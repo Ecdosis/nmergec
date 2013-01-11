@@ -4,10 +4,13 @@
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
-      <itemPath>commands.h</itemPath>
-      <itemPath>empty_output_stream.h</itemPath>
-      <itemPath>kmpsearch.h</itemPath>
-      <itemPath>output_stream.h</itemPath>
+      <itemPath>include/mvd/chunk_state.h</itemPath>
+      <itemPath>include/commands.h</itemPath>
+      <itemPath>include/empty_output_stream.h</itemPath>
+      <itemPath>include/kmpsearch.h</itemPath>
+      <itemPath>include/memwatch.h</itemPath>
+      <itemPath>include/mvdtool.h</itemPath>
+      <itemPath>include/output_stream.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
@@ -16,10 +19,11 @@
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
-      <itemPath>empty_output_stream.c</itemPath>
-      <itemPath>kmpsearch.c</itemPath>
-      <itemPath>mvdtool.c</itemPath>
-      <itemPath>output_stream.c</itemPath>
+      <itemPath>src/empty_output_stream.c</itemPath>
+      <itemPath>src/kmpsearch.c</itemPath>
+      <itemPath>src/memwatch.c</itemPath>
+      <itemPath>src/mvdtool.c</itemPath>
+      <itemPath>src/output_stream.c</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
                    displayName="Test Files"
@@ -41,6 +45,11 @@
         <compilerSet>default</compilerSet>
       </toolsSet>
       <compileType>
+        <cTool>
+          <incDir>
+            <pElem>include</pElem>
+          </incDir>
+        </cTool>
       </compileType>
     </conf>
     <conf name="Release" type="1">

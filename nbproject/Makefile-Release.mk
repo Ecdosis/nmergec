@@ -35,10 +35,11 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
-	${OBJECTDIR}/kmpsearch.o \
-	${OBJECTDIR}/output_stream.o \
-	${OBJECTDIR}/mvdtool.o \
-	${OBJECTDIR}/empty_output_stream.o
+	${OBJECTDIR}/src/empty_output_stream.o \
+	${OBJECTDIR}/src/kmpsearch.o \
+	${OBJECTDIR}/src/mvdtool.o \
+	${OBJECTDIR}/src/memwatch.o \
+	${OBJECTDIR}/src/output_stream.o
 
 
 # C Compiler Flags
@@ -65,25 +66,30 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nmergec: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nmergec ${OBJECTFILES} ${LDLIBSOPTIONS} 
 
-${OBJECTDIR}/kmpsearch.o: kmpsearch.c 
-	${MKDIR} -p ${OBJECTDIR}
+${OBJECTDIR}/src/empty_output_stream.o: src/empty_output_stream.c 
+	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/kmpsearch.o kmpsearch.c
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/empty_output_stream.o src/empty_output_stream.c
 
-${OBJECTDIR}/output_stream.o: output_stream.c 
-	${MKDIR} -p ${OBJECTDIR}
+${OBJECTDIR}/src/kmpsearch.o: src/kmpsearch.c 
+	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/output_stream.o output_stream.c
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/kmpsearch.o src/kmpsearch.c
 
-${OBJECTDIR}/mvdtool.o: mvdtool.c 
-	${MKDIR} -p ${OBJECTDIR}
+${OBJECTDIR}/src/mvdtool.o: src/mvdtool.c 
+	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/mvdtool.o mvdtool.c
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvdtool.o src/mvdtool.c
 
-${OBJECTDIR}/empty_output_stream.o: empty_output_stream.c 
-	${MKDIR} -p ${OBJECTDIR}
+${OBJECTDIR}/src/memwatch.o: src/memwatch.c 
+	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/empty_output_stream.o empty_output_stream.c
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/memwatch.o src/memwatch.c
+
+${OBJECTDIR}/src/output_stream.o: src/output_stream.c 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/output_stream.o src/output_stream.c
 
 # Subprojects
 .build-subprojects:

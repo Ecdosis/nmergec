@@ -1,5 +1,81 @@
 #include <stdio.h>
 #include "mvdtool.h"
+#include "commands.h"
+#include "mvd/chunk_state.h"
+#ifdef MVD_DEBUG
+#include "memwatch.h"
+#endif
+struct mvdtool_struct
+{
+    /** version id of backup version */
+	int backup;
+	/** user issued command */
+	Commands command;
+	/** description of MVD */
+	char *description;
+	/** encoding of text file to be merged */
+	char *encoding;
+	/** text to be found */
+	char *findString;
+	/** group name of new version */
+	char *groupName;
+	/** length of variant in base version */
+	int variantLen;
+	/** long name of new version */
+	char *longName;
+	/** name of mvd file */
+	char *mvdFile;
+	/** name of archive */
+	char *archiveName;
+	/** from offset in base version */
+	int fromOffset;
+	/** specified version is partial */
+	int partial;
+	/** short name of new version */
+	char *shortName;
+	/** name of text file for merging */
+	char *textFile;
+	/** id of specified version */
+	short version;	
+	/** version to compare with version */
+	short with;	
+	/** file name for database connection */
+	char *dbConn;
+	/** name of xml file for export only */
+	char *xmlFile;
+	/** command to print example of */
+	char *helpCommand;
+	/** String for defining default sigla */
+	const char *ALPHABET;
+	/** default break before and after byte arrays */
+	const char *BREAK_BEFORE;
+	const char *BREAK_AFTER;
+	/** Stream to report results to */
+	FILE *out;
+	/** state to label version text not found in with text 
+	 * during compare */
+	ChunkState uniqueState;
+	/** id of default folder */
+	int folderId;
+    /** whether to merge shared versions */
+    int mergeSharedVersions = 0;
+    /** do only direct alignment */
+    int directAlignOnly = 0;
+    const char *UTF8_BOM;
+};
+/**
+ * Reset all the static variables to sensible defaults
+ */
+static void clear_to_defaults( struct mvdtool_struct *mts )
+{
+   mts->encoding = "UTF-8";
+   mts->version = 1;
+   mts->uniqueState = deleted;
+   mts->UTF8_BOM = "\357\273\277";
+   mts->ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+   mts->BREAK_AFTER = "> ,\n\r\t";
+   mts->BREAK_BEFORE = "<";
+}
 /**
  * Tell the user about how to use this program
  */
