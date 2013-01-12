@@ -13,7 +13,7 @@ extern "C" {
 #endif
 
 int search( char *text, int offset, char *pattern );
-#ifdef MVD_DEBUG
+#ifdef MVD_TEST
 int test_kmpsearch( int *passed, int *failed );
 #endif
 #ifdef	__cplusplus

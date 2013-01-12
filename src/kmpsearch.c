@@ -22,7 +22,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "kmpsearch.h"
-#ifdef MVD_DEBUG
+#ifdef MVD_TEST
 #include "memwatch.h"
 #endif
 
@@ -91,7 +91,7 @@ int search( char *text, int offset, char *pattern )
     return -1;
 }
 
-#ifdef MVD_DEBUG
+#ifdef MVD_TEST
 /**
  * Test the kmpsearch routine
  * @param passed VAR param for number of tests passed
@@ -100,8 +100,8 @@ int search( char *text, int offset, char *pattern )
  */
 int test_kmpsearch( int *passed, int *failed )
 {
-    *passed = 0;
-    *failed = 0;
+    int kmp_passed = 0;
+    int kmp_failed = 0;
     const char *text = "Lorem ipsum dolor sit amet, consectetur adipisicing "
     "elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
     " Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi "
@@ -111,52 +111,54 @@ int test_kmpsearch( int *passed, int *failed )
     "qui officia deserunt mollit anim id est laborum.";
     int res = search( (char*)text, 0, "nostrud");
     if ( res != -1 )
-        (*passed)++;
+        kmp_passed++;
     else
     {
-        (*failed)++;
+        kmp_failed++;
         printf("could not find nostrud\n");
     }
     res = search( (char*)text, 0, "qui officia deserunt");
     if ( res != -1 )
-        passed++;
+        kmp_passed++;
     else
     {
-        (*failed)++;
+        kmp_failed++;
         printf("could not find qui officia deserunt\n");
     }
     res = search( (char*)text, 0, "anim id est laborum.");
     if ( res != -1 )
-        (*passed)++;
+        kmp_passed++;
     else
     {
-        (*failed)++;
+        kmp_failed++;
         printf("could not find anim id est laborum. (at text end)\n");
     }
     res = search( (char*)text, 0, "Lorem ipsum");
     if ( res != -1 )
-        (*passed)++;
+        kmp_passed++;
     else
     {
-        (*failed)++;
+        kmp_failed++;
         printf("could not find Lorem ipsum (at text start)\n");
     }
     res = search( (char*)text, 0, "bananarama");
     if ( res != -1 )
     {
-        (*failed)++;
+        kmp_failed++;
         printf("found bananarama at %d (but shouldn't have!)\n",res);
     }
     else
-        (*passed)++;
+        kmp_passed++;
     res = search( (char*)text, 0, "exercitaton");
     if ( res != -1 )
     {
-        (*failed)++;
+        kmp_failed++;
         printf("found exercitaton at %d (but shouldn't have!)\n",res);
     }
     else
-        (*passed)++;
-    return (*failed)==0;
+        kmp_passed++;
+    *failed += kmp_failed;
+    *passed += kmp_passed;
+    return kmp_failed==0;
 }
 #endif

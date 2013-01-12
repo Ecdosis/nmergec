@@ -12,11 +12,14 @@
 extern "C" {
 #endif
 
-typedef enum { ADD, ARCHIVE, COMPARE, CREATE,
+typedef enum { ACOMMAND=0, ADD, ARCHIVE, COMPARE, CREATE,
 	DELETE, DESCRIPTION, EXPORT, FIND, HELP,
-	IMPORT, LIST, READ, UNARCHIVE, UPDATE,
-	USAGE, VARIANTS, TREE } Commands;
-
+	IMPORT, LIST, READ, TREE, UNARCHIVE, UPDATE,
+	USAGE, VARIANTS } command;
+    command command_value( const char *value );
+#ifdef MVD_TEST
+    int test_command( int *passed, int *failed );
+#endif
 #ifdef	__cplusplus
 }
 #endif

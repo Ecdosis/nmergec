@@ -37,9 +37,12 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 OBJECTFILES= \
 	${OBJECTDIR}/src/empty_output_stream.o \
 	${OBJECTDIR}/src/kmpsearch.o \
+	${OBJECTDIR}/src/command.o \
 	${OBJECTDIR}/src/mvdtool.o \
 	${OBJECTDIR}/src/memwatch.o \
-	${OBJECTDIR}/src/output_stream.o
+	${OBJECTDIR}/src/test.o \
+	${OBJECTDIR}/src/output_stream.o \
+	${OBJECTDIR}/src/mvd/chunk_state.o
 
 
 # C Compiler Flags
@@ -76,6 +79,11 @@ ${OBJECTDIR}/src/kmpsearch.o: src/kmpsearch.c
 	${RM} $@.d
 	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/kmpsearch.o src/kmpsearch.c
 
+${OBJECTDIR}/src/command.o: src/command.c 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/command.o src/command.c
+
 ${OBJECTDIR}/src/mvdtool.o: src/mvdtool.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
@@ -86,10 +94,20 @@ ${OBJECTDIR}/src/memwatch.o: src/memwatch.c
 	${RM} $@.d
 	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/memwatch.o src/memwatch.c
 
+${OBJECTDIR}/src/test.o: src/test.c 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/test.o src/test.c
+
 ${OBJECTDIR}/src/output_stream.o: src/output_stream.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/output_stream.o src/output_stream.c
+
+${OBJECTDIR}/src/mvd/chunk_state.o: src/mvd/chunk_state.c 
+	${MKDIR} -p ${OBJECTDIR}/src/mvd
+	${RM} $@.d
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvd/chunk_state.o src/mvd/chunk_state.c
 
 # Subprojects
 .build-subprojects:

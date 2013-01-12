@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "mvdtool.h"
-#include "commands.h"
+#include "command.h"
 #include "mvd/chunk_state.h"
 #ifdef MVD_DEBUG
 #include "memwatch.h"
@@ -10,7 +10,7 @@ struct mvdtool_struct
     /** version id of backup version */
 	int backup;
 	/** user issued command */
-	Commands command;
+	command op;
 	/** description of MVD */
 	char *description;
 	/** encoding of text file to be merged */
@@ -63,6 +63,7 @@ struct mvdtool_struct
     int directAlignOnly = 0;
     const char *UTF8_BOM;
 };
+static struct mvdtool_struct mt;
 /**
  * Reset all the static variables to sensible defaults
  */
@@ -75,6 +76,113 @@ static void clear_to_defaults( struct mvdtool_struct *mts )
    mts->ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
    mts->BREAK_AFTER = "> ,\n\r\t";
    mts->BREAK_BEFORE = "<";
+}
+/**
+ * Read in the arguments
+ * @param args an array of Strings from the command line
+ * @return 1 if the arguments were valid
+ */
+static void read_args( int argc, char **argv ) 
+{
+    int sane = 1;
+    clear_to_defaults( &mt );
+    if ( argc > 1 )
+    {
+        int i;
+        for ( i=1;i<argc;i++ )
+        {
+            if ( argv[i][0] =='-' && strlen(argv[i]>1) )
+            {
+                switch ( argv[i][1] )
+                {
+                    case 'c':
+                        if ( mt.op == USAGE )
+                        {
+                            fprintf(stderr,"Only one of -c and -? is allowed\n");
+                            command = command_value(argv[i+1]);
+                        }
+                        break;
+                    case 'p':
+                        mt.partial = 1;
+                        break;
+               
+                    case '?':
+                        if ( mt.op != ACOMMAND )
+                        {
+                            fprintf(stderr,"Only one of -c and -? is allowed");
+                            sane = 0;
+                        }
+                        else
+                            mt.op = USAGE;
+                        break;
+           
+                    case 'D':
+                        mt.directAlignOnly = 1;
+                        break;
+                    case 'a':
+                        mt.archiveName = argv[i+1];
+                        break;
+                    case 'b':
+                        mt.backup = atoi(argv[i+1]);
+                        break;
+                    case 'd':
+                        mt.description = argv[i+1];
+                        break;
+                    case 'e':
+                        mt.encoding = argv[i+1];
+                        break;
+                    case 'f':
+                        mt.findString = argv[i+1];
+                        break;
+                    case 'g':
+                        mt.groupName = argv[i+1];
+                        break;
+                    case 'h':
+                        mt.op = HELP;
+                        mt.helpCommand = argv[i+1];
+                        break;
+                    case 'k':
+                        mt.variantLen = atoi(argv[i+1]);
+                        break;
+                    case 'l':
+                        mt.longName = argv[i+1];
+                        break;
+                    case 'm':
+                        mt.mvdFile = argv[i+1];
+                        break;
+                    case 'o':
+                        mt.fromOffset = atoit(argv[i+1]);
+                        break;
+                    case 's':
+                        mt.shortName = argv[i+1];
+                        break;
+                    case 't':
+                        mt.textFile = argv[i+1];
+                        break;
+                    case 'u':
+                        mt.uniqueState = chunk_state_value(argv[i+1]);
+                        break;
+               else if ( key.equals("v") )
+                   version = Short.parseShort(value);
+               else if ( key.equals("w") )
+                   with = Short.parseShort(value);
+               else if ( key.equals("x") )
+                   xmlFile = value;
+               else if ( key.equals("y") )
+                   dbConn = value;
+               else if ( key.equals("z") )
+                   folderId = Integer.parseInt(value);
+               else if ( key.equals("n") )
+                   mergeSharedVersions = true;
+               else
+                   throw new MVDToolException( "Unknown option "+key );
+           }
+            if ( !sane )
+                break;
+       }
+   }
+   if ( command == null )
+       command = Commands.USAGE;
 }
 /**
  * Tell the user about how to use this program

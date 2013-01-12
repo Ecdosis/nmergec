@@ -5,7 +5,7 @@
                    displayName="Header Files"
                    projectFiles="true">
       <itemPath>include/mvd/chunk_state.h</itemPath>
-      <itemPath>include/commands.h</itemPath>
+      <itemPath>include/command.h</itemPath>
       <itemPath>include/empty_output_stream.h</itemPath>
       <itemPath>include/kmpsearch.h</itemPath>
       <itemPath>include/memwatch.h</itemPath>
@@ -19,11 +19,14 @@
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
+      <itemPath>src/mvd/chunk_state.c</itemPath>
+      <itemPath>src/command.c</itemPath>
       <itemPath>src/empty_output_stream.c</itemPath>
       <itemPath>src/kmpsearch.c</itemPath>
       <itemPath>src/memwatch.c</itemPath>
       <itemPath>src/mvdtool.c</itemPath>
       <itemPath>src/output_stream.c</itemPath>
+      <itemPath>src/test.c</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
                    displayName="Test Files"
