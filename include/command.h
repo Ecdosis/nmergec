@@ -13,7 +13,7 @@ extern "C" {
 #endif
 
 typedef enum { ACOMMAND=0, ADD, ARCHIVE, COMPARE, CREATE,
-	DELETE, DESCRIPTION, EXPORT, FIND, HELP,
+	DELETE, DESCRIPTION, DETAILED_USAGE, EXPORT, FIND, HELP,
 	IMPORT, LIST, READ, TREE, UNARCHIVE, UPDATE,
 	USAGE, VARIANTS } command;
     command command_value( const char *value );
