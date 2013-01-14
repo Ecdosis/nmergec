@@ -36,8 +36,11 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 # Object Files
 OBJECTFILES= \
 	${OBJECTDIR}/src/empty_output_stream.o \
+	${OBJECTDIR}/src/mvd/mvdfile.o \
 	${OBJECTDIR}/src/kmpsearch.o \
 	${OBJECTDIR}/src/command.o \
+	${OBJECTDIR}/src/b64.o \
+	${OBJECTDIR}/src/mvd/mvd.o \
 	${OBJECTDIR}/src/mvdtool.o \
 	${OBJECTDIR}/src/memwatch.o \
 	${OBJECTDIR}/src/test.o \
@@ -74,6 +77,11 @@ ${OBJECTDIR}/src/empty_output_stream.o: src/empty_output_stream.c
 	${RM} $@.d
 	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/empty_output_stream.o src/empty_output_stream.c
 
+${OBJECTDIR}/src/mvd/mvdfile.o: src/mvd/mvdfile.c 
+	${MKDIR} -p ${OBJECTDIR}/src/mvd
+	${RM} $@.d
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvd/mvdfile.o src/mvd/mvdfile.c
+
 ${OBJECTDIR}/src/kmpsearch.o: src/kmpsearch.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
@@ -83,6 +91,16 @@ ${OBJECTDIR}/src/command.o: src/command.c
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/command.o src/command.c
+
+${OBJECTDIR}/src/b64.o: src/b64.c 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/b64.o src/b64.c
+
+${OBJECTDIR}/src/mvd/mvd.o: src/mvd/mvd.c 
+	${MKDIR} -p ${OBJECTDIR}/src/mvd
+	${RM} $@.d
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvd/mvd.o src/mvd/mvd.c
 
 ${OBJECTDIR}/src/mvdtool.o: src/mvdtool.c 
 	${MKDIR} -p ${OBJECTDIR}/src

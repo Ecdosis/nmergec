@@ -10,8 +10,9 @@
 #define EXAMPLE_COMPARE "nmerge -c compare -m work.mvd -v 4 -w 7"
 #define EXAMPLE_DELETE "nmerge -c delete -m work.mvd -v 7"
 #define EXAMPLE_CREATE "nmerge -c create -m work.mvd -d \"my new MVD\" -e UTF-8"
-#define EXAMPLE_DESCRIPTION "nmerge -c description -m work.mvd -d "\
+#define EXAMPLE_DESCRIPTION1 "nmerge -c description -m work.mvd -d "\
 "\"my new mvd description\""
+#define EXAMPLE_DESCRIPTION2 "nmerge -c description -m work.mvd"
 #define EXAMPLE_TREE "nmerge -c tree -m work.mvd -d existing.mvd"
 #define EXAMPLE_EXPORT "nmerge -c export -m work.mvd -x work.xml"
 #define EXAMPLE_FIND "nmerge -c find -m work.mvd -f \"bananas are nice\""
@@ -21,6 +22,9 @@
 #define EXAMPLE_UNARCHIVE "nmerge -c unarchive -m work.mvd -a myArchiveFolder"
 #define EXAMPLE_UPDATE "nmerge -c update -m work.mvd -v 3 -t 5.txt"
 #define EXAMPLE_VARIANTS "nmerge -c variants -m work.mvd -v 3 -o 1124 -k 23"
+#define DEFAULT_MVD "untitled.mvd"
+#define DEFAULT_XML "untitled.xml"
+
 #ifdef MVD_DEBUG
 #include "memwatch.h"
 #endif
@@ -89,6 +93,7 @@ static void clear_to_defaults()
     mt.encoding = "UTF-8";
     mt.version = 1;
     mt.uniqueState = deleted;
+    mt.helpCommand = "ACOMMAND";
     mt.UTF8_BOM = "\357\273\277";
     mt.ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     mt.BREAK_AFTER = "> ,\n\r\t";
@@ -96,9 +101,9 @@ static void clear_to_defaults()
     mt.groupName = "Base";
     mt.longName = "version 1";
     mt.shortName = "1";
-	mt.mvdFile = "untitled.mvd";
+	mt.mvdFile = DEFAULT_MVD;
 	mt.folderId = 1;
-	mt.xmlFile = "untitled.xml";
+	mt.xmlFile = DEFAULT_XML;
     mt.out = stdout;
 }
 /**
@@ -310,68 +315,72 @@ static int print_example()
         fprintf(stderr,"mvdtool: please specify a help command!\n");
         sane = 0;
     }
-    command hComm = command_value(mt.helpCommand);
-    switch ( hComm )
+    else
     {
-        case ADD:
-            fprintf(mt.out, "%s\n", EXAMPLE_ADD );
-            break;
-        case ARCHIVE:
-            fprintf(mt.out, "%s\n", EXAMPLE_ARCHIVE);
-            break;
-        case COMPARE:
-            fprintf(mt.out, "%s\n", EXAMPLE_COMPARE);
-            break;
-        case DELETE:
-            fprintf(mt.out, "%s\n", EXAMPLE_DELETE);
-            break;
-        case CREATE:
-            fprintf(mt.out, "%s\n", EXAMPLE_CREATE);
-            break;
-        case DESCRIPTION:
-            fprintf(mt.out, "%s\n", EXAMPLE_DESCRIPTION);
-            break;
-        case TREE:
-            fprintf(mt.out, "%s\n", EXAMPLE_TREE );
-            break;
-        case EXPORT:
-            fprintf(mt.out, "%s\n", EXAMPLE_EXPORT );
-            break;
-        case FIND:
-            fprintf(mt.out, "%s\n", EXAMPLE_FIND);
-            break;
-        case IMPORT:
-            fprintf(mt.out, "%s\n", EXAMPLE_IMPORT);
-            break;
-        case LIST:
-            fprintf(mt.out, "%s\n", EXAMPLE_LIST);
-            break;
-        case READ:
-            fprintf(mt.out, "%s\n", EXAMPLE_READ);
-            break;
-        case UNARCHIVE:
-            fprintf(mt.out, "%s\n", EXAMPLE_UNARCHIVE);
-            break;
-        case UPDATE:
-            fprintf(mt.out, "%s\n", EXAMPLE_UPDATE);
-            break;
-        case VARIANTS:
-            fprintf(mt.out, "%s\n", EXAMPLE_VARIANTS);					
-            break;
-        case HELP: 
-            print_example();
-            break;
-        case DETAILED_USAGE: 
-            detailed_usage();
-            break;
-        case USAGE:
-            usage();
-            break;
-        default:
-            fprintf(stderr, "mvdtool: command %s not catered for\n",
-                mt.helpCommand );
-            sane = 0;
-            break;
+        command hComm = command_value(mt.helpCommand);
+        switch ( hComm )
+        {
+            case ADD:
+                fprintf(mt.out, "%s\n", EXAMPLE_ADD );
+                break;
+            case ARCHIVE:
+                fprintf(mt.out, "%s\n", EXAMPLE_ARCHIVE);
+                break;
+            case COMPARE:
+                fprintf(mt.out, "%s\n", EXAMPLE_COMPARE);
+                break;
+            case DELETE:
+                fprintf(mt.out, "%s\n", EXAMPLE_DELETE);
+                break;
+            case CREATE:
+                fprintf(mt.out, "%s\n", EXAMPLE_CREATE);
+                break;
+            case DESCRIPTION:
+                fprintf(mt.out, "%s\n", EXAMPLE_DESCRIPTION1);
+                fprintf(mt.out, "%s\n", EXAMPLE_DESCRIPTION2);
+                break;
+            case TREE:
+                fprintf(mt.out, "%s\n", EXAMPLE_TREE );
+                break;
+            case EXPORT:
+                fprintf(mt.out, "%s\n", EXAMPLE_EXPORT );
+                break;
+            case FIND:
+                fprintf(mt.out, "%s\n", EXAMPLE_FIND);
+                break;
+            case IMPORT:
+                fprintf(mt.out, "%s\n", EXAMPLE_IMPORT);
+                break;
+            case LIST:
+                fprintf(mt.out, "%s\n", EXAMPLE_LIST);
+                break;
+            case READ:
+                fprintf(mt.out, "%s\n", EXAMPLE_READ);
+                break;
+            case UNARCHIVE:
+                fprintf(mt.out, "%s\n", EXAMPLE_UNARCHIVE);
+                break;
+            case UPDATE:
+                fprintf(mt.out, "%s\n", EXAMPLE_UPDATE);
+                break;
+            case VARIANTS:
+                fprintf(mt.out, "%s\n", EXAMPLE_VARIANTS);					
+                break;
+            case HELP: 
+                print_example();
+                break;
+            case DETAILED_USAGE: 
+                detailed_usage();
+                break;
+            case USAGE:
+                usage();
+                break;
+            default:
+                fprintf(stderr, "mvdtool: command %s not catered for\n",
+                    mt.helpCommand );
+                sane = 0;
+                break;
+        }
     }
     return sane;
 }
@@ -522,6 +531,249 @@ int main( int argc, char **argv )
         usage();
 }
 #else
+/**
+ * Test the ADD command. textFile is a required param
+ * @param passed VAR param number of passed tests
+ * @param failed VAR param number of failed tests
+ * @return 1 if it was OK
+ */
+static int test_add( int *passed, int *failed )
+{
+    if ( mt.textFile == NULL )
+    {
+        *failed += 1;
+        fprintf(stderr,"mvdtool: failed to set textFile\n");
+        return 0;
+    }
+    else 
+        *passed += 1;
+    return 1;
+}
+/**
+ * Test the ARCHIVE command. 
+ * @param passed VAR param number of passed tests
+ * @param failed VAR param number of failed tests
+ * @return 1 if it was OK
+ */
+static int test_archive( int *passed, int *failed )
+{
+    if ( strcmp(mt.mvdFile,DEFAULT_MVD) == 0 )
+    {
+        *failed += 1;
+        fprintf(stderr,"mvdtool: failed to set mvdFile\n");
+        return 0;
+    }
+    else
+        *passed += 1;
+    return 1;
+}
+/**
+ * Test the COMPARE command. 
+ * @param passed VAR param number of passed tests
+ * @param failed VAR param number of failed tests
+ * @return 1 if it was OK
+ */
+static int test_compare( int *passed, int *failed )
+{
+    int f = 0;
+    
+    if ( strcmp(mt.mvdFile,DEFAULT_MVD)==0 )
+    {
+        f = 1;
+        fprintf(stderr,"mvdtool: mvdFile unspecified for compare\n");
+    }
+    if ( mt.with == 0 )
+    {
+        f = 1;
+        fprintf(stderr,"mvdtool: with version unspecified for compare\n");
+    }
+    if ( f == 0 )
+        *passed += 1;
+    else
+    {
+        *failed += 1;
+        return 0;
+    }
+    return 1;
+}
+/**
+ * Test the DESCRIPTION command. Can read or write 
+ * @param passed VAR param number of passed tests
+ * @param failed VAR param number of failed tests
+ * @return 1 if it was OK
+ */
+static int test_description( int *passed, int *failed )
+{
+    if ( mt.description == NULL )
+    {
+        if ( strcmp(mt.mvdFile,DEFAULT_MVD) == 0 )
+        {
+            *failed += 1;
+            fprintf(stderr,"mvdtool: failed to set mvdFile\n");
+            return 0;
+        }
+        else
+            *passed += 1;
+    }
+    // else setting for a possibly empty MVD
+    return 1;
+}
+/**
+ * Test the EXPORT command. 
+ * @param passed VAR param number of passed tests
+ * @param failed VAR param number of failed tests
+ * @return 1 if it was OK
+ */
+static int test_export( int *passed, int *failed )
+{
+    if ( strcmp(mt.mvdFile,DEFAULT_MVD)==0 )
+    {
+        *failed += 1;
+        fprintf(stderr,"mvdtool: mvdFile unspecified for export\n");
+        return 0;
+    }
+    else
+        *passed += 1;
+    return 1;
+}
+/**
+ * Ensure the mvdFile is set to a non-default value
+ * @param passed VAR param number of passed tests
+ * @param failed VAR param number of failed tests
+ * @param cmd the command to ensure it for
+ * @return 1 if it was OK
+ */
+static int test_ensure_mvd( int *passed, int *failed, const char *cmd )
+{
+    if ( strcmp(mt.mvdFile,DEFAULT_MVD)==0 )
+    {
+        *failed += 1;
+        fprintf(stderr,"mvdtool: mvdFile unspecified for %s\n",cmd);
+        return 0;
+    }
+    else
+        *passed += 1;
+    return 1;
+}
+/**
+ * Test the IMPORT command. 
+ * @param passed VAR param number of passed tests
+ * @param failed VAR param number of failed tests
+ * @return 1 if it was OK
+ */
+static int test_import( int *passed, int *failed )
+{
+    if ( strcmp(mt.xmlFile,DEFAULT_XML)==0 )
+    {
+        *failed += 1;
+        fprintf(stderr,"mvdtool: xmlFile unspecified for import\n");
+        return 0;
+    }
+    else
+        *passed += 1;
+    return 1;
+}
+/**
+ * Test the FIND command. 
+ * @param passed VAR param number of passed tests
+ * @param failed VAR param number of failed tests
+ * @return 1 if it was OK
+ */
+static int test_find( int *passed, int *failed )
+{
+    int f = 0;
+    if ( strcmp(mt.mvdFile,DEFAULT_MVD)==0 )
+    {
+        f = 1;
+        fprintf(stderr,"mvdtool: mvdFile unspecified for find\n");
+
+    }
+    if ( mt.findString == NULL )
+    {
+        f = 1;
+        fprintf(stderr,"mvdtool: findString unspecified for find\n");
+
+    }
+    if ( f == 1 )
+        *failed += 1;
+    else
+        *passed += 1;
+    return f == 0;
+}
+/**
+ * Test the UNARCHIVE command. 
+ * @param passed VAR param number of passed tests
+ * @param failed VAR param number of failed tests
+ * @return 1 if it was OK
+ */
+static int test_unarchive( int *passed, int *failed )
+{
+    int f = 0;
+    if ( mt.archiveName == NULL )
+    {
+        *failed += 1;
+        fprintf(stderr,"mvdtool: archiveName unspecified for unarchive\n");
+    }
+    else *passed += 1;
+}
+/**
+ * Test the UPDATE command. 
+ * @param passed VAR param number of passed tests
+ * @param failed VAR param number of failed tests
+ * @return 1 if it was OK
+ */
+static int test_update( int *passed, int *failed )
+{
+    int f = 0;
+    if ( strcmp(mt.mvdFile,DEFAULT_MVD)==0 )
+    {
+        f = 1;
+        fprintf(stderr,"mvdtool: mvdFile unspecified for update\n");
+    }
+    if ( mt.textFile == NULL )
+    {
+        f = 1;
+        fprintf(stderr,"mvdtool: textFile unspecified for update\n");
+    }
+    if ( f > 0 )
+        *failed += 1;
+    else
+        *passed += 1;
+    return f==0;
+}
+/**
+ * Test the VARIANTS command. 
+ * @param passed VAR param number of passed tests
+ * @param failed VAR param number of failed tests
+ * @return 1 if it was OK
+ */
+static int test_variants( int *passed, int *failed )
+{
+    int f = 0;
+    if ( strcmp(mt.mvdFile,DEFAULT_MVD)==0 )
+    {
+        f = 1;
+        fprintf(stderr,"mvdtool: mvdFile unspecified for variants\n");
+    }
+    if ( mt.variantLen == 0 )
+    {
+        f = 1;
+        fprintf(stderr,"mvdtool: fromOffset unspecified for variants\n");
+    }
+    if ( f > 0 )
+        *failed += 1;
+    else
+        *passed += 1;
+    return f==0;
+}
+/**
+ * Test the arguments to a command
+ * @param example the example commandline string
+ * @param passed VAR param increment by 1 if it passed
+ * @param failed VAR param increment by 1 if failed
+ * @param true equals 1 if the result should be correct
+ * @return 1 if all was OK
+ */
 static int test_args( const char *example, int *passed, int *failed, int true )
 {
     int i,state = 0;
@@ -646,6 +898,52 @@ static int test_args( const char *example, int *passed, int *failed, int true )
         }
         free( copy );
     }
+    // now check that the arguments were set correctly
+    if ( true && sane )
+    {
+        switch ( mt.op )
+        {
+            case ADD:
+                sane = test_add(passed,failed);
+                break;
+            case ARCHIVE:
+                sane = test_archive(passed,failed);
+                break;
+            case COMPARE:
+                sane = test_compare(passed,failed);
+                break;
+            case DELETE:
+                sane = test_ensure_mvd(passed,failed,"delete");
+                break;
+            case DESCRIPTION:
+                sane = test_description(passed,failed);
+                break;
+            case EXPORT:
+                sane = test_export(passed,failed);
+                break;
+            case FIND:
+                sane = test_find(passed,failed);
+                break;
+            case IMPORT:
+                sane = test_import(passed,failed);
+                break;
+            case LIST:
+                sane = test_ensure_mvd(passed,failed,"list");
+                break;
+            case READ:
+                sane = test_ensure_mvd(passed,failed,"read");
+                break;
+            case UNARCHIVE:
+                sane = test_unarchive(passed,failed);
+                break;
+            case UPDATE:
+                sane = test_update(passed,failed);
+                break;
+            case VARIANTS:
+                sane = test_variants(passed,failed);
+                break;
+        }
+    }
     return sane;
 }
 /**
@@ -661,7 +959,8 @@ int test_mvdtool( int *passed, int *failed )
     test_args(EXAMPLE_COMPARE,passed,failed,1);
     test_args(EXAMPLE_DELETE,passed,failed,1);
     test_args(EXAMPLE_CREATE,passed,failed,1);
-    test_args(EXAMPLE_DESCRIPTION,passed,failed,1);
+    test_args(EXAMPLE_DESCRIPTION1,passed,failed,1);
+    test_args(EXAMPLE_DESCRIPTION2,passed,failed,1);
     test_args(EXAMPLE_TREE,passed,failed,1);
     test_args(EXAMPLE_EXPORT,passed,failed,1);
     test_args(EXAMPLE_FIND,passed,failed,1);

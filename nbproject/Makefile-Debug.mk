@@ -36,8 +36,11 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 # Object Files
 OBJECTFILES= \
 	${OBJECTDIR}/src/empty_output_stream.o \
+	${OBJECTDIR}/src/mvd/mvdfile.o \
 	${OBJECTDIR}/src/kmpsearch.o \
 	${OBJECTDIR}/src/command.o \
+	${OBJECTDIR}/src/b64.o \
+	${OBJECTDIR}/src/mvd/mvd.o \
 	${OBJECTDIR}/src/mvdtool.o \
 	${OBJECTDIR}/src/memwatch.o \
 	${OBJECTDIR}/src/test.o \
@@ -72,42 +75,57 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nmergec: ${OBJECTFILES}
 ${OBJECTDIR}/src/empty_output_stream.o: src/empty_output_stream.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -Iinclude -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/empty_output_stream.o src/empty_output_stream.c
+	$(COMPILE.c) -g -DMVD_TEST -Iinclude -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/empty_output_stream.o src/empty_output_stream.c
+
+${OBJECTDIR}/src/mvd/mvdfile.o: src/mvd/mvdfile.c 
+	${MKDIR} -p ${OBJECTDIR}/src/mvd
+	${RM} $@.d
+	$(COMPILE.c) -g -DMVD_TEST -Iinclude -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvd/mvdfile.o src/mvd/mvdfile.c
 
 ${OBJECTDIR}/src/kmpsearch.o: src/kmpsearch.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -Iinclude -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/kmpsearch.o src/kmpsearch.c
+	$(COMPILE.c) -g -DMVD_TEST -Iinclude -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/kmpsearch.o src/kmpsearch.c
 
 ${OBJECTDIR}/src/command.o: src/command.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -Iinclude -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/command.o src/command.c
+	$(COMPILE.c) -g -DMVD_TEST -Iinclude -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/command.o src/command.c
+
+${OBJECTDIR}/src/b64.o: src/b64.c 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.c) -g -DMVD_TEST -Iinclude -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/b64.o src/b64.c
+
+${OBJECTDIR}/src/mvd/mvd.o: src/mvd/mvd.c 
+	${MKDIR} -p ${OBJECTDIR}/src/mvd
+	${RM} $@.d
+	$(COMPILE.c) -g -DMVD_TEST -Iinclude -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvd/mvd.o src/mvd/mvd.c
 
 ${OBJECTDIR}/src/mvdtool.o: src/mvdtool.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -Iinclude -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvdtool.o src/mvdtool.c
+	$(COMPILE.c) -g -DMVD_TEST -Iinclude -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvdtool.o src/mvdtool.c
 
 ${OBJECTDIR}/src/memwatch.o: src/memwatch.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -Iinclude -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/memwatch.o src/memwatch.c
+	$(COMPILE.c) -g -DMVD_TEST -Iinclude -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/memwatch.o src/memwatch.c
 
 ${OBJECTDIR}/src/test.o: src/test.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -Iinclude -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/test.o src/test.c
+	$(COMPILE.c) -g -DMVD_TEST -Iinclude -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/test.o src/test.c
 
 ${OBJECTDIR}/src/output_stream.o: src/output_stream.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -Iinclude -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/output_stream.o src/output_stream.c
+	$(COMPILE.c) -g -DMVD_TEST -Iinclude -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/output_stream.o src/output_stream.c
 
 ${OBJECTDIR}/src/mvd/chunk_state.o: src/mvd/chunk_state.c 
 	${MKDIR} -p ${OBJECTDIR}/src/mvd
 	${RM} $@.d
-	$(COMPILE.c) -g -Iinclude -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvd/chunk_state.o src/mvd/chunk_state.c
+	$(COMPILE.c) -g -DMVD_TEST -Iinclude -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvd/chunk_state.o src/mvd/chunk_state.c
 
 # Subprojects
 .build-subprojects:
