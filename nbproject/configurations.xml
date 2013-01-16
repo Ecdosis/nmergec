@@ -7,14 +7,18 @@
       <logicalFolder name="f1" displayName="mvd" projectFiles="true">
         <itemPath>include/mvd/chunk_state.h</itemPath>
         <itemPath>include/mvd/mvd.h</itemPath>
+        <itemPath>include/mvd/mvdfile.h</itemPath>
       </logicalFolder>
       <itemPath>include/b64.h</itemPath>
-      <itemPath>include/command.h</itemPath>
-      <itemPath>include/empty_output_stream.h</itemPath>
-      <itemPath>include/kmpsearch.h</itemPath>
+      <itemPath>include/bitset.h</itemPath>
+      <itemPath>include/char_buf.h</itemPath>
+      <itemPath>include/dyn_array.h</itemPath>
       <itemPath>include/memwatch.h</itemPath>
       <itemPath>include/mvdtool.h</itemPath>
-      <itemPath>include/output_stream.h</itemPath>
+      <itemPath>include/operation.h</itemPath>
+      <itemPath>include/plugin.h</itemPath>
+      <itemPath>include/plugin_list.h</itemPath>
+      <itemPath>include/zip/zip.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
@@ -28,13 +32,26 @@
         <itemPath>src/mvd/mvd.c</itemPath>
         <itemPath>src/mvd/mvdfile.c</itemPath>
       </logicalFolder>
+      <logicalFolder name="f2" displayName="zip" projectFiles="true">
+        <itemPath>src/zip/adler32.c</itemPath>
+        <itemPath>src/zip/compress.c</itemPath>
+        <itemPath>src/zip/crc32.c</itemPath>
+        <itemPath>src/zip/deflate.c</itemPath>
+        <itemPath>src/zip/inffast.c</itemPath>
+        <itemPath>src/zip/inflate.c</itemPath>
+        <itemPath>src/zip/inftrees.c</itemPath>
+        <itemPath>src/zip/trees.c</itemPath>
+        <itemPath>src/zip.c</itemPath>
+        <itemPath>src/zip/zutil.c</itemPath>
+      </logicalFolder>
       <itemPath>src/b64.c</itemPath>
-      <itemPath>src/command.c</itemPath>
-      <itemPath>src/empty_output_stream.c</itemPath>
-      <itemPath>src/kmpsearch.c</itemPath>
+      <itemPath>src/char_buf.c</itemPath>
+      <itemPath>src/dyn_array.c</itemPath>
       <itemPath>src/memwatch.c</itemPath>
       <itemPath>src/mvdtool.c</itemPath>
-      <itemPath>src/output_stream.c</itemPath>
+      <itemPath>src/operation.c</itemPath>
+      <itemPath>src/plugin.c</itemPath>
+      <itemPath>src/plugin_list.c</itemPath>
       <itemPath>src/test.c</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
@@ -60,11 +77,14 @@
         <cTool>
           <incDir>
             <pElem>include</pElem>
+            <pElem>include/zip</pElem>
           </incDir>
-          <preprocessorList>
-            <Elem>MVD_TEST</Elem>
-          </preprocessorList>
         </cTool>
+        <linkerTool>
+          <linkerLibItems>
+            <linkerLibStdlibItem>DynamicLinking</linkerLibStdlibItem>
+          </linkerLibItems>
+        </linkerTool>
       </compileType>
     </conf>
     <conf name="Release" type="1">

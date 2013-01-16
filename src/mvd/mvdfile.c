@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include "char_buf.h"
+#include "zip/zip.h"
+#include "mvd/mvd.h"
 /**
  * <h4>MVD file format</h4>
  * <ul><li>outer wrapper: base64 encoding</li>
@@ -42,16 +45,69 @@
  * @param dst the file to save it to
  * @return 1 if it worked
  */
-/*static int mvdfile_externalise( MVD *mvd, char *dst ) 
+static int mvdfile_externalise( MVD *mvd, char *dst ) 
 {
-   int size = mvd_datasize( mvd );
-   char *data = malloc(size);
-   int nbytes = mvd_serialise( mvd, data );
-   assert(nBytes==size);
-   String str = Base64.encodeBytes( data, Base64.GZIP );
-   if ( rb == null )
-       writeToFile( dst, str );
-   else
-       writeToDatabase( dst.getName(), str, mvd.description, folderId, rb );
-}*/
+    int res = 0;
+    int size = mvd_datasize( mvd );
+    unsigned char *data = malloc( size );
+    if ( data != NULL )
+    {
+        int nbytes = mvd_serialise( mvd, data );
+        assert(nbytes==size);
+        // need to ZIP encode it first
+        size_t encoded_size = b64_encode_buflen( (size_t)nbytes );
+        char *encoded = malloc( encoded_size );
+        if ( encoded != NULL )
+        {
+            b64_encode( data, size, encoded, encoded_size ); 
+            FILE *out = fopen( dst, "w" );
+            if ( out != NULL )
+            {
+                size_t nitems = fwrite( encoded, 1, encoded_size, out );
+                if ( nitems != encoded_size )
+                    fprintf(stderr,
+                        "mvdfile: length mismatch. desired=%d, actual=%d\n",
+                        (int)encoded_size,(int)nitems);
+                else
+                    res = 1;
+                fclose( out );
+            }
+            else
+                fprintf(stderr,"mvdfile: failed to open %s\n",dst);
+            free( encoded );
+        }
+        else
+            fprintf(stderr,"mvdfile: failed to allocate b64 buf\n");
+        free( data );
+    }
+    else
+        fprintf(stderr,"mvdfile: failed to allocate mvd data\n");
+    return res;
+}
 	
+MVD *mvdfile_internalise( char *src )
+{
+    /**
+	 * Read an MVD from a file or a database
+	 * @param src the file to read it from
+	 * @param props database property file
+	 * @throws Exception
+	 */
+	public static MVD internalise( File src, Properties props ) throws Exception
+	{
+		MVD mvd = null;
+		char[] data = null;
+		if ( props == null )
+			data = readFromFile( src );
+		else
+			data = readFromDatabase( src.getName(), props );
+		if ( data != null && data.length != 0 )
+		{
+			byte[] bytes = base64Decode( new String(data) );
+			mvd = parse( bytes );
+		}
+		else
+			throw new MVDException( "data is empty");
+		return mvd;
+	}
+}

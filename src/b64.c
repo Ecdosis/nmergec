@@ -38,7 +38,7 @@ static int mod_table[] = {0, 2, 1};
  * @param data input data
  * @param input_len the length of the input data
  * @param output the output buffer of the correct size
- * @param output_len VAR param length of allocated b64 text
+ * @param output_len length of output buffer
  */
 void b64_encode( const unsigned char *data, size_t input_len, 
     char *output, size_t output_len ) 
@@ -158,7 +158,7 @@ int test_b64( int *passed, int *failed )
                         break;
                     }
                 }
-                if ( i == decode_len )
+                if ( i == src_len )
                     *passed += 1;
             }
             free( decoded );

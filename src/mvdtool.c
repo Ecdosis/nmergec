@@ -1,110 +1,49 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <dlfcn.h>
+#include <dirent.h>
 #include "mvdtool.h"
-#include "command.h"
 #include "mvd/chunk_state.h"
-#define EXAMPLE_ADD "nmerge -c add -g \"MS 5 versions\" -s \"P\" -l \"third "\
-"correction layer\" -t p.txt -m work.mvd"
-#define EXAMPLE_ARCHIVE "nmerge -c archive -m work.mvd -a myArchiveFolder"
-#define EXAMPLE_COMPARE "nmerge -c compare -m work.mvd -v 4 -w 7"
-#define EXAMPLE_DELETE "nmerge -c delete -m work.mvd -v 7"
-#define EXAMPLE_CREATE "nmerge -c create -m work.mvd -d \"my new MVD\" -e UTF-8"
-#define EXAMPLE_DESCRIPTION1 "nmerge -c description -m work.mvd -d "\
-"\"my new mvd description\""
-#define EXAMPLE_DESCRIPTION2 "nmerge -c description -m work.mvd"
-#define EXAMPLE_TREE "nmerge -c tree -m work.mvd -d existing.mvd"
-#define EXAMPLE_EXPORT "nmerge -c export -m work.mvd -x work.xml"
-#define EXAMPLE_FIND "nmerge -c find -m work.mvd -f \"bananas are nice\""
-#define EXAMPLE_IMPORT "nmerge -c import -m work.mvd -x work.xml"
-#define EXAMPLE_LIST "nmerge -c list -m work.mvd"
-#define EXAMPLE_READ "nmerge -c read -m work.mvd -v 4"
-#define EXAMPLE_UNARCHIVE "nmerge -c unarchive -m work.mvd -a myArchiveFolder"
-#define EXAMPLE_UPDATE "nmerge -c update -m work.mvd -v 3 -t 5.txt"
-#define EXAMPLE_VARIANTS "nmerge -c variants -m work.mvd -v 3 -o 1124 -k 23"
-#define DEFAULT_MVD "untitled.mvd"
-#define DEFAULT_XML "untitled.xml"
+#include "mvd/mvd.h"
+#include "mvd/mvdfile.h"
+#include "plugin.h"
+#include "plugin_list.h"
+#include "operation.h"
 
 #ifdef MVD_DEBUG
 #include "memwatch.h"
 #endif
-struct mvdtool_struct
-{
-    /** version id of backup version */
-	int backup;
-	/** user issued command */
-	command op;
-	/** description of MVD */
-	char *description;
-	/** encoding of text file to be merged */
-	char *encoding;
-	/** text to be found */
-	char *findString;
-	/** group name of new version */
-	char *groupName;
-	/** length of variant in base version */
-	int variantLen;
-	/** long name of new version */
-	char *longName;
-	/** name of mvd file */
-	char *mvdFile;
-	/** name of archive */
-	char *archiveName;
-	/** from offset in base version */
-	int fromOffset;
-	/** specified version is partial */
-	int partial;
-	/** short name of new version */
-	char *shortName;
-	/** name of text file for merging */
-	char *textFile;
-	/** id of specified version */
-	short version;	
-	/** version to compare with version */
-	short with;	
-	/** name of xml file for export only */
-	char *xmlFile;
-	/** command to print example of */
-	char *helpCommand;
-	/** String for defining default sigla */
-	const char *ALPHABET;
-	/** default break before and after byte arrays */
-	const char *BREAK_BEFORE;
-	const char *BREAK_AFTER;
-	/** Stream to report results to */
-	FILE *out;
-	/** state to label version text not found in with text 
-	 * during compare */
-	chunk_state uniqueState;
-	/** id of default folder */
-	int folderId;
-    /** whether to merge shared versions */
-    int mergeSharedVersions;
-    /** do only direct alignment */
-    int directAlignOnly;
-    const char *UTF8_BOM;
-};
-static struct mvdtool_struct mt;
+#define PATH_LEN 128
+
+#ifndef PLUGIN_DIR
+#define PLUGIN_DIR "/usr/local/lib/nmerge-plugins"
+#endif
+
+#ifdef __ELF__
+#define LIB_SUFFIX ".so"
+#else
+#define LIB_SUFFIX ".dylib"
+#endif
+
+/** name of plugin command */
+static char *command=NULL;
+/** options for command */
+static char *options=NULL;
+/** name of mvd file */
+static char *mvdFile=NULL;
+/** list of available modules */
+plugin_list *plugins=NULL;
+/** operations */
+operation op=EMPTY;
 /**
- * Reset all the static variables to sensible defaults
+ * Tell the user about how to use this program
  */
-static void clear_to_defaults()
+static void usage()
 {
-    mt.encoding = "UTF-8";
-    mt.version = 1;
-    mt.uniqueState = deleted;
-    mt.helpCommand = "ACOMMAND";
-    mt.UTF8_BOM = "\357\273\277";
-    mt.ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    mt.BREAK_AFTER = "> ,\n\r\t";
-    mt.BREAK_BEFORE = "<";
-    mt.groupName = "Base";
-    mt.longName = "version 1";
-    mt.shortName = "1";
-	mt.mvdFile = DEFAULT_MVD;
-	mt.folderId = 1;
-	mt.xmlFile = DEFAULT_XML;
-    mt.out = stdout;
+   fprintf(stdout,
+    "usage: nmerge [-l] [-v COMMAND] [-h COMMAND] -m <MVD> -c <COMMAND> \n"
+       "-o <OPT-string> \n");
 }
 /**
  * Read in the arguments
@@ -115,8 +54,6 @@ static void clear_to_defaults()
 static int read_args( int argc, char **argv ) 
 {
     int sane = 1;
-    memset( &mt, 0, sizeof(struct mvdtool_struct) );
-    clear_to_defaults();
     if ( argc > 1 )
     {
         int i=1;
@@ -126,107 +63,32 @@ static int read_args( int argc, char **argv )
             {
                 switch ( argv[i][1] )
                 {
-                    case 'p':
-                        mt.partial = 1;
-                        i++;
-                        continue;
-                    case '?':
-                        if ( mt.op != ACOMMAND )
-                        {
-                            fprintf(stderr,
-                                "mvdtool: only one of -c and -? is allowed");
-                            sane = 0;
-                        }
-                        else
-                            mt.op = DETAILED_USAGE;
-                        i++;
-                        continue;
-                    case 'D':
-                        mt.directAlignOnly = 1;
-                        i++;
-                        continue;
-                    case 'n':
-                        mt.mergeSharedVersions = 1;
-                        i++;
-                        continue;
+                    case 'c':
+                        command = argv[++i];
+                        op = RUN;
+                        break;
+                    case 'o':
+                        options = argv[++i];
+                        break;
+                    case 'm':
+                        mvdFile = argv[++i];
+                        break;
+                    case 'l':
+                        op = LIST;
+                        break;
+                    case 'h':
+                        op = HELP;
+                        command = argv[++i];
+                        break;
+                    case 'v':
+                        op = VERSION;
+                        command = argv[++i];
+                        break;
+                    default:
+                        fprintf(stderr, "mvdtool: unknown option %c\n",
+                            argv[i][1] );
+                        break;
                 }
-                if ( i<argc-1 )
-                {
-                    switch ( argv[i][1] )
-                    {
-                        case 'a':
-                            mt.archiveName = argv[++i];
-                            break;
-                        case 'b':
-                            mt.backup = atoi(argv[++i]);
-                            break;
-                        case 'c':
-                            if ( mt.op == USAGE )
-                            {
-                                fprintf(stderr,
-                                    "mvdtool: only one of -c and -? is allowed\n");
-                                sane = 0;
-                            }
-                            else
-                                mt.op = command_value(argv[++i]);
-                            break;
-                        case 'd':
-                            mt.description = argv[++i];
-                            break;
-                        case 'e':
-                            mt.encoding = argv[++i];
-                            break;
-                        case 'f':
-                            mt.findString = argv[++i];
-                            break;
-                        case 'g':
-                            mt.groupName = argv[++i];
-                            break;
-                        case 'h':
-                            mt.op = HELP;
-                            mt.helpCommand = argv[++i];
-                            break;
-                        case 'k':
-                            mt.variantLen = atoi(argv[++i]);
-                            break;
-                        case 'l':
-                            mt.longName = argv[++i];
-                            break;
-                        case 'm':
-                            mt.mvdFile = argv[++i];
-                            break;
-                        case 'o':
-                            mt.fromOffset = atoi(argv[++i]);
-                            break;
-                        case 's':
-                            mt.shortName = argv[++i];
-                            break;
-                        case 't':
-                            mt.textFile = argv[++i];
-                            break;
-                        case 'u':
-                            mt.uniqueState = chunk_state_value(argv[++i]);
-                            break;
-                        case 'v':
-                            mt.version = atoi(argv[++i]);
-                            break;
-                        case 'w':
-                            mt.with = atoi(argv[++i]);
-                            break;
-                        case 'x':
-                            mt.xmlFile = argv[++i];
-                            break;
-                        case 'z':
-                            mt.folderId = atoi(argv[++i]);
-                            break;
-                        default:
-                            fprintf(stderr, "mvdtool: unknown option %c\n",
-                                argv[i][1] );
-                            break;
-                    }
-                }
-                else
-                    fprintf(stderr,"mvdtool: wrong number of argument\n");
             }
             else 
             {
@@ -238,714 +100,159 @@ static int read_args( int argc, char **argv )
                 break;
             i++;
         }
-    }
-    else
-        sane = 0;
-    if ( mt.op == ACOMMAND )
-        mt.op = USAGE;
-    return sane;
-}
-/**
- * Print more detailed help
- */
-static void detailed_usage()
-{
-    fprintf(stdout,
-    "-a archive - folder to use with archive and unarchive commands\n"
-    "-b backup - the version number of a backup (for partial versions)\n"
-    "-c command - operation to perform. One of:\n"
-    "     add - add the specified version to the MVD\n"
-    "     archive - save MVD in a folder as a set of separate versions\n"
-    "     compare - compare specified version 'with' another version\n"
-    "     create - create a new empty MVD\n"
-    "     description - print or change the MVD's description string\n"
-    "     delete - delete specified version from the MVD\n"
-    "     export - export the MVD as XML\n"
-    "     find - find specified text in all versions or in specified version\n"
-    "     import - convert XML file to MVD\n"
-    "     list - list versions and groups\n"
-    "     read - print specified version to standard out\n"
-    "     tree - compute phylogenetic tree\n"
-    "     update - replace specified version with contents of textfile\n"
-    "     unarchive - convert an MVD archive into an MVD\n"
-    "     variants - find variants of specified version, offset and length\n"
-    "-d description - specified when setting/changing the MVD description\n"
-    "-D - direct align only (no transpositions)\n"
-    "-e encoding - the encoding of the version's text e.g. UTF-8\n"
-    "-f string - to be found (used with command find)\n"
-    "-g group - name of group for new version\n"
-    "-h command - print example for command\n"
-    "-k length - find variants of this length in the base version's text\n"
-    "-l longname - the long name/description of the new version (quoted)\n"
-    "-m MVD - the MVD file to create/update\n"
-    "-n - apply update to all versions sharing the same text\n"
-    "-o offset - in given version to look for variants\n"
-    "-p - specified version is partial\n"
-    "-s shortname - short name or siglum of specified version\n"
-    "-t textfile - the text file to add to/update in the MVD\n"
-    "-u unique - name of state to label text found in the main -v version,\n"
-    "   not in -w version during compare - e.g. 'added' or 'deleted'(default)\n"
-    "-v version - number of version for command (starting from 1)\n"
-    "-w with - another version to compare with version\n"
-    "-x XML - the XML file to export or import\n"
-    "-z folderId - id of folder to store mvd (default 1)\n"
-    "-? - print this message\n"
-    );
-}
-/**
- * Tell the user about how to use this program
- */
-static void usage()
-{
-   fprintf(stdout,
-    "usage: nmerge [-c command] [-a archive] [-b backup]  [-d description]\n"
-    "     [-e encoding] [-f string] [-g group] [-h command] [-k length]\n"
-    "     [-l longname] [-m MVD] [-o offset] [-p] [-s shortname]\n"
-    "     [-t textfile] [-v version] [-w with] [-x XMLfile] \n");
-}
-/**
- * Print an example for the given helpCommand
- * @return 1 if it could be printed else 0
- */
-static int print_example() 
-{
-    int sane = 1;
-    if ( mt.helpCommand == ACOMMAND )
-    {
-        fprintf(stderr,"mvdtool: please specify a help command!\n");
-        sane = 0;
-    }
-    else
-    {
-        command hComm = command_value(mt.helpCommand);
-        switch ( hComm )
+        switch ( op )
         {
-            case ADD:
-                fprintf(mt.out, "%s\n", EXAMPLE_ADD );
+            case RUN:
+                if ( mvdFile == NULL||command==NULL||options==NULL )
+                    sane = 0;
                 break;
-            case ARCHIVE:
-                fprintf(mt.out, "%s\n", EXAMPLE_ARCHIVE);
+            case HELP:
+                if ( command == NULL )
+                    sane = 0;
                 break;
-            case COMPARE:
-                fprintf(mt.out, "%s\n", EXAMPLE_COMPARE);
-                break;
-            case DELETE:
-                fprintf(mt.out, "%s\n", EXAMPLE_DELETE);
-                break;
-            case CREATE:
-                fprintf(mt.out, "%s\n", EXAMPLE_CREATE);
-                break;
-            case DESCRIPTION:
-                fprintf(mt.out, "%s\n", EXAMPLE_DESCRIPTION1);
-                fprintf(mt.out, "%s\n", EXAMPLE_DESCRIPTION2);
-                break;
-            case TREE:
-                fprintf(mt.out, "%s\n", EXAMPLE_TREE );
-                break;
-            case EXPORT:
-                fprintf(mt.out, "%s\n", EXAMPLE_EXPORT );
-                break;
-            case FIND:
-                fprintf(mt.out, "%s\n", EXAMPLE_FIND);
-                break;
-            case IMPORT:
-                fprintf(mt.out, "%s\n", EXAMPLE_IMPORT);
-                break;
-            case LIST:
-                fprintf(mt.out, "%s\n", EXAMPLE_LIST);
-                break;
-            case READ:
-                fprintf(mt.out, "%s\n", EXAMPLE_READ);
-                break;
-            case UNARCHIVE:
-                fprintf(mt.out, "%s\n", EXAMPLE_UNARCHIVE);
-                break;
-            case UPDATE:
-                fprintf(mt.out, "%s\n", EXAMPLE_UPDATE);
-                break;
-            case VARIANTS:
-                fprintf(mt.out, "%s\n", EXAMPLE_VARIANTS);					
-                break;
-            case HELP: 
-                print_example();
-                break;
-            case DETAILED_USAGE: 
-                detailed_usage();
-                break;
-            case USAGE:
-                usage();
-                break;
-            default:
-                fprintf(stderr, "mvdtool: command %s not catered for\n",
-                    mt.helpCommand );
-                sane = 0;
+            case VERSION:
+                if ( command == NULL )
+                    sane = 0;
                 break;
         }
     }
+    else
+        sane = 0;
     return sane;
 }
 /**
- * Add the specified version to the MVD. Don't replace an existing 
- * version, so we reset the supplied version parameter to the number 
- * of versions+1
+ * Open a single bot-module
+ * @param path the path to the module
+ * @return the result of loading it: 1 if success, 0 otherwise
  */
-static void do_add_version()
+static void open_plugin( char *path )
 {
-    printf("mvdtool: executing add version\n");
+	void *handle = dlopen( path, RTLD_LOCAL|RTLD_LAZY );
+	if ( handle != NULL )
+	{
+		if ( plugins == NULL )
+			plugins = plugin_list_create();
+		plugin_list_add( plugins, handle );
+	}
+	else
+		fprintf(stderr, 
+            "mvdtool: failed to read plugin path %s. error: %s\n",
+			path,dlerror() );
 }
 /**
- * Write out all the versions as separate files
+ * Look for plugins to open. PLUGIN_DIR is supplied
+ * during compilation via -D
  */
-static void do_archive()
+static void do_open_plugins()
 {
-    printf("mvdtool: executing archive\n");
-}
-static void do_compare()
-{
-    printf("mvdtool: executing compare\n");
-}
-static void do_delete_version()
-{
-    printf("mvdtool: executing delete version\n");
-}
-static void do_create()
-{
-    printf("mvdtool: executing create\n");
-}
-static void do_description()
-{
-    printf("mvdtool: executing description\n");
-}
-static void do_export_to_XML()
-{
-    printf("mvdtool: executing export to XML\n");
-}
-static void do_find()
-{
-    printf("mvdtool: executing find\n");
-}
-static void do_import_from_XML()
-{
-    printf("mvdtool: executing import from XML\n");
-}
-static void do_list_versions()
-{
-    printf("mvdtool: executing list versions\n");
-}
-static void do_read_version()
-{
-    printf("mvdtool: executing read version\n");
+	struct dirent *dp;
+	DIR *dir = opendir(PLUGIN_DIR);
+    int suffix_len = strlen(LIB_SUFFIX);
+    // without this it won't find any modules
+	setenv("LD_LIBRARY_PATH",PLUGIN_DIR,1);
+	while ((dp=readdir(dir)) != NULL)
+	{
+		char path[PATH_LEN];
+		char suffix[32];
+		int len;
+		snprintf( path, PATH_LEN, "%s/%s", PLUGIN_DIR, dp->d_name );
+		len = strlen( dp->d_name );
+		if ( len > suffix_len )
+		{
+            // is it a dynamic library?
+            char *dot_pos = strrchr(dp->d_name,'.');
+			strncpy( suffix, dot_pos, 32 );
+			if ( strcmp(suffix,LIB_SUFFIX)==0 )
+				open_plugin( path );
+		}
+	}
+	closedir(dir);
 }
 /**
- * Read the versions of an archive back in to create an MVD
- * in one step.
+ * Print the specified plugin's help message
  */
-static void do_unarchive()
+void do_help()
 {
-    printf("mvdtool: executing unarchive\n");
-}
-static void do_update_MVD()
+    if ( plugins != NULL )
+    {
+        plugin *plug = plugin_list_get( plugins, command );
+        if ( plug != NULL )
+            plugin_help( plug );
+    }
+}/**
+ * Display the specified plugin version
+ */
+void do_version()
 {
-    printf("mvdtool: executing update MVD\n");
-}
-static void do_find_variants()
-{
-    printf("mvdtool: executing find variants\n");
+    if ( plugins != NULL )
+    {
+        plugin *plug = plugin_list_get( plugins, command );
+        if ( plug != NULL )
+            plugin_version( plug );
+    }
 }
 /**
- * Create a phylogenetic tree using the fastME method.
- */
-static void do_tree()
-{
-    printf("mvdtool: executing tree\n");
-}
-/**
- * Execute the preset arguments
+ * Execute the preset command with its options
  */
 void do_command()
 {
-    switch ( mt.op )
+    if ( plugins != NULL )
     {
-        case ADD:
-            do_add_version();
-            break;
-        case ARCHIVE:
-            do_archive();
-            break;
-        case COMPARE:
-            do_compare();
-            break;
-        case DELETE:
-            do_delete_version();
-            break;
-        case CREATE:
-            do_create();
-            break;
-        case DESCRIPTION:
-            do_description();
-            break;
-        case EXPORT:
-            do_export_to_XML();
-            break;
-        case FIND:
-            do_find();
-            break;
-        case HELP:
-            print_example();
-            break;
-        case IMPORT:
-            do_import_from_XML();
-            break;
-        case LIST:
-            do_list_versions();
-            break;
-        case READ:
-            do_read_version();
-            break;
-        case UNARCHIVE:
-            do_unarchive();
-            break;
-        case UPDATE:
-            do_update_MVD();
-            break;
-        case USAGE:
-            usage();
-            break;
-        case VARIANTS:
-            do_find_variants();
-            break;
-        case DETAILED_USAGE:
-            detailed_usage();
-            break;
-        case TREE:
-            do_tree();
-            break;
+        unsigned char *output;
+        plugin *plug = plugin_list_get( plugins, command );
+        if ( plug != NULL )
+        {
+            MVD *mvd = mvdfile_internalise( mvdFile );
+            if ( mvd != NULL )
+            {
+                int res = plugin_process( plug, mvd, options, &output );
+                if ( res && output != NULL )
+                    printf( "%s\n", output );
+            }
+        } 
     }
 }
+/**
+ * List available plugins
+ */
+static void list_plugins()
+{
+    if ( plugins != NULL )
+        plugin_list_all( plugins );
+    else
+        fprintf(stderr,"mvdtool: no plugins found\n");
+}
+
 #ifndef MVD_TEST
 int main( int argc, char **argv )
 {
     if ( read_args(argc,argv) )
-        do_command();
+    {
+        do_open_plugins();
+        switch ( op )
+        {
+            case EMPTY:
+                usage();
+                break;
+            case RUN:
+                do_command();
+                break;
+            case VERSION:
+                do_version();
+                break;
+            case LIST:
+                list_plugins();
+                break;
+            case HELP:
+                do_help();
+                break;
+        }
+        plugin_list_dispose( plugins );
+    }
     else
         usage();
 }
 #else
-/**
- * Test the ADD command. textFile is a required param
- * @param passed VAR param number of passed tests
- * @param failed VAR param number of failed tests
- * @return 1 if it was OK
- */
-static int test_add( int *passed, int *failed )
-{
-    if ( mt.textFile == NULL )
-    {
-        *failed += 1;
-        fprintf(stderr,"mvdtool: failed to set textFile\n");
-        return 0;
-    }
-    else 
-        *passed += 1;
-    return 1;
-}
-/**
- * Test the ARCHIVE command. 
- * @param passed VAR param number of passed tests
- * @param failed VAR param number of failed tests
- * @return 1 if it was OK
- */
-static int test_archive( int *passed, int *failed )
-{
-    if ( strcmp(mt.mvdFile,DEFAULT_MVD) == 0 )
-    {
-        *failed += 1;
-        fprintf(stderr,"mvdtool: failed to set mvdFile\n");
-        return 0;
-    }
-    else
-        *passed += 1;
-    return 1;
-}
-/**
- * Test the COMPARE command. 
- * @param passed VAR param number of passed tests
- * @param failed VAR param number of failed tests
- * @return 1 if it was OK
- */
-static int test_compare( int *passed, int *failed )
-{
-    int f = 0;
-    
-    if ( strcmp(mt.mvdFile,DEFAULT_MVD)==0 )
-    {
-        f = 1;
-        fprintf(stderr,"mvdtool: mvdFile unspecified for compare\n");
-    }
-    if ( mt.with == 0 )
-    {
-        f = 1;
-        fprintf(stderr,"mvdtool: with version unspecified for compare\n");
-    }
-    if ( f == 0 )
-        *passed += 1;
-    else
-    {
-        *failed += 1;
-        return 0;
-    }
-    return 1;
-}
-/**
- * Test the DESCRIPTION command. Can read or write 
- * @param passed VAR param number of passed tests
- * @param failed VAR param number of failed tests
- * @return 1 if it was OK
- */
-static int test_description( int *passed, int *failed )
-{
-    if ( mt.description == NULL )
-    {
-        if ( strcmp(mt.mvdFile,DEFAULT_MVD) == 0 )
-        {
-            *failed += 1;
-            fprintf(stderr,"mvdtool: failed to set mvdFile\n");
-            return 0;
-        }
-        else
-            *passed += 1;
-    }
-    // else setting for a possibly empty MVD
-    return 1;
-}
-/**
- * Test the EXPORT command. 
- * @param passed VAR param number of passed tests
- * @param failed VAR param number of failed tests
- * @return 1 if it was OK
- */
-static int test_export( int *passed, int *failed )
-{
-    if ( strcmp(mt.mvdFile,DEFAULT_MVD)==0 )
-    {
-        *failed += 1;
-        fprintf(stderr,"mvdtool: mvdFile unspecified for export\n");
-        return 0;
-    }
-    else
-        *passed += 1;
-    return 1;
-}
-/**
- * Ensure the mvdFile is set to a non-default value
- * @param passed VAR param number of passed tests
- * @param failed VAR param number of failed tests
- * @param cmd the command to ensure it for
- * @return 1 if it was OK
- */
-static int test_ensure_mvd( int *passed, int *failed, const char *cmd )
-{
-    if ( strcmp(mt.mvdFile,DEFAULT_MVD)==0 )
-    {
-        *failed += 1;
-        fprintf(stderr,"mvdtool: mvdFile unspecified for %s\n",cmd);
-        return 0;
-    }
-    else
-        *passed += 1;
-    return 1;
-}
-/**
- * Test the IMPORT command. 
- * @param passed VAR param number of passed tests
- * @param failed VAR param number of failed tests
- * @return 1 if it was OK
- */
-static int test_import( int *passed, int *failed )
-{
-    if ( strcmp(mt.xmlFile,DEFAULT_XML)==0 )
-    {
-        *failed += 1;
-        fprintf(stderr,"mvdtool: xmlFile unspecified for import\n");
-        return 0;
-    }
-    else
-        *passed += 1;
-    return 1;
-}
-/**
- * Test the FIND command. 
- * @param passed VAR param number of passed tests
- * @param failed VAR param number of failed tests
- * @return 1 if it was OK
- */
-static int test_find( int *passed, int *failed )
-{
-    int f = 0;
-    if ( strcmp(mt.mvdFile,DEFAULT_MVD)==0 )
-    {
-        f = 1;
-        fprintf(stderr,"mvdtool: mvdFile unspecified for find\n");
-
-    }
-    if ( mt.findString == NULL )
-    {
-        f = 1;
-        fprintf(stderr,"mvdtool: findString unspecified for find\n");
-
-    }
-    if ( f == 1 )
-        *failed += 1;
-    else
-        *passed += 1;
-    return f == 0;
-}
-/**
- * Test the UNARCHIVE command. 
- * @param passed VAR param number of passed tests
- * @param failed VAR param number of failed tests
- * @return 1 if it was OK
- */
-static int test_unarchive( int *passed, int *failed )
-{
-    int f = 0;
-    if ( mt.archiveName == NULL )
-    {
-        *failed += 1;
-        fprintf(stderr,"mvdtool: archiveName unspecified for unarchive\n");
-    }
-    else *passed += 1;
-}
-/**
- * Test the UPDATE command. 
- * @param passed VAR param number of passed tests
- * @param failed VAR param number of failed tests
- * @return 1 if it was OK
- */
-static int test_update( int *passed, int *failed )
-{
-    int f = 0;
-    if ( strcmp(mt.mvdFile,DEFAULT_MVD)==0 )
-    {
-        f = 1;
-        fprintf(stderr,"mvdtool: mvdFile unspecified for update\n");
-    }
-    if ( mt.textFile == NULL )
-    {
-        f = 1;
-        fprintf(stderr,"mvdtool: textFile unspecified for update\n");
-    }
-    if ( f > 0 )
-        *failed += 1;
-    else
-        *passed += 1;
-    return f==0;
-}
-/**
- * Test the VARIANTS command. 
- * @param passed VAR param number of passed tests
- * @param failed VAR param number of failed tests
- * @return 1 if it was OK
- */
-static int test_variants( int *passed, int *failed )
-{
-    int f = 0;
-    if ( strcmp(mt.mvdFile,DEFAULT_MVD)==0 )
-    {
-        f = 1;
-        fprintf(stderr,"mvdtool: mvdFile unspecified for variants\n");
-    }
-    if ( mt.variantLen == 0 )
-    {
-        f = 1;
-        fprintf(stderr,"mvdtool: fromOffset unspecified for variants\n");
-    }
-    if ( f > 0 )
-        *failed += 1;
-    else
-        *passed += 1;
-    return f==0;
-}
-/**
- * Test the arguments to a command
- * @param example the example commandline string
- * @param passed VAR param increment by 1 if it passed
- * @param failed VAR param increment by 1 if failed
- * @param true equals 1 if the result should be correct
- * @return 1 if all was OK
- */
-static int test_args( const char *example, int *passed, int *failed, int true )
-{
-    int i,state = 0;
-    int sane = 1;
-    char *copy = strdup(example);
-    if ( copy != NULL )
-    {
-        int len = strlen(copy);
-        for ( i=0;i<len;i++ )
-        {
-            switch ( state )
-            {
-                case 0:
-                    if ( copy[i]==' ' )
-                    {
-                        copy[i] = 0;
-                        state = 1;
-                    }
-                    else if ( copy[i]=='"' )
-                    {
-                        copy[i] = 0;
-                        state = 2;
-                    }
-                    break;
-                case 1:
-                    if ( copy[i]=='"' )
-                    {
-                        copy[i] = 0;
-                        state = 2;
-                    }
-                    else if ( copy[i] != ' ' )
-                        state = 0;
-                    else
-                        copy[i] = 0;
-                    break;
-                case 2:
-                    if ( copy[i]=='"' )
-                    {
-                        state = 0;
-                        copy[i] = 0;
-                    }
-                    break;
-            }
-        }
-        // count remaining sections
-        state = 0;
-        int argc = 0;
-        for ( i=0;i<len;i++ )
-        {
-            switch ( state )
-            {
-                case 0:// initial: neither
-                    if ( copy[i] != 0 )
-                        state = 1;
-                    break;
-                case 1:// characters
-                    if ( copy[i] == 0 )
-                    {
-                        argc++;
-                        state = 2;
-                    }
-                    break;
-                case 2:// blanks
-                    if ( copy[i] != 0 )
-                        state = 1;
-                    break;
-            }
-        }
-        if ( state == 1 )
-            argc++;
-        char **argv = calloc( argc, sizeof(char*) );
-        if ( argv != NULL )
-        {
-            // assign pointers
-            state = 0;
-            int j = 0;
-            for ( i=0;i<len;i++ )
-            {
-                switch ( state )
-                {
-                    case 0:
-                        if ( copy[i] != 0 )
-                        {
-                            if ( j == argc )
-                            {
-                                fprintf(stderr,"mvdtool: invalid index %d\n",j);
-                                exit(0);
-                            }
-                            argv[j++] = &copy[i];
-                            state = 1;
-                        }
-                        break;
-                    case 1:
-                        if ( copy[i] == 0 )
-                        {
-                            state = 2;
-                        }
-                        break;
-                    case 2:
-                        if ( copy[i] != 0 )
-                        {
-                            if ( j == argc )
-                            {
-                                fprintf(stderr,"mvdtool: invalid index %d\n",j);
-                                exit(0);
-                            }
-                            argv[j++] = &copy[i];
-                            state = 1;
-                        }
-                        break;
-                }
-            }
-            sane = read_args( argc, argv );
-            if ( (sane && true)||(!sane&&!true) )
-                *passed += 1;
-            else
-            {
-                fprintf(stderr,"mvdtool: command %s failed\n",example);
-                *failed += 1;
-            }
-            free( argv );
-        }
-        free( copy );
-    }
-    // now check that the arguments were set correctly
-    if ( true && sane )
-    {
-        switch ( mt.op )
-        {
-            case ADD:
-                sane = test_add(passed,failed);
-                break;
-            case ARCHIVE:
-                sane = test_archive(passed,failed);
-                break;
-            case COMPARE:
-                sane = test_compare(passed,failed);
-                break;
-            case DELETE:
-                sane = test_ensure_mvd(passed,failed,"delete");
-                break;
-            case DESCRIPTION:
-                sane = test_description(passed,failed);
-                break;
-            case EXPORT:
-                sane = test_export(passed,failed);
-                break;
-            case FIND:
-                sane = test_find(passed,failed);
-                break;
-            case IMPORT:
-                sane = test_import(passed,failed);
-                break;
-            case LIST:
-                sane = test_ensure_mvd(passed,failed,"list");
-                break;
-            case READ:
-                sane = test_ensure_mvd(passed,failed,"read");
-                break;
-            case UNARCHIVE:
-                sane = test_unarchive(passed,failed);
-                break;
-            case UPDATE:
-                sane = test_update(passed,failed);
-                break;
-            case VARIANTS:
-                sane = test_variants(passed,failed);
-                break;
-        }
-    }
-    return sane;
-}
 /**
  * Test the mvdtool class
  * @param passed VAR param number of passed tests
@@ -954,25 +261,6 @@ static int test_args( const char *example, int *passed, int *failed, int true )
  */
 int test_mvdtool( int *passed, int *failed )
 {
-    test_args(EXAMPLE_ADD,passed,failed,1);
-    test_args(EXAMPLE_ARCHIVE,passed,failed,1);
-    test_args(EXAMPLE_COMPARE,passed,failed,1);
-    test_args(EXAMPLE_DELETE,passed,failed,1);
-    test_args(EXAMPLE_CREATE,passed,failed,1);
-    test_args(EXAMPLE_DESCRIPTION1,passed,failed,1);
-    test_args(EXAMPLE_DESCRIPTION2,passed,failed,1);
-    test_args(EXAMPLE_TREE,passed,failed,1);
-    test_args(EXAMPLE_EXPORT,passed,failed,1);
-    test_args(EXAMPLE_FIND,passed,failed,1);
-    test_args(EXAMPLE_IMPORT,passed,failed,1);
-    test_args(EXAMPLE_LIST,passed,failed,1);
-    test_args(EXAMPLE_READ,passed,failed,1);
-    test_args(EXAMPLE_UNARCHIVE,passed,failed,1);
-    test_args(EXAMPLE_UPDATE,passed,failed,1);
-    test_args(EXAMPLE_VARIANTS,passed,failed,1);
-    test_args("-t text.txt -m my.mvd",passed,failed,0);
-    test_args("foo bar -M banana -m 27",passed,failed,0);
-    // add some more tests here when things go wrong later
-    return (*failed)==0;
+    
 }
 #endif

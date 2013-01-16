@@ -7,11 +7,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "command.h"
-#include "kmpsearch.h"
+#include "operation.h"
 #include "mvdtool.h"
 #include "mvd/chunk_state.h"
 #include "b64.h"
+#include "char_buf.h"
+#include "zip.h"
 static int total_passed = 0;
 static int total_failed = 0;
 /*
@@ -37,6 +38,7 @@ int main(int argc, char** argv)
     report_test( "chunk_state", test_chunk_state,&passed,&failed);
     report_test( "mvdtool", test_mvdtool,&passed,&failed);
     report_test( "b64", test_b64,&passed,&failed);
+    report_test( "zip", test_zip,&passed,&failed);
     fprintf( stdout, "total passed %d failed %d tests\n",total_passed,
         total_failed);
 }
