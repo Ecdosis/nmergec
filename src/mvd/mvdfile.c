@@ -145,7 +145,7 @@ static short readShort( unsigned char *data, int len, int p )
  * Read a 2-byte preceded UTF-8 string from an array of data bytes
  * @param data the data to read from
  * @param p the offset of the string start
- * @return an allocated string
+ * @return an allocated string or NULL
  */
 static unsigned char *readUtf8String( unsigned char *data, int len, int p ) 
 {
@@ -159,14 +159,14 @@ static unsigned char *readUtf8String( unsigned char *data, int len, int p )
             str[i] = data[p+i];
         }
     }
-    return ( str, "UTF-8" );
+    return str;
 }
 /**
  * Read the group table for an MVD from a byte array
  * @param data the byte array containing the group definitions
  * @param len the length of the mvd_data
  * @param p the start offset of the groups within data
- * @param return an array of group paths or NULL
+ * @param return an allocated array of group paths or NULL
  */
 static char **readGroupTable( unsigned char *mvd_data, int len, int p )
 {

@@ -9,7 +9,6 @@ struct dyn_string_struct
     int allocated;
     char *data;
 };
-
 /**
  * Create a dynamic string object
  * @return an allocated basic dynamic string
@@ -38,7 +37,7 @@ dyn_string *dyn_string_create()
  * @param ds the object in question
  * @return NULL
  */
-dyn_string *dyn_string_dispose()
+dyn_string *dyn_string_dispose( dyn_string *ds )
 {
     if ( ds->data != NULL )
         free( ds->data );
