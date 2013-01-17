@@ -5,4 +5,38 @@
         <activeConfIndexElem>0</activeConfIndexElem>
     </data>
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
+    <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/1">
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/mvdtool.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/include/mvdtool.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/memwatch.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/include/mvd/chunk_state.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/operation.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/test.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/mvd/chunk_state.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/mvd/mvdfile.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/mvd/mvd.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/b64.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/include/b64.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/zip.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/char_buf.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/include/char_buf.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/include/zip/zip.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/zip/deflate.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/zip/crc32.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/zip/zutil.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/zip/trees.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/zip/adler32.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/zip/inflate.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/plugin.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/plugin_list.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/include/plugin_list.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/include/mvd/mvdfile.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/include/operation.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/include/dyn_array.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/include/bitset.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/dyn_array.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/bitset.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/include/mvd/pair.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/mvd/pair.c</file>
+    </open-files>
 </project-private>

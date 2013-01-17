@@ -15,6 +15,7 @@ extern "C" {
 typedef struct dyn_array_struct dyn_array;
 dyn_array *dyn_array_create( int initial_size );
 void dyn_array_dispose( dyn_array *da );
+int dyn_array_size( dyn_array *da );
 void *dyn_array_get( dyn_array *da, int index );
 int dyn_array_add( dyn_array *da, void *obj );
 

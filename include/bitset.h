@@ -15,11 +15,11 @@ extern "C" {
 typedef struct bitset_struct bitset;
 bitset *bitset_create();
 void bitset_dispose( bitset *bs );
-void bitset_set( bitset *bs, int i );
+int bitset_set( bitset *bs, int i );
 int bitset_get( bitset *bs, int i );
-void bitset_or( bitset *bs, bitset *other );
+int bitset_or( bitset *bs, bitset *other );
 void bitset_and( bitset *bs, bitset *other );
-
+int bitset_cardinality( bitset *bs );
 
 #ifdef	__cplusplus
 }

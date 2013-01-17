@@ -44,6 +44,14 @@ void dyn_array_dispose( dyn_array *da )
     free( da );
 }
 /**
+ * Dispose of a dynamic array
+ * @param da the dynamic array in question
+ */
+int dyn_array_size( dyn_array *da )
+{
+    return da->pos;
+}
+/**
  * Get an item from the array
  * @param da the dynamic array in question
  * @param index the index of the desired item

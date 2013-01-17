@@ -8,6 +8,7 @@
         <itemPath>include/mvd/chunk_state.h</itemPath>
         <itemPath>include/mvd/mvd.h</itemPath>
         <itemPath>include/mvd/mvdfile.h</itemPath>
+        <itemPath>include/mvd/pair.h</itemPath>
       </logicalFolder>
       <itemPath>include/b64.h</itemPath>
       <itemPath>include/bitset.h</itemPath>
@@ -31,6 +32,7 @@
         <itemPath>src/mvd/chunk_state.c</itemPath>
         <itemPath>src/mvd/mvd.c</itemPath>
         <itemPath>src/mvd/mvdfile.c</itemPath>
+        <itemPath>src/mvd/pair.c</itemPath>
       </logicalFolder>
       <logicalFolder name="f2" displayName="zip" projectFiles="true">
         <itemPath>src/zip/adler32.c</itemPath>
@@ -45,6 +47,7 @@
         <itemPath>src/zip/zutil.c</itemPath>
       </logicalFolder>
       <itemPath>src/b64.c</itemPath>
+      <itemPath>src/bitset.c</itemPath>
       <itemPath>src/char_buf.c</itemPath>
       <itemPath>src/dyn_array.c</itemPath>
       <itemPath>src/memwatch.c</itemPath>
@@ -78,6 +81,7 @@
           <incDir>
             <pElem>include</pElem>
             <pElem>include/zip</pElem>
+            <pElem>src/mvd</pElem>
           </incDir>
         </cTool>
         <linkerTool>

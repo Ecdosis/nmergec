@@ -41,6 +41,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/zip.o \
 	${OBJECTDIR}/src/plugin.o \
 	${OBJECTDIR}/src/zip/deflate.o \
+	${OBJECTDIR}/src/mvd/pair.o \
 	${OBJECTDIR}/src/zip/crc32.o \
 	${OBJECTDIR}/src/b64.o \
 	${OBJECTDIR}/src/mvd/mvd.o \
@@ -52,6 +53,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/plugin_list.o \
 	${OBJECTDIR}/src/test.o \
 	${OBJECTDIR}/src/zip/zutil.o \
+	${OBJECTDIR}/src/bitset.o \
 	${OBJECTDIR}/src/zip/inffast.o \
 	${OBJECTDIR}/src/zip/adler32.o \
 	${OBJECTDIR}/src/zip/inftrees.o \
@@ -113,6 +115,11 @@ ${OBJECTDIR}/src/zip/deflate.o: src/zip/deflate.c
 	${RM} $@.d
 	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/deflate.o src/zip/deflate.c
 
+${OBJECTDIR}/src/mvd/pair.o: src/mvd/pair.c 
+	${MKDIR} -p ${OBJECTDIR}/src/mvd
+	${RM} $@.d
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvd/pair.o src/mvd/pair.c
+
 ${OBJECTDIR}/src/zip/crc32.o: src/zip/crc32.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
@@ -167,6 +174,11 @@ ${OBJECTDIR}/src/zip/zutil.o: src/zip/zutil.c
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
 	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/zutil.o src/zip/zutil.c
+
+${OBJECTDIR}/src/bitset.o: src/bitset.c 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/bitset.o src/bitset.c
 
 ${OBJECTDIR}/src/zip/inffast.o: src/zip/inffast.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip

@@ -12,6 +12,8 @@
 extern "C" {
 #endif
 typedef struct MVD_struct MVD;
+MVD *mvd_create();
+void mvd_dispose( MVD *mvd );
 int mvd_datasize( MVD *mvd );
 int mvd_serialise( MVD *mvd, char *data );
    

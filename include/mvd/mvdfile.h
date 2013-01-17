@@ -12,8 +12,8 @@
 extern "C" {
 #endif
 
-MVD *mvdfile_internalise( char *src );
-
+MVD *mvdfile_internalise( char *data, int len );
+MVD *mvd_load( char *file );
 
 #ifdef	__cplusplus
 }
