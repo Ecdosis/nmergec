@@ -16,6 +16,9 @@ typedef struct dyn_string_struct dyn_string;
 dyn_string *dyn_string_create();
 dyn_string *dyn_string_dispose( dyn_string *ds );
 int dyn_string_concat( dyn_string *ds, char *tail );
+int dyn_string_len( dyn_string *ds );
+char *dyn_string_data( dyn_string *ds );
+int dyn_string_test( int *passed, int *failed );
 
 #ifdef	__cplusplus
 }

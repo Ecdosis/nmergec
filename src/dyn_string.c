@@ -52,6 +52,9 @@ dyn_string *dyn_string_dispose( dyn_string *ds )
 static int dyn_string_resize( dyn_string *ds, int wanted )
 {
     int res = 1;
+#ifdef DYN_STRING_DEBUG
+    printf("resizing...\n");
+#endif
     int inc = wanted + wanted%DYN_DEFAULT_LEN;
     if ( inc == inc )
         inc += DYN_DEFAULT_LEN;
@@ -60,6 +63,8 @@ static int dyn_string_resize( dyn_string *ds, int wanted )
     {
         strcpy( temp, ds->data );
         ds->allocated = inc;
+        free( ds->data );
+        ds->data = temp;
     }
     else
     {
@@ -83,7 +88,72 @@ int dyn_string_concat( dyn_string *ds, char *tail )
     if ( res )
     {
         strcat( ds->data, tail );
-        ds->len ++ tlen;
+        ds->len += tlen;
     }
     return res;
 }
+/**
+ * Get the length of a dynamic string
+ * @param ds the dynamic string object
+ * @return its length
+ */
+int dyn_string_len( dyn_string *ds )
+{
+    return ds->len;
+}
+/**
+ * Get a dynamic string's actual data
+ * @param ds the object in question
+ * @return its actual string data
+ */
+char *dyn_string_data( dyn_string *ds )
+{
+    return ds->data;
+}
+/**
+ * Test the dyn_string object
+ * @param passed VAR param update number of passed tests
+ * @param failed VAR param update number of failed tests
+ * @return 1 if everything worked else 0
+ */
+int dyn_string_test( int *passed, int *failed )
+{
+    int res = 0;
+    dyn_string *ds = dyn_string_create();
+    if ( ds != NULL )
+    {
+        res = dyn_string_concat( ds, "Hello " );
+        if ( res )
+            res = dyn_string_concat( ds, "Kitty. " );
+        if ( res )
+            res = dyn_string_concat( ds, "Lorem ipsum dolor sit amet, "
+                "consectetur adipisicing elit, sed do eiusmod tempor "
+                "incididunt ut labore et dolore magna aliqua." );
+        printf("res=%d len=%d data=%s\n",res,ds->len,ds->data);
+        dyn_string_dispose( ds );
+    }
+    if ( res )
+        *passed += 1;
+    else
+        *failed += 1;
+    return res;
+}
+// just an initial test to debug the above...
+#ifdef DYN_STRING_DEBUG
+int main( int argc, char **argv )
+{
+    dyn_string *ds = dyn_string_create();
+    if ( ds != NULL )
+    {
+        int res = dyn_string_concat( ds, "Hello " );
+        if ( res )
+            res = dyn_string_concat( ds, "Kitty. " );
+        if ( res )
+            res = dyn_string_concat( ds, "Lorem ipsum dolor sit amet, "
+                "consectetur adipisicing elit, sed do eiusmod tempor "
+                "incididunt ut labore et dolore magna aliqua." );
+        printf("res=%d len=%d data=%s\n",res,ds->len,ds->data);
+        dyn_string_dispose( ds );
+    }
+}
+#endif
