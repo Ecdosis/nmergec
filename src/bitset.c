@@ -1,96 +1,111 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "bitset.h"
 #ifdef MVD_TEST 
 #include "memwatch.h"
 #endif
+#define MIN_BITS 32
+#define DATA_MINSIZE 2
+// variable size bitsets
 struct bitset_struct
 {
-    unsigned char *data;
-    int allocated;
-    
+    short allocated;
+    unsigned char data[DATA_MINSIZE];
 };
-
 /**
- * Create a new bitset
+ * Create a bitset of a given size
+ * @param bits the maximum number of bits to represent
+ * @return an allocated bitset or NULL
+ */
+bitset *bitset_create_exact( int bits )
+{
+    if ( bits < MIN_BITS )
+        bits = MIN_BITS;
+    size_t byteSize = bits/8;
+    size_t size = sizeof(int)+byteSize;
+    bitset *bs = malloc( size );
+    memset( bs, 0, size );
+    if ( bs == NULL )
+        fprintf(stderr,"bitset: failed to allocate object\n");
+    else
+        bs->allocated = byteSize;
+    return bs;
+}
+/**
+ * Create a new bitset. defaults to a 4-byte int
  * @return the finished bitset or NULL if it failed (unlikely)
  */
 bitset *bitset_create()
 {
-    bitset *bs = calloc( 1, sizeof(bitset) );
-    if ( bs != NULL )
-    {
-        bs->data = calloc( 4,sizeof(unsigned char) );
-        if ( bs->data == NULL )
-        {
-            fprintf(stderr,"bitset: failed to allocate data\n");
-            free( bs );
-            bs = NULL;
-        }
-        else
-            bs->allocated = 4;
-    }
-    else
-        fprintf(stderr,"bitset: failed to allocate object\n");
-    return bs;
+    return bitset_create_exact( 32 );
+}
+/**
+ * Make an exact copy of this bitset
+ * @param bs the bitset to copy
+ * @return the new copied bitset or NULL if it failed
+ */
+bitset *bitset_clone( bitset *bs )
+{
+    bitset *new_bs = bitset_create_exact( bs->allocated*8 );
+    if ( new_bs != NULL )
+        memcpy( new_bs->data, bs->data, bs->allocated );
+    return new_bs;
 }
 /**
  * Dispose of a bitset
  * @param bs the bitset to dispose
  */
-void bitset_dispose( bitset *bs )
+void *bitset_dispose( bitset *bs )
 {
-    if ( bs->data != NULL )
-        free( bs->data );
     free( bs );
+    return NULL;
 }
 /**
- * Resize a bitset if possible
+ * Resize a bitset if possible, aligned on a 4-byte boundary
  * @param bs the bitset in question
- * @param required the number of bytes needed in data
- * @return 1 if it worked else 0
+ * @param required the number of BYTES needed in data
+ * @return the new bitset or NULL if it failed
  */
-static int bitset_resize( bitset *bs, int required )
+static bitset *bitset_resize( bitset *bs, size_t required )
 {
-    int res = 1;
     int i,mod2 = required % 4;
     if ( mod2 > 0 )
         required += 4-mod2;
-    unsigned char *temp = calloc(required,1); 
+    required += sizeof(int);
+    bitset *temp = malloc( required ); 
     if ( temp != NULL )
     {
+        memset( temp, 0, required );
         for ( i=0;i<bs->allocated;i++ )
-            temp[i] = bs->data[i];
-        free( bs->data );
-        bs->data = temp;
-        bs->allocated = required;
+            temp->data[i] = bs->data[i];
+        temp->allocated = required - sizeof(int);
+        free( bs );
     }
     else
     {
         fprintf(stderr,"bitset: failed to reallocate data\n");
-        res = 0;
     }
-    return res;
+    return temp;
 }
 /**
  * Set an individual bit
  * @param bs the bitset in question
  * @param i the index of the bit (zero-based)
- * @return 1 if it worked or 0 if it needed to reallocate and failed
+ * @return the original or reallocated bitset or NULL if it failed
  */
-int bitset_set( bitset *bs, int i )
+bitset *bitset_set( bitset *bs, int i )
 {
     int index = i/8;
     int mod = i%8;
-    int res = 1;
     if ( index+1 > bs->allocated )
-        res = bitset_resize(bs,index+1);
-    if ( res )
+        bs = bitset_resize(bs,index+1);
+    if ( bs != NULL )
     {
         unsigned char bit = 128;
         bs->data[index] |= bit>>mod;
     }
-    return res;
+    return bs;
 }
 /**
  * Get a particular bit (1 or 0) at the given index
@@ -128,19 +143,19 @@ static int min( int a, int b )
  * OR two bitsets together
  * @param bs this bitset which will be modified
  * @param other the other bitset which will not
- * @return 1 if the operation succeeded, 0 if this bitset could not be resized
+ * @return the original or reallocated bitset or NULL if it failed
  */
-int bitset_or( bitset *bs, bitset *other )
+bitset *bitset_or( bitset *bs, bitset *other )
 {
     int required = max(other->allocated,bs->allocated);
-    int res = bitset_resize( bs, required );
-    if ( res )
+    bs = bitset_resize( bs, required );
+    if ( bs != NULL )
     {
         int i;
-        for ( i=0;i<required;i++ )
+        for ( i=0;i<other->allocated;i++ )
             bs->data[i] |= other->data[i];
     }
-    return res;
+    return bs;
 }
 /**
  * And two bitsets together
@@ -176,6 +191,7 @@ int bitset_cardinality( bitset *bs )
     }
     return count;
 }
+#ifdef MVD_TEST
 /**
  * Print a bitset to stdout
  * @param bs the bitset to print
@@ -211,13 +227,15 @@ int bitset_test( int *passed, int *failed )
     else
     {
         *passed += 1;
-        bitset_set( bs, 0 );
-        bitset_set( bs, 4 );
-        if ( bitset_cardinality(bs) == 2 )
+        bs = bitset_set( bs, 0 );
+        if ( bs != NULL )
+            bs = bitset_set( bs, 4 );
+        if ( bs != NULL && bitset_cardinality(bs) == 2 )
         {
             *passed += 1;
-            bitset_set( bs, 32 );
-            bitset_set( bs, 63 );
+            bs = bitset_set( bs, 32 );
+            if ( bs != NULL )
+                bs = bitset_set( bs, 63 );
             if ( bs->allocated==8 )
                 *passed += 1;
             else
@@ -231,23 +249,37 @@ int bitset_test( int *passed, int *failed )
             if ( card==4 )
                 *passed += 1;
             else
-                fprintf(stderr,"bitset: cardinality wrong %d\n",card);
-            bitset_set( other, 4 );
-            bitset_set( other, 32 );
-            bitset_and( bs, other );
+            {
+                *failed += 1;
+                fprintf(stderr,"bitset: cardinality wrong (1) %d\n",card);
+            }
+            other = bitset_set( other, 4 );
+            if ( other != NULL )
+                other = bitset_set( other, 32 );
+            if ( bs != NULL )
+                bitset_and( bs, other );
             card = bitset_cardinality(bs);
             if ( card==2 )
                 *passed += 1;
             else
-                fprintf(stderr,"bitset: cardinality wrong %d\n",card);
-            bitset_set( other, 39 );
-            bitset_set( other, 22 );
-            bitset_or( bs, other );
+            {
+                *failed += 1;
+                fprintf(stderr,"bitset: cardinality wrong (2) %d\n",card);
+            }
+            if ( other != NULL )
+                other = bitset_set( other, 39 );
+            if ( other != NULL )
+                other = bitset_set( other, 22 );
+            if ( bs != NULL )
+                bs = bitset_or( bs, other );
             card = bitset_cardinality(bs);
             if ( card==4 )
                 *passed += 1;
             else
-                fprintf(stderr,"bitset: cardinality wrong %d\n",card);
+            {
+                fprintf(stderr,"bitset: cardinality wrong (3) %d\n",card);
+                *failed += 1;
+            }
             if ( bitset_get( bs, 39) )
                 *passed += 1;
             else
@@ -267,13 +299,5 @@ int bitset_test( int *passed, int *failed )
         bitset_dispose( bs );
         bitset_dispose( other );
     }
-}
-#ifdef BITSET_DEBUG
-int main( int argc, char **argv )
-{
-    int passed = 0;
-    int failed = 0;
-    bitset_test( &passed, &failed );
-    printf("passed %d failed %d tests\n",passed,failed);
 }
 #endif

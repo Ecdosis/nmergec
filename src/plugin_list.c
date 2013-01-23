@@ -10,6 +10,8 @@
 #include <string.h>
 #include <dlfcn.h>
 #include <stdarg.h>
+#include "bitset.h"
+#include "mvd/pair.h"
 #include "mvd/mvd.h"
 #include "plugin.h"
 #include "plugin_list.h"

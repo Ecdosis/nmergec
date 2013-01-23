@@ -5,6 +5,8 @@
 #include <dirent.h>
 #include "mvdtool.h"
 #include "mvd/chunk_state.h"
+#include "bitset.h"
+#include "mvd/pair.h"
 #include "mvd/mvd.h"
 #include "mvd/mvdfile.h"
 #include "plugin.h"
@@ -34,6 +36,8 @@ static char *options=NULL;
 static char *mvdFile=NULL;
 /** list of available modules */
 plugin_list *plugins=NULL;
+/** write in old MVD format */
+int old = 0;
 /** operations */
 operation op=EMPTY;
 /**
@@ -42,7 +46,7 @@ operation op=EMPTY;
 static void usage()
 {
    fprintf(stdout,
-    "usage: nmerge [-l] [-v COMMAND] [-h COMMAND] -m <MVD> -c <COMMAND> \n"
+    "usage: nmerge [-l] [-p] [-v COMMAND] [-h COMMAND] -m <MVD> -c <COMMAND> \n"
        "-o <OPT-string> \n");
 }
 /**
@@ -69,6 +73,9 @@ static int read_args( int argc, char **argv )
                         break;
                     case 'o':
                         options = argv[++i];
+                        break;
+                    case 'p':
+                        old = 1;
                         break;
                     case 'm':
                         mvdFile = argv[++i];
@@ -202,7 +209,7 @@ void do_command()
         plugin *plug = plugin_list_get( plugins, command );
         if ( plug != NULL )
         {
-            MVD *mvd = mvdfile_internalise( mvdFile );
+            MVD *mvd = mvdfile_load( mvdFile );
             if ( mvd != NULL )
             {
                 int res = plugin_process( plug, mvd, options, &output );
@@ -261,6 +268,6 @@ int main( int argc, char **argv )
  */
 int test_mvdtool( int *passed, int *failed )
 {
-    
+    return 1;
 }
 #endif

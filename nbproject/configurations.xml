@@ -6,19 +6,27 @@
                    projectFiles="true">
       <logicalFolder name="f1" displayName="mvd" projectFiles="true">
         <itemPath>include/mvd/chunk_state.h</itemPath>
+        <itemPath>include/mvd/group.h</itemPath>
         <itemPath>include/mvd/mvd.h</itemPath>
         <itemPath>include/mvd/mvdfile.h</itemPath>
         <itemPath>include/mvd/pair.h</itemPath>
+        <itemPath>include/mvd/serialiser.h</itemPath>
       </logicalFolder>
       <itemPath>include/b64.h</itemPath>
+      <itemPath>include/benchmark.h</itemPath>
       <itemPath>include/bitset.h</itemPath>
       <itemPath>include/char_buf.h</itemPath>
       <itemPath>include/dyn_array.h</itemPath>
+      <itemPath>include/dyn_string.h</itemPath>
+      <itemPath>include/hashmap.h</itemPath>
+      <itemPath>include/hsieh.h</itemPath>
+      <itemPath>include/link_node.h</itemPath>
       <itemPath>include/memwatch.h</itemPath>
       <itemPath>include/mvdtool.h</itemPath>
       <itemPath>include/operation.h</itemPath>
       <itemPath>include/plugin.h</itemPath>
       <itemPath>include/plugin_list.h</itemPath>
+      <itemPath>include/utils.h</itemPath>
       <itemPath>include/zip/zip.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
@@ -30,9 +38,11 @@
                    projectFiles="true">
       <logicalFolder name="f1" displayName="mvd" projectFiles="true">
         <itemPath>src/mvd/chunk_state.c</itemPath>
+        <itemPath>src/mvd/group.c</itemPath>
         <itemPath>src/mvd/mvd.c</itemPath>
         <itemPath>src/mvd/mvdfile.c</itemPath>
         <itemPath>src/mvd/pair.c</itemPath>
+        <itemPath>src/mvd/serialiser.c</itemPath>
       </logicalFolder>
       <logicalFolder name="f2" displayName="zip" projectFiles="true">
         <itemPath>src/zip/adler32.c</itemPath>
@@ -43,19 +53,25 @@
         <itemPath>src/zip/inflate.c</itemPath>
         <itemPath>src/zip/inftrees.c</itemPath>
         <itemPath>src/zip/trees.c</itemPath>
-        <itemPath>src/zip.c</itemPath>
+        <itemPath>src/zip/zip.c</itemPath>
         <itemPath>src/zip/zutil.c</itemPath>
       </logicalFolder>
       <itemPath>src/b64.c</itemPath>
+      <itemPath>src/benchmark.c</itemPath>
       <itemPath>src/bitset.c</itemPath>
       <itemPath>src/char_buf.c</itemPath>
       <itemPath>src/dyn_array.c</itemPath>
+      <itemPath>src/dyn_string.c</itemPath>
+      <itemPath>src/hashmap.c</itemPath>
+      <itemPath>src/hsieh.c</itemPath>
+      <itemPath>src/link_node.c</itemPath>
       <itemPath>src/memwatch.c</itemPath>
       <itemPath>src/mvdtool.c</itemPath>
       <itemPath>src/operation.c</itemPath>
       <itemPath>src/plugin.c</itemPath>
       <itemPath>src/plugin_list.c</itemPath>
       <itemPath>src/test.c</itemPath>
+      <itemPath>src/utils.c</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
                    displayName="Test Files"
@@ -83,6 +99,9 @@
             <pElem>include/zip</pElem>
             <pElem>src/mvd</pElem>
           </incDir>
+          <preprocessorList>
+            <Elem>MVD_TEST</Elem>
+          </preprocessorList>
         </cTool>
         <linkerTool>
           <linkerLibItems>

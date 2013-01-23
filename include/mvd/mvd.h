@@ -13,12 +13,16 @@ extern "C" {
 #endif
 typedef struct MVD_struct MVD;
 MVD *mvd_create();
-void mvd_dispose( MVD *mvd );
+void *mvd_dispose( MVD *mvd );
 int mvd_datasize( MVD *mvd );
-int mvd_serialise( MVD *mvd, char *data );
-   
-
-
+int mvd_serialise( MVD *mvd, unsigned char *data, int old );
+void mvd_set_bitset_size( MVD *mvd, int setSize );
+int mvd_add_version_path( MVD *mvd, char *versionID );
+int mvd_get_set_size( MVD *mvd );
+int mvd_count_versions( MVD *mvd );
+int mvd_set_description( MVD *mvd, char *description );
+int mvd_set_encoding( MVD *mvd, char *encoding );
+int mvd_add_pair( MVD *mvd, pair *tpl2 );
 
 #ifdef	__cplusplus
 }

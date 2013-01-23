@@ -14,10 +14,12 @@ extern "C" {
 
 typedef struct bitset_struct bitset;
 bitset *bitset_create();
-void bitset_dispose( bitset *bs );
-int bitset_set( bitset *bs, int i );
+bitset *bitset_create_exact( int bits );
+bitset *bitset_clone( bitset *bs );
+void *bitset_dispose( bitset *bs );
+bitset *bitset_set( bitset *bs, int i );
 int bitset_get( bitset *bs, int i );
-int bitset_or( bitset *bs, bitset *other );
+bitset *bitset_or( bitset *bs, bitset *other );
 void bitset_and( bitset *bs, bitset *other );
 int bitset_cardinality( bitset *bs );
 

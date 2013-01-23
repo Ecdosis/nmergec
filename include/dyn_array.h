@@ -18,6 +18,9 @@ void dyn_array_dispose( dyn_array *da );
 int dyn_array_size( dyn_array *da );
 void *dyn_array_get( dyn_array *da, int index );
 int dyn_array_add( dyn_array *da, void *obj );
+#ifdef MVD_TEST
+int test_dyn_array( int *passed, int *failed );
+#endif
 
 
 #ifdef	__cplusplus

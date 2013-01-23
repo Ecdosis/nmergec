@@ -1,10 +1,13 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 #ifdef MVD_TEST
 #include <string.h>
 #include <stdio.h>
 #endif
+#define LINE_END "\n"
 
 static char encoding_table[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
                                 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
@@ -44,6 +47,7 @@ void b64_encode( const unsigned char *data, size_t input_len,
     char *output, size_t output_len ) 
 {
     int i,j;
+    int cr_len = strlen(LINE_END);
     for (i = 0, j = 0; i < input_len;) 
     {
         uint32_t octet_a = i < input_len ? data[i++] : 0;
@@ -56,6 +60,14 @@ void b64_encode( const unsigned char *data, size_t input_len,
         output[j++] = encoding_table[(triple >> 2 * 6) & 0x3F];
         output[j++] = encoding_table[(triple >> 1 * 6) & 0x3F];
         output[j++] = encoding_table[(triple >> 0 * 6) & 0x3F];
+        // put these line-ends in for formatting 
+        if ( i % 57 == 0 )
+        {
+            int k;
+            const char *cr = LINE_END;
+            for ( k=0;k<cr_len;k++ )
+                output[j++] = cr[k];
+        }
     }
     for (i = 0; i < mod_table[input_len % 3]; i++)
         output[output_len - 1 - i] = '=';
@@ -67,7 +79,9 @@ void b64_encode( const unsigned char *data, size_t input_len,
  */
 size_t b64_encode_buflen( size_t input_len )
 {
-    return (size_t) (4.0 * ceil((double) input_len / 3.0));
+    size_t base_len = (size_t) (4.0 * ceil((double) input_len / 3.0));
+    // add this for the inserted LINE_ENDs
+    return base_len + (input_len/57)*strlen(LINE_END);
 }
 /**
  * Compute the correct output length for decode 
@@ -95,6 +109,11 @@ void b64_decode(const char *data, size_t input_len,
         (output_len)--;
     for (i = 0, j = 0; i < input_len;) 
     {
+        if ( data[i]<=32 )
+        {   
+            i++;
+            continue;
+        }
         uint32_t sextet_a = data[i] == '=' ? 0 & i++:decoding_table[data[i++]];
         uint32_t sextet_b = data[i] == '=' ? 0 & i++:decoding_table[data[i++]];
         uint32_t sextet_c = data[i] == '=' ? 0 & i++:decoding_table[data[i++]];

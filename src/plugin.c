@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <dlfcn.h>
 #include <stdarg.h>
+#include "bitset.h"
+#include "mvd/pair.h"
 #include "mvd/mvd.h"
 #include "plugin.h"
 #ifdef MVD_TEST

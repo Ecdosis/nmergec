@@ -92,3 +92,54 @@ int dyn_array_add( dyn_array *da, void *obj )
         da->items[da->pos++] = obj;
     return res;
 }
+#ifdef MVD_TEST
+int test_dyn_array( int *passed, int *failed )
+{
+    dyn_array *da = dyn_array_create( 2 );
+    if ( da != NULL )
+    {
+        int res = dyn_array_add( da, "banana" );
+        if ( res )
+        {
+            res = dyn_array_add( da, "apple" );
+            if ( res )
+            {
+                *passed += 1;
+                res = dyn_array_add( da, "pineapple" );
+                if ( !res )
+                {
+                    fprintf(stderr,"dyn_array: failed teo reallocate array\n");
+                    *failed += 1;
+                }
+                else
+                {
+                    char *str1 = dyn_array_get( da, 0 );
+                    char *str2 = dyn_array_get( da, 1 );
+                    char *str3 = dyn_array_get( da, 2 );
+                    if ( str1 != NULL && strcmp(str1,"banana")==0 
+                        && str2 != NULL && strcmp(str2,"apple")==0
+                        && str3 != NULL && strcmp(str3,"pineapple")==0 )  
+                        *passed += 1;
+                    else
+                    {
+                        fprintf(stderr,"dyn_array: failed to retrieve "
+                            "strings from array\n");
+                        *failed += 1;
+                    }
+                }
+            }
+            else
+            {
+                fprintf(stderr,"dyn_array: failed store string in array\n");
+                *failed += 1;
+            }
+        }
+        dyn_array_dispose( da );
+    }
+    else
+    {
+        fprintf(stderr,"dyn_array: failed to allocate object\n");
+        *failed += 1;
+    }
+}
+#endif
