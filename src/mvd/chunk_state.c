@@ -56,7 +56,7 @@ static void test_c( const char *value, chunk_state answer, int *p, int *f )
         (*f)++;
     }
 }
-int test_chunk_state( int *passed, int *failed )
+void test_chunk_state( int *passed, int *failed )
 {
     int chunk_passed = 0;
     int chunk_failed = 0;
@@ -71,6 +71,5 @@ int test_chunk_state( int *passed, int *failed )
     test_c( "partial", partial, &chunk_passed, &chunk_failed );
     *passed += chunk_passed;
     *failed += chunk_failed;
-    return chunk_failed==0;
 }
 #endif

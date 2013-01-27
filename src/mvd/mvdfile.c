@@ -12,13 +12,14 @@
 #include "char_buf.h"
 #include "zip/zip.h"
 #include "bitset.h"
+#include "link_node.h"
 #include "mvd/pair.h"
+#include "mvd/version.h"
 #include "mvd/mvd.h"
 #include "dyn_array.h"
 #include "dyn_string.h"
 #include "b64.h"
 #include "hashmap.h"
-#include "link_node.h"
 #include "utils.h"
 #include "mvd/mvdfile.h"
 #ifdef MVD_TEST
@@ -30,7 +31,7 @@
  * <ul><li>outer wrapper: base64 encoding</li>
  * <li>inner wrapper: zip compression</li></ul>
  * <p>Header:</p>
- * <ul><li>magic string: 8 bytes must be 0xDEADC0DE (old) or 0x600DCODE (new)</li>
+ * <ul><li>magic string: 4 bytes must be 0xDEADC0DE (old) or 0x600DCODE (new)</li>
  * <li>data mask: 4 bytes 0=NONE (omitted in new)</li>
  * <li>group-table offset: 4-byte int offset from start of file(omitted in new)</li>
  * <li>version-table offset: 4-byte int offset from start of file</li>
@@ -43,14 +44,10 @@
  * 2 byte int;<br> for each group: parent: 2-byte int (0 if a top level group); 
  * name: 2-byte int preceded utf-8 string; id implied by position in the table 
  * starting at 1</li>
- * <li>version-table (old): number of versions: 2-byte int; version-set size: 
+ * <li>version-table: number of versions: 2-byte int; version-set size: 
  * 2-byte int;<br/>
- * for each version: group: 2 byte int; shortName: 2-byte int 
- * preceded utf-8 string; longName: 2-byte int preceded utf-8 string; 
- * version numbers implied by position in table starting at 1</li>
- * <li>version-table (new): number of versions: 2-byte int; version-set size: 
- * 2-byte int;<br/>
- * for each version: versionID: 2-byte int preceded utf-8 string;  
+ * for each version: group: 2 byte int; shortName(old)/versionID(new): 
+ * 2-byte int preceded utf-8 string; longName: 2-byte int preceded utf-8 string; 
  * version numbers implied by position in table starting at 1</li>
  * <li>pairs table: number of pairs: 4-byte int;<br/>
  * for each pair: version-set size bytes, LSB first. first bit of 
@@ -104,7 +101,7 @@ static int readInt( unsigned char *data, int len, int p )
  * @param data an array of bytes
  * @param len the length of data
  * @param p offset into data to begin
- * @return the int read from data
+ * @return the short read from data
  */
 static short readShort( unsigned char *data, int len, int p ) 
 {
@@ -122,23 +119,31 @@ static short readShort( unsigned char *data, int len, int p )
 /**
  * Read a 2-byte preceded UTF-8 string from an array of data bytes
  * @param data the data to read from
- * @param len overall length of data
+ * @param len the overall length of the mvd_data
+ * @param slen VAR param update length of string read or 0 on failure
  * @param p the offset of the string start
  * @return an allocated string or NULL
  */
-static unsigned char *readUtf8String( unsigned char *data, int len, int p ) 
+static unsigned char *readUtf8String( unsigned char *data, int len, 
+    short *slen, int p ) 
 {
-    short i,slen = readShort( data, len, p );
-    p += 2;
+    short i,ulen = readShort( data, len, p );
     unsigned char *str = NULL;
-    if ( slen+p <= len )
+    p += 2;
+    str = malloc(ulen+1);
+    if ( str != NULL )
     {
-        str = malloc(slen+1);
-        for ( i=0;i<slen;i++ )
+        for ( i=0;i<ulen;i++ )
         {
             str[i] = data[p+i];
         }
-        str[slen] = 0;
+        str[ulen] = 0;
+        *slen = ulen;
+    }
+    else
+    {
+        fprintf(stderr,"mvdfile: failed to allocate utf8 string\n");
+        *slen = 0;
     }
     return str;
 }
@@ -168,11 +173,10 @@ static char **readGroupTable( unsigned char *mvd_data, int len, int p )
             int res = 1;
             for ( i=0;i<nGroups;i++ )
             {
-                short parent = readShort( mvd_data, len, p );
+                short slen,parent = readShort( mvd_data, len, p );
                 assert( parent <= i && parent <nGroups );
                 p += 2;
-                short slen = readShort( mvd_data, len, p );
-                unsigned char *name = readUtf8String( mvd_data, len, p );
+                unsigned char *name = readUtf8String( mvd_data, len, &slen, p );
                 p += 2 + slen;
                 if ( name != NULL )
                 {
@@ -254,11 +258,28 @@ static int readNewVersionTable( unsigned char *mvd_data, int p, int len,
         mvd_set_bitset_size( mvd, setSize );
         for ( i=0;i<nVersions;i++ )
         {
-            short slen = readShort( mvd_data, len, p );
-            // allocates shortName
-            unsigned char *versionID = readUtf8String( mvd_data, len, p );
-            p += 2 + slen;
-            res = mvd_add_version_path( mvd, versionID );
+            // read versionID
+            unsigned char *description,*versionID;
+            short slen;
+            version *v = NULL;
+            versionID = readUtf8String( mvd_data, len, &slen, p );
+            if ( slen > 0 )
+                p += 2 + slen;
+            // read description
+            description = readUtf8String( mvd_data, len, &slen, p );
+            if ( versionID != NULL && description != NULL )
+                v = version_create( versionID, description );
+            if ( v != NULL )
+                res = mvd_add_version( mvd, v );
+            if ( versionID != NULL )
+                free( versionID );
+            if ( description != NULL )
+                free( description );
+            if ( v == NULL )
+            {
+                fprintf(stderr,"mvdfile: bad versionID. len=%d\n",slen);
+                res = 0;
+            }
             if ( !res )
                 break;
         }
@@ -299,19 +320,14 @@ static int readOldVersionTable( unsigned char *mvd_data, int len, int p,
                 group = 1;
             p += 2;
             // ignore backup
-            short backup = readShort( mvd_data, len, p );
+            short slen,backup = readShort( mvd_data, len, p );
             p += 2;
-            short slen = readShort( mvd_data, len, p );
-            // allocates shortName
-            unsigned char *shortName = readUtf8String( mvd_data, len, p );
+            unsigned char *shortName,*longName;
+            shortName = readUtf8String( mvd_data, len, &slen, p );
             p += 2 + slen;
-            slen = readShort( mvd_data, len, p );
-            // throw away longname - not used any more
-            unsigned char *longName = readUtf8String( mvd_data, len, p );
-            if ( longName != NULL )
-                free( longName );
+            longName = readUtf8String( mvd_data, len, &slen, p );
             p += 2 + slen;
-            if ( shortName != NULL )
+            if ( shortName != NULL && longName != NULL )
             {
                 dyn_string *ds = dyn_string_create_from( groups[group-1] );
                 if ( ds != NULL )
@@ -320,13 +336,23 @@ static int readOldVersionTable( unsigned char *mvd_data, int len, int p,
                     if ( res )
                         res = dyn_string_concat( ds, shortName );
                     if ( res )
-                        res = mvd_add_version_path( mvd,dyn_string_data(ds) );
+                    {
+                        version *v = version_create( dyn_string_data(ds), 
+                            longName );
+                        if ( v != NULL )
+                            res = mvd_add_version( mvd, v );
+                        else
+                            res = 0;
+                    }
                     dyn_string_dispose( ds );
                 }
-                free( shortName );
             }
             else
                 res = 0;
+            if ( shortName != NULL )
+                free( shortName );
+            if ( longName != NULL )
+                free( longName );
         }
     }
     return res;
@@ -361,26 +387,6 @@ static bitset *readVersionSet( int setSize, unsigned char *data,
     return versions;
 }
 /**
- * Make a copy of a portion of a larger byte array
- * @param len the length of the copy
- * @param offset the offset within data where the copy begins
- * @param data the larger byte array from which to copy
- * @return a copy of a section off the data array or NULL
- */
-static unsigned char *copyData( int len, int offset, unsigned char *data )
-{
-   unsigned char *raw = malloc( len );
-   if ( raw != NULL )
-   {
-       int j,q;
-       for ( j=0,q=offset;j<len;j++,q++ )
-            raw[j] = data[q];
-   }
-   else
-       fprintf(stderr,"mvdfile: failed to duplicate data\n");
-   return raw;
-}
-/**
  * Read the pairs table for an MVD from a byte array
  * @param data the byte array containing the version definitions
  * @param len the overall length of the mvd_data
@@ -406,13 +412,14 @@ static int readPairsTable( unsigned char *mvd_data, int len,
             fprintf(stderr,"mvdfile: invalid number (%d) of pairs: ", nPairs );
             res = 0;
         }
+        int setSize = mvd_get_set_size(mvd);
         for ( i=0;i<nPairs;i++ )
         {
-            unsigned char *copy;
             pair *tpl2;
-            versions = readVersionSet( mvd_get_set_size(mvd),mvd_data,
-                len, p );
-            p += mvd_get_set_size(mvd);
+            versions = readVersionSet( setSize, mvd_data, len, p );
+            if ( versions == NULL )
+                break;
+            p += setSize;
             int data_offset = readInt( mvd_data, len, p );
             p += 4;
             int data_len = readInt( mvd_data, len, p );
@@ -422,12 +429,12 @@ static int readPairsTable( unsigned char *mvd_data, int len,
             p += 4;
             if ( flag == PARENT_FLAG )
             {
+                int offset = dataTableOffset+data_offset;
                 // read special parent id field 
                 int pId = readInt( mvd_data, len, p );
                 p += 4;
                 // transpose parent
-                copy = copyData( data_len, dataTableOffset+data_offset, mvd_data );
-                tpl2 = pair_create_parent( versions, copy, data_len );
+                tpl2 = pair_create_parent( versions, &mvd_data[offset], data_len );
                 char *key = itoa( pId );
                 // check for orphans of this parent
                 link_node *children = hashmap_get( orphans, key );
@@ -446,7 +453,8 @@ static int readPairsTable( unsigned char *mvd_data, int len,
                             pair_set_parent( child, tpl2 );
                     } while ( (temp=link_node_next(temp))!= NULL );
                     // now they're not orphans any more. hooray!
-                    int removed = hashmap_remove( orphans, key );
+                    int removed = hashmap_remove( orphans, key, NULL );
+                    link_node_dispose( children );
                     assert(removed==1);
                 }
                 // always do this in case more children turn up
@@ -483,13 +491,15 @@ static int readPairsTable( unsigned char *mvd_data, int len,
                     if ( tpl2 == NULL )
                         break;
                     pair_add_child( parent, tpl2 );
+                    pair_set_parent( tpl2, parent );
+					
                 }
             }
             else // no transposition
             {
-                copy = copyData( data_len, dataTableOffset+data_offset, 
-                    mvd_data );
-                tpl2 = pair_create_basic( versions, copy, data_len );
+                int offset = dataTableOffset+data_offset;
+                tpl2 = pair_create_basic( versions, &mvd_data[offset], 
+                    data_len );
                 if ( tpl2 == NULL )
                     break;
             }
@@ -498,8 +508,6 @@ static int readPairsTable( unsigned char *mvd_data, int len,
             versions = bitset_dispose( versions );
         }
         res = (i== nPairs);
-        if ( versions != NULL )
-            bitset_dispose( versions );
     }
     return res;
 }
@@ -512,7 +520,9 @@ static int readPairsTable( unsigned char *mvd_data, int len,
  */
 MVD *mvd_parse( unsigned char *mvd_data, int len, int old )
 {
+    unsigned char *description,*encoding;
     int res = 0;
+    short slen;
     int groupTableOffset,maskType;
     MVD *mvd = NULL;
     // point after magic
@@ -531,17 +541,20 @@ MVD *mvd_parse( unsigned char *mvd_data, int len, int old )
     p += 4;
     int dataTableOffset = readInt( mvd_data, len, p );
     p += 4;
-    short strLen = readShort( mvd_data, len, p );
-    unsigned char *description = readUtf8String( mvd_data, len, p );
-    p += strLen + 2;
-    strLen = readShort( mvd_data, len, p );
-    unsigned char *encoding = readUtf8String( mvd_data, len, p );
+    description = readUtf8String( mvd_data, len, &slen, p );
+    p += slen + 2;
+    encoding = readUtf8String( mvd_data, len, &slen, p );
     mvd = mvd_create();
-    res = mvd_set_description( mvd, description );
-    if ( res )
+    if ( description != NULL )
+    {
+        res = mvd_set_description( mvd, description );
+        free( description );
+    }
+    if ( res && encoding != NULL )
+    {
         res = mvd_set_encoding( mvd, encoding );
-    free( description );
-    free( encoding );
+        free( encoding );
+    }
     if ( res )
     {
         if ( old )
@@ -629,11 +642,11 @@ MVD *mvd_internalise( char *data, int len )
 char *mvdfile_externalise( MVD *mvd, int *len, int old )
 {
     char *b64_data = NULL;
-    int size = mvd_datasize( mvd );
+    int size = mvd_datasize( mvd, old );
     unsigned char *data = malloc( size );
     if ( data != NULL )
     {
-        int nBytes = mvd_serialise( mvd, data, old );
+        int nBytes = mvd_serialise( mvd, data, size, old );
         if ( nBytes < size )
             fprintf(stderr,"mvdfile: MVD shorter than predicted\n");
         else
@@ -703,7 +716,7 @@ static int file_length( FILE *fp )
 MVD *mvdfile_load( char *file )
 {
     MVD *mvd;
-    long start = epoch_time();
+    //long start = epoch_time();
     FILE *fp = fopen( file, "r" );
     if ( fp != NULL )
     {
@@ -722,8 +735,8 @@ MVD *mvdfile_load( char *file )
             fprintf(stderr,"mvdfile: failed to allocate file buffer\n");
         fclose( fp );
     }
-    long end = epoch_time();
-    printf("time taken to load mvd: %ld microseconds\n",(end-start));
+    //long end = epoch_time();
+    //printf("time taken to load mvd: %ld microseconds\n",(end-start));
     return mvd;
 }
 /**
@@ -760,9 +773,8 @@ int mvdfile_save( MVD *mvd, char *file, int old )
  * Test the mvdfile class
  * @param passed VAR param update with number of passed tests
  * @param failed VAR param update with number of failed tests
- * @return 1 if it worked else 0
  */
-int test_mvdfile( int *passed, int *failed )
+void test_mvdfile( int *passed, int *failed )
 {
     int res = 0;
     const char *gdata = "\0\3\0\0\0\6banana\0\0\0\11pineapple\0\1\0\4pear";
@@ -798,6 +810,5 @@ int test_mvdfile( int *passed, int *failed )
         fprintf(stderr,"mvdfile: failed to read group table\n");
         *failed += 1;
     }
-    return res==1;
 }
 #endif

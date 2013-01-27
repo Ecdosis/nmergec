@@ -11,10 +11,10 @@
 #ifdef	__cplusplus
 extern "C" {
 #endif
-void write_int( unsigned char *data, int p, int value );
-void write_short( unsigned char *data, int p, short value );
-int write_string( unsigned char *data, int p, unsigned char *value ); 
-
+void write_int( unsigned char *data, int len, int p, int value );
+void write_short( unsigned char *data, int len, int p, short value );
+int write_string( unsigned char *data, int len, int p, unsigned char *value ); 
+int write_data( unsigned char *dst, int len, int p, unsigned char *src, int src_len );
 
 #ifdef	__cplusplus
 }

@@ -23,7 +23,7 @@ char *mvdfile_externalise( MVD *mvd, int *len, int old );
 MVD *mvdfile_load( char *file );
 int mvdfile_save( MVD *mvd, char *file, int old );
 #ifdef MVD_TEST
-int test_mvdfile( int *passed, int *failed );
+void test_mvdfile( int *passed, int *failed );
 #endif
 
 #ifdef	__cplusplus

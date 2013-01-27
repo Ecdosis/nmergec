@@ -40,7 +40,7 @@ typedef enum
 
 chunk_state chunk_state_value( const char *value );
 #ifdef MVD_TEST
-int test_chunk_state( int *passed, int *failed );
+void test_chunk_state( int *passed, int *failed );
 #endif
 
 #ifdef	__cplusplus

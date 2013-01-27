@@ -12,11 +12,12 @@
 extern "C" {
 #endif
 typedef struct group_struct group;
-group *group_create( int id, int parent );
-void group_dispose( group *g );
+group *group_create( int id, int parent, char *name );
+void group_dispose( void *g );
 void group_set_parent( group *g, int parent );
 int group_id( group *g );
 int group_parent( group *g );
+int group_datasize( group *g );
 
 #ifdef	__cplusplus
 }
