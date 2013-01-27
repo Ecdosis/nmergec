@@ -17,7 +17,7 @@ char_buf *char_buf_create( int initial );
 int char_buf_write( char_buf *cb, unsigned char *data, int len );
 unsigned char *char_buf_get( char_buf *cb, int *len );
 #ifdef MVD_TEST
-int test_char_buf( int *passed, int *failed );
+void test_char_buf( int *passed, int *failed );
 #endif
 
 #ifdef	__cplusplus

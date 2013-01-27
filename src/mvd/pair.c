@@ -6,7 +6,7 @@
 #include "mvd/pair.h"
 
 // assuming we are on an 8 byte system
-#define DATA_MINSIZE 5
+#define DATA_MINSIZE 1
 #define BASIC_PAIR 0
 #define CHILD_PAIR 1
 #define PARENT_PAIR 2
@@ -19,9 +19,9 @@ struct pair_struct
         link_node *children;
         pair *parent;
     };
-    short len;
     int id;
-	unsigned char type;
+	short len;
+    unsigned char type;
     unsigned char data[DATA_MINSIZE];
 };
 /**

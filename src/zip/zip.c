@@ -137,7 +137,7 @@ static const char *src =
 "consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate "
 "velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum "
 "fugiat quo voluptas nulla pariatur?";
-int test_zip( int *passed, int *failed )
+void test_zip( int *passed, int *failed )
 {
     int res = 0;
     char_buf *cb = char_buf_create( 1024 );
@@ -205,6 +205,5 @@ int test_zip( int *passed, int *failed )
     }
     if ( !res )
         *failed += 1;
-    return res;
 }
 #endif

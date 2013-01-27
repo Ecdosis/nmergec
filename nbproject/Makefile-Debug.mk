@@ -66,7 +66,8 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/zip/inftrees.o \
 	${OBJECTDIR}/src/mvd/chunk_state.o \
 	${OBJECTDIR}/src/zip/adler32.o \
-	${OBJECTDIR}/src/zip/trees.o
+	${OBJECTDIR}/src/zip/trees.o \
+	${OBJECTDIR}/src/mvd/version.o
 
 
 # C Compiler Flags
@@ -96,162 +97,167 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nmergec: ${OBJECTFILES}
 ${OBJECTDIR}/src/utils.o: src/utils.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/utils.o src/utils.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/utils.o src/utils.c
 
 ${OBJECTDIR}/src/dyn_array.o: src/dyn_array.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/dyn_array.o src/dyn_array.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/dyn_array.o src/dyn_array.c
 
 ${OBJECTDIR}/src/zip/zip.o: src/zip/zip.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/zip.o src/zip/zip.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/zip.o src/zip/zip.c
 
 ${OBJECTDIR}/src/mvd/mvdfile.o: src/mvd/mvdfile.c 
 	${MKDIR} -p ${OBJECTDIR}/src/mvd
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvd/mvdfile.o src/mvd/mvdfile.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvd/mvdfile.o src/mvd/mvdfile.c
 
 ${OBJECTDIR}/src/char_buf.o: src/char_buf.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/char_buf.o src/char_buf.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/char_buf.o src/char_buf.c
 
 ${OBJECTDIR}/src/mvd/group.o: src/mvd/group.c 
 	${MKDIR} -p ${OBJECTDIR}/src/mvd
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvd/group.o src/mvd/group.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvd/group.o src/mvd/group.c
 
 ${OBJECTDIR}/src/plugin.o: src/plugin.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/plugin.o src/plugin.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/plugin.o src/plugin.c
 
 ${OBJECTDIR}/src/benchmark.o: src/benchmark.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/benchmark.o src/benchmark.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/benchmark.o src/benchmark.c
 
 ${OBJECTDIR}/src/zip/deflate.o: src/zip/deflate.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/deflate.o src/zip/deflate.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/deflate.o src/zip/deflate.c
 
 ${OBJECTDIR}/src/mvd/pair.o: src/mvd/pair.c 
 	${MKDIR} -p ${OBJECTDIR}/src/mvd
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvd/pair.o src/mvd/pair.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvd/pair.o src/mvd/pair.c
 
 ${OBJECTDIR}/src/dyn_string.o: src/dyn_string.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/dyn_string.o src/dyn_string.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/dyn_string.o src/dyn_string.c
 
 ${OBJECTDIR}/src/zip/crc32.o: src/zip/crc32.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/crc32.o src/zip/crc32.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/crc32.o src/zip/crc32.c
 
 ${OBJECTDIR}/src/b64.o: src/b64.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/b64.o src/b64.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/b64.o src/b64.c
 
 ${OBJECTDIR}/src/mvd/mvd.o: src/mvd/mvd.c 
 	${MKDIR} -p ${OBJECTDIR}/src/mvd
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvd/mvd.o src/mvd/mvd.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvd/mvd.o src/mvd/mvd.c
 
 ${OBJECTDIR}/src/hashmap.o: src/hashmap.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/hashmap.o src/hashmap.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/hashmap.o src/hashmap.c
 
 ${OBJECTDIR}/src/zip/compress.o: src/zip/compress.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/compress.o src/zip/compress.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/compress.o src/zip/compress.c
 
 ${OBJECTDIR}/src/mvdtool.o: src/mvdtool.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvdtool.o src/mvdtool.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvdtool.o src/mvdtool.c
 
 ${OBJECTDIR}/src/mvd/serialiser.o: src/mvd/serialiser.c 
 	${MKDIR} -p ${OBJECTDIR}/src/mvd
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvd/serialiser.o src/mvd/serialiser.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvd/serialiser.o src/mvd/serialiser.c
 
 ${OBJECTDIR}/src/operation.o: src/operation.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/operation.o src/operation.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/operation.o src/operation.c
 
 ${OBJECTDIR}/src/memwatch.o: src/memwatch.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/memwatch.o src/memwatch.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/memwatch.o src/memwatch.c
 
 ${OBJECTDIR}/src/zip/inflate.o: src/zip/inflate.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/inflate.o src/zip/inflate.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/inflate.o src/zip/inflate.c
 
 ${OBJECTDIR}/src/plugin_list.o: src/plugin_list.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/plugin_list.o src/plugin_list.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/plugin_list.o src/plugin_list.c
 
 ${OBJECTDIR}/src/test.o: src/test.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/test.o src/test.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/test.o src/test.c
 
 ${OBJECTDIR}/src/link_node.o: src/link_node.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/link_node.o src/link_node.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/link_node.o src/link_node.c
 
 ${OBJECTDIR}/src/zip/zutil.o: src/zip/zutil.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/zutil.o src/zip/zutil.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/zutil.o src/zip/zutil.c
 
 ${OBJECTDIR}/src/hsieh.o: src/hsieh.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/hsieh.o src/hsieh.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/hsieh.o src/hsieh.c
 
 ${OBJECTDIR}/src/bitset.o: src/bitset.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/bitset.o src/bitset.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/bitset.o src/bitset.c
 
 ${OBJECTDIR}/src/zip/inffast.o: src/zip/inffast.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/inffast.o src/zip/inffast.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/inffast.o src/zip/inffast.c
 
 ${OBJECTDIR}/src/zip/inftrees.o: src/zip/inftrees.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/inftrees.o src/zip/inftrees.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/inftrees.o src/zip/inftrees.c
 
 ${OBJECTDIR}/src/mvd/chunk_state.o: src/mvd/chunk_state.c 
 	${MKDIR} -p ${OBJECTDIR}/src/mvd
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvd/chunk_state.o src/mvd/chunk_state.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvd/chunk_state.o src/mvd/chunk_state.c
 
 ${OBJECTDIR}/src/zip/adler32.o: src/zip/adler32.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/adler32.o src/zip/adler32.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/adler32.o src/zip/adler32.c
 
 ${OBJECTDIR}/src/zip/trees.o: src/zip/trees.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/trees.o src/zip/trees.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/trees.o src/zip/trees.c
+
+${OBJECTDIR}/src/mvd/version.o: src/mvd/version.c 
+	${MKDIR} -p ${OBJECTDIR}/src/mvd
+	${RM} $@.d
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Iinclude/zip -Isrc/mvd -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvd/version.o src/mvd/version.c
 
 # Subprojects
 .build-subprojects:

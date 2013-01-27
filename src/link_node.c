@@ -74,7 +74,7 @@ void *link_node_obj( link_node *ln )
 #ifdef MVD_TEST
 #include <string.h>
 #include <stdio.h>
-int test_link_node( int *passed, int *failed )
+void test_link_node( int *passed, int *failed )
 {
     link_node *ln1 = link_node_create();
     link_node_set_obj( ln1, "banana" );

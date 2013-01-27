@@ -13,7 +13,7 @@ extern "C" {
 #endif
 
 #ifdef MVD_TEST
-int test_b64( int *passed, int *failed );
+void test_b64( int *passed, int *failed );
 #endif
 void b64_encode( const unsigned char *data, size_t input_len, 
     char *output, size_t output_len );

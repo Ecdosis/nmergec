@@ -11,6 +11,7 @@
         <itemPath>include/mvd/mvdfile.h</itemPath>
         <itemPath>include/mvd/pair.h</itemPath>
         <itemPath>include/mvd/serialiser.h</itemPath>
+        <itemPath>include/mvd/version.h</itemPath>
       </logicalFolder>
       <itemPath>include/b64.h</itemPath>
       <itemPath>include/benchmark.h</itemPath>
@@ -43,6 +44,7 @@
         <itemPath>src/mvd/mvdfile.c</itemPath>
         <itemPath>src/mvd/pair.c</itemPath>
         <itemPath>src/mvd/serialiser.c</itemPath>
+        <itemPath>src/mvd/version.c</itemPath>
       </logicalFolder>
       <logicalFolder name="f2" displayName="zip" projectFiles="true">
         <itemPath>src/zip/adler32.c</itemPath>
@@ -100,6 +102,7 @@
             <pElem>src/mvd</pElem>
           </incDir>
           <preprocessorList>
+            <Elem>MEMWATCH</Elem>
             <Elem>MVD_TEST</Elem>
           </preprocessorList>
         </cTool>

@@ -103,7 +103,7 @@ static const char *src2 =
 "consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate "
 "velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum "
 "fugiat quo voluptas nulla pariatur?";
-int test_char_buf( int *passed, int *failed )
+void test_char_buf( int *passed, int *failed )
 {
     char_buf *cb = char_buf_create( 64 );
     if ( cb != NULL )

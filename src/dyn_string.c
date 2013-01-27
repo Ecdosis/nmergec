@@ -126,9 +126,8 @@ char *dyn_string_data( dyn_string *ds )
  * Test the dyn_string object
  * @param passed VAR param update number of passed tests
  * @param failed VAR param update number of failed tests
- * @return 1 if everything worked else 0
  */
-int test_dyn_string( int *passed, int *failed )
+void test_dyn_string( int *passed, int *failed )
 {
     int res = 0;
     dyn_string *ds = dyn_string_create();
@@ -148,5 +147,4 @@ int test_dyn_string( int *passed, int *failed )
         *passed += 1;
     else
         *failed += 1;
-    return res;
 }

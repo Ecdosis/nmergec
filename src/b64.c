@@ -128,7 +128,7 @@ void b64_decode(const char *data, size_t input_len,
     }
 }
 #ifdef MVD_TEST
-int test_b64( int *passed, int *failed )
+void test_b64( int *passed, int *failed )
 {
     // encode/decode every possible 8-bit character except NULL
     const unsigned char *src = "\1\2\3\4\5\6\7\10\11\12\13\14\15\16\17\20"

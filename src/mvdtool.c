@@ -6,7 +6,9 @@
 #include "mvdtool.h"
 #include "mvd/chunk_state.h"
 #include "bitset.h"
+#include "link_node.h"
 #include "mvd/pair.h"
+#include "mvd/version.h"
 #include "mvd/mvd.h"
 #include "mvd/mvdfile.h"
 #include "plugin.h"
@@ -34,7 +36,7 @@ static char *command=NULL;
 static char *options=NULL;
 /** name of mvd file */
 static char *mvdFile=NULL;
-/** list of available modules */
+/** list of available plugins */
 plugin_list *plugins=NULL;
 /** write in old MVD format */
 int old = 0;
@@ -128,8 +130,8 @@ static int read_args( int argc, char **argv )
     return sane;
 }
 /**
- * Open a single bot-module
- * @param path the path to the module
+ * Open a single plugin
+ * @param path the path to the plugin
  * @return the result of loading it: 1 if success, 0 otherwise
  */
 static void open_plugin( char *path )
@@ -155,7 +157,7 @@ static void do_open_plugins()
 	struct dirent *dp;
 	DIR *dir = opendir(PLUGIN_DIR);
     int suffix_len = strlen(LIB_SUFFIX);
-    // without this it won't find any modules
+    // without this it won't find any plugins
 	setenv("LD_LIBRARY_PATH",PLUGIN_DIR,1);
 	while ((dp=readdir(dir)) != NULL)
 	{
@@ -261,13 +263,135 @@ int main( int argc, char **argv )
 }
 #else
 /**
+ * Test an mvd by 
+ * 1. loading it 
+ * 2. saving it in the old format 
+ * 3. saving it in the new format
+ * @param path the path of the src mvd
+ * @param passed VAR param update with number of passed tests
+ * @param failed VAR param update with teh number of failed tests
+ * @return 1 if the test succeeded
+ */
+static int test_mvd( char *path, int *passed, int *failed )
+{
+    MVD *mvd = mvdfile_load( path );
+    if ( mvd != NULL )
+    {
+        *passed += 1;
+        if ( mvd_test_versions(mvd) )
+            *passed += 1;
+        else
+            *failed += 1;
+        char *write_path = strdup( path );
+        if ( write_path != NULL )
+        {
+            char *dot_pos = strchr(write_path,'.');
+            if ( dot_pos != NULL )
+            {
+                strcpy( dot_pos, ".old" );
+                int res = mvdfile_save( mvd, write_path, 1 );
+                if ( res )
+                {
+                    *passed += 1;
+                    strcpy( dot_pos, ".new" );
+                    res = mvdfile_save( mvd, write_path, 0 );
+                    if ( res )
+                        *passed += 1;
+                    else
+                        *failed += 1;
+                }
+                else
+                    *failed += 2;
+            }
+            free( write_path );
+        }
+        mvd_dispose( mvd );
+    }
+    else    // failed all tests in effect
+        *failed += 3;
+}
+static void test_mvd_dir( char *folder, int *passed, int *failed )
+{
+    int res = 1;
+    struct dirent *dp;
+	DIR *dir = opendir(folder);
+    if ( dir != NULL )
+    {
+        while ((dp=readdir(dir)) != NULL)
+        {
+            // is it a dynamic library?
+            char *dot_pos = strrchr(dp->d_name,'.');
+            if ( strcmp(dot_pos,".mvd")==0 )
+            {
+                int plen = strlen(folder)+2+strlen(dp->d_name);
+                char *path = malloc(plen);
+                if ( path != NULL )
+                {
+                    snprintf( path, plen, "%s/%s", folder, dp->d_name );
+                    res = test_mvd( path, passed, failed );
+                    free( path );
+                    if ( !res )
+                        break;
+                }
+            }
+        }
+        closedir(dir);
+    }
+    else
+    {
+        fprintf(stderr,"mvdtool: failed to open folder %s\n",folder);
+    }
+}
+/**
  * Test the mvdtool class
  * @param passed VAR param number of passed tests
  * @param failed VAR param number of failed tests
- * @return 1 if all was OK
  */
-int test_mvdtool( int *passed, int *failed )
+void test_mvdtool( int *passed, int *failed )
 {
-    return 1;
+    // nmerge [-l] [-p] [-v COMMAND] [-h COMMAND] -m <MVD> -c <COMMAND> \n"
+    //   "-o <OPT-string>
+    static char *args1[] = {"nmergec","-l"};
+    static char *args2[] = {"nmergec","-c","add","-m","kinglear.mvd","-o",
+        "version=1"};
+    static char *args3[] = {"nmergec","banana","-o","rubbish"};
+    int sane = read_args(sizeof(args1)/sizeof(char*),args1);
+    if ( !sane || op != LIST )
+    {
+        fprintf(stderr,"mvdtool: failed to read listing command\n");
+        *failed += 1;
+    }
+    else
+        *passed += 1;
+    sane = read_args(sizeof(args2)/sizeof(char*),args2);
+    if ( !sane || op != RUN || strcmp(mvdFile,"kinglear.mvd")!=0
+        || strcmp(options,"version=1")!=0||strcmp(command,"add")!=0 )
+    {
+        fprintf(stderr,"mvdtool: failed to read add command and options\n");
+        *failed += 1;
+    }
+    else
+    {
+        do_open_plugins();
+        plugin *p = plugin_list_get( plugins, command );
+        if ( p == NULL )
+        {
+            fprintf(stderr,"mvdtool: plugin %s not found\n",command);
+            *failed += 1 ;
+        }
+        else
+            *passed += 1;
+    }
+    if ( read_args(sizeof(args3)/sizeof(char*),args3) )
+    {
+        fprintf(stderr,"mvdtool: failed to detect bogus command\n");
+        *failed += 1;
+    }
+    else
+    {
+        *passed += 1;
+    }
+    // test load and save of mvds
+    test_mvd_dir( "mvds", passed, failed );
 }
 #endif

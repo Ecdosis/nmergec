@@ -59,8 +59,9 @@ hashmap *hashmap_create( int initial_size, int int_keys )
 /**
  * Delete a hashmap and everything it owns
  * @param map the doomed map
+ * @param func the dispose function for values or NULL
  */
-void hashmap_dispose( hashmap *map )
+void hashmap_dispose( hashmap *map, dispose_func func )
 {
     int i;
     for ( i=0;i<map->num_buckets;i++ )
@@ -74,6 +75,8 @@ void hashmap_dispose( hashmap *map )
                 // printf("freeing key %s value %s address %lx\n",
                 // hm->key,hm->value,(long)hm->value);
                 free( hm->key );
+                if ( func != NULL )
+                    (func)(hm->value);
                 free( hm );
                 hm = next;
             }
@@ -274,9 +277,10 @@ int hashmap_size( hashmap *map )
  * Remove a key from the map
  * @param hm the hashmap in question
  * @param key the key to remove
+ * @param func to dispose of the value
  * @retiurn 1 if it was there and removed
  */
-int hashmap_remove( hashmap *map, char *key )
+int hashmap_remove( hashmap *map, char *key, dispose_func func )
 {
     int res = 0;
     int bucket = key_to_bucket( map, key );
@@ -293,6 +297,8 @@ int hashmap_remove( hashmap *map, char *key )
                     map->buckets[bucket] = b->next;
                 else
                     prev->next = b->next;
+                if ( func != NULL )
+                    (func)(b->value);
                 free( b );
                 map->num_keys--;
                 res = 1;
@@ -375,12 +381,11 @@ static char *random_str()
     return "banana";
 }
 /**
- * Test the hasmap
+ * Test the hashmap
  * @param passed VAR param update number of passed tests
  * @param failed VAR param update number of failed tests
- * @return 1 if it all worked
  */
-int test_hashmap( int *passed, int *failed )
+void test_hashmap( int *passed, int *failed )
 {
     hashmap *hm = hashmap_create( 200, 0 );
     int total = 0;
@@ -434,8 +439,7 @@ int test_hashmap( int *passed, int *failed )
             *failed += 1;
             fprintf(stderr,"hashmap: hashmap not empty after clear\n");
         }
-        hashmap_dispose( hm );
+        hashmap_dispose( hm, NULL );
     }
-    return *failed == 0;
 }
 #endif

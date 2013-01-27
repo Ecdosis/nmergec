@@ -22,6 +22,10 @@ int bitset_get( bitset *bs, int i );
 bitset *bitset_or( bitset *bs, bitset *other );
 void bitset_and( bitset *bs, bitset *other );
 int bitset_cardinality( bitset *bs );
+void test_bitset( int *passed, int *failed );
+int bitset_next_set_bit( bitset *bs, int index );
+void bitset_clear( bitset *bs );
+int bitset_allocated( bitset *bs );
 
 #ifdef	__cplusplus
 }

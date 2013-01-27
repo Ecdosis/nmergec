@@ -65,7 +65,7 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_add.${CND_DLIB_EXT}: ${OBJECTF
 ${OBJECTDIR}/mvd_add.o: mvd_add.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -g -I../../NMergeC/include -I../../NMergeC/include/mvd -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/mvd_add.o mvd_add.c
+	$(COMPILE.c) -g -I../../include -I../../include/mvd -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/mvd_add.o mvd_add.c
 
 # Subprojects
 .build-subprojects:

@@ -11,7 +11,9 @@
 #include "mvdtool.h"
 #include "mvd/chunk_state.h"
 #include "bitset.h"
+#include "link_node.h"
 #include "mvd/pair.h"
+#include "mvd/version.h"
 #include "mvd/mvd.h"
 #include "mvd/mvdfile.h"
 #include "b64.h"
@@ -22,14 +24,13 @@
 #include <stdint.h>
 #include "hsieh.h"
 #include "zip.h"
-#include "link_node.h"
 static int total_passed = 0;
 static int total_failed = 0;
 /*
  * Run all the tests
  */
 #ifdef MVD_TEST
-typedef int (*test_function)(int *p,int *f);
+typedef void (*test_function)(int *p,int *f);
 static void report_test( const char *name, test_function tf, int *p, int *f )
 {
     (tf)(p,f);
@@ -43,6 +44,7 @@ int main(int argc, char** argv)
     int passed=0;
     int failed=0;
     
+    report_test( "bitset", test_bitset, &passed, &failed );
     report_test( "chunk_state", test_chunk_state,&passed,&failed);
     report_test( "mvdtool", test_mvdtool,&passed,&failed);
     report_test( "b64", test_b64,&passed,&failed);
@@ -55,7 +57,7 @@ int main(int argc, char** argv)
     report_test( "hashmap", test_hashmap,&passed,&failed );
     report_test( "hsieh", test_hsieh,&passed,&failed );
     report_test( "link_node", test_link_node,&passed,&failed );
-
+    
     fprintf( stdout, "total passed %d failed %d tests\n",total_passed,
         total_failed);
 }

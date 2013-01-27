@@ -3,7 +3,9 @@
 #include <dlfcn.h>
 #include <stdarg.h>
 #include "bitset.h"
+#include "link_node.h"
 #include "mvd/pair.h"
+#include "mvd/version.h"
 #include "mvd/mvd.h"
 #include "plugin.h"
 #ifdef MVD_TEST
@@ -61,7 +63,8 @@ plugin *plugin_create( void *handle )
  */
 void plugin_dispose( plugin *plug )
 {
-	dlclose( plug->handle );
+	if ( plug->handle != NULL )
+        dlclose( plug->handle );
 	free( plug );
 }
 /**

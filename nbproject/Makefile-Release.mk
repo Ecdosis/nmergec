@@ -66,7 +66,8 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/zip/inftrees.o \
 	${OBJECTDIR}/src/mvd/chunk_state.o \
 	${OBJECTDIR}/src/zip/adler32.o \
-	${OBJECTDIR}/src/zip/trees.o
+	${OBJECTDIR}/src/zip/trees.o \
+	${OBJECTDIR}/src/mvd/version.o
 
 
 # C Compiler Flags
@@ -252,6 +253,11 @@ ${OBJECTDIR}/src/zip/trees.o: src/zip/trees.c
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
 	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/trees.o src/zip/trees.c
+
+${OBJECTDIR}/src/mvd/version.o: src/mvd/version.c 
+	${MKDIR} -p ${OBJECTDIR}/src/mvd
+	${RM} $@.d
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvd/version.o src/mvd/version.c
 
 # Subprojects
 .build-subprojects:

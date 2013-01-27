@@ -9,17 +9,18 @@
 #define	HASHMAP_H
 
 typedef struct hashmap_struct hashmap;
+typedef void (*dispose_func)(void*);
 hashmap *hashmap_create( int initial_size, int int_keys );
-void hashmap_dispose( hashmap *map );
+void hashmap_dispose( hashmap *map, dispose_func func );
 int hashmap_put( hashmap *map, char *key, void *value );
 void *hashmap_get( hashmap *map, char *key );
 int hashmap_contains( hashmap *map, char *key );
 int hashmap_size( hashmap *map );
 int hashmap_is_empty( hashmap *map );
 void hashmap_to_array( hashmap *map, char **array );
-int hashmap_remove( hashmap *map, char *key );
+int hashmap_remove( hashmap *map, char *key, dispose_func func );
 void hashmap_clear( hashmap *map );
 #ifdef MVD_TEST
-int test_hashmap( int *passed, int *failed );
+void test_hashmap( int *passed, int *failed );
 #endif
 #endif	/* HASHMAP_H */

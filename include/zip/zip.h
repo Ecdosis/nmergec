@@ -15,7 +15,7 @@ extern "C" {
 int zip_deflate( unsigned char *src, int src_len, char_buf *buf );
 int zip_inflate( unsigned char *src, int src_len, char_buf *buf );
 #ifdef MVD_TEST
-int test_zip( int *passed, int *failed );
+void test_zip( int *passed, int *failed );
 #endif
 
 #ifdef	__cplusplus

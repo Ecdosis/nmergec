@@ -20,7 +20,6 @@ void plugin_list_dispose( plugin_list *list );
 plugin *plugin_list_get( plugin_list *list, char *name );
 void plugin_list_all( plugin_list *list );
 
-
 #ifdef	__cplusplus
 }
 #endif

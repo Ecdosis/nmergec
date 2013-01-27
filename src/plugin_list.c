@@ -11,7 +11,9 @@
 #include <dlfcn.h>
 #include <stdarg.h>
 #include "bitset.h"
+#include "link_node.h"
 #include "mvd/pair.h"
+#include "mvd/version.h"
 #include "mvd/mvd.h"
 #include "plugin.h"
 #include "plugin_list.h"
@@ -64,7 +66,7 @@ void plugin_list_add( plugin_list *list, void *handle )
         if ( temp == NULL )
         {
             fprintf(stderr,
-                "plugin_list: failed to reallote list of plugins\n");
+                "plugin_list: failed to reallocate list of plugins\n");
         }
         list->block_size = new_size;
         for ( i=0;i<list->num_plugins;i++ )
@@ -118,3 +120,4 @@ void plugin_list_all( plugin_list *list )
         printf("%s\n",plug_name);
 	}
 }
+// NB: can't really test this without creating plugins per se

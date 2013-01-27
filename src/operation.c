@@ -58,7 +58,7 @@ static void test_op( const char *value, operation answer, int *p, int *f )
         (*f)++;
     }
 }
-int test_operation( int *passed, int *failed )
+void test_operation( int *passed, int *failed )
 {
     int op_passed = 0;
     int op_failed = 0;
@@ -69,6 +69,5 @@ int test_operation( int *passed, int *failed )
     test_op( "VERSION", VERSION, &op_passed, &op_failed );
     *passed += op_passed;
     *failed += op_failed;
-    return op_failed==0;
 }
 #endif

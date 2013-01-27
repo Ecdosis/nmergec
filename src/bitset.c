@@ -52,6 +52,10 @@ bitset *bitset_clone( bitset *bs )
         memcpy( new_bs->data, bs->data, bs->allocated );
     return new_bs;
 }
+int bitset_allocated( bitset *bs )
+{
+    return bs->allocated;
+}
 /**
  * Dispose of a bitset
  * @param bs the bitset to dispose
@@ -118,7 +122,36 @@ int bitset_get( bitset *bs, int index )
     int i = index/8;
     int mod = index%8;
     unsigned char mask = 128;
-    return bs->data[i] & mask>>mod;
+    return bs->data[i] & mask>>mod != 0;
+}
+/**
+ * Get the next set bit 
+ * @param bs the bitset to act on
+ * @param bit the position to start from (and including)
+ * @return the index of the next set bit or -1 if none found
+ */
+int bitset_next_set_bit( bitset *bs, int bit )
+{
+    int i;
+    for ( i=bit/8;i<bs->allocated;i++ )
+    {
+        int j;
+        unsigned char mask = 128>>(bit%8);
+        for ( j=bit%8;j<8;j++ )
+        {
+            if ( bs->data[i] & mask )
+            {
+                int res = i*8+j;
+                if ( res == 15 )
+                    printf("stop\n");
+                return res;
+            }
+            else
+                bit++;
+            mask >>= 1;
+        }
+    }
+    return -1;
 }
 /**
  * The simple maximum
@@ -191,6 +224,16 @@ int bitset_cardinality( bitset *bs )
     }
     return count;
 }
+/**
+ * Clear all the bits in this bitset
+ * @param bs the bitset to clear
+ */
+void bitset_clear( bitset *bs )
+{
+    int i;
+    for ( i=0;i<bs->allocated;i++ )
+        bs->data[i] = 0;
+}
 #ifdef MVD_TEST
 /**
  * Print a bitset to stdout
@@ -212,13 +255,24 @@ static void bitset_print( bitset *bs )
     }
     printf("\n");
 }
+static void bit_test( bitset *bs, int start, int expected, 
+    int *passed, int *failed )
+{
+    int bit = bitset_next_set_bit( bs, start );
+    if ( bit != expected )
+    {
+        fprintf(stderr,"bitset: next set bit not %d but %d\n",expected,bit);
+        *failed += 1;
+    }
+    else
+        *passed += 1;
+}
 /**
  * Test this object
  * @param passed VAR param update number of passed tests
  * @param faield VAR param update number of failed tests
- * @return 1 if it all worked
  */
-int bitset_test( int *passed, int *failed )
+void test_bitset( int *passed, int *failed )
 {
     bitset *bs = bitset_create();
     bitset *other = bitset_create();
@@ -296,8 +350,17 @@ int bitset_test( int *passed, int *failed )
             
         }
         // if this fails memwatch will pick it up
-        bitset_dispose( bs );
         bitset_dispose( other );
+        bitset_clear( bs );
+        bs = bitset_set( bs, 6 );
+        bs = bitset_set( bs, 12 );
+        bs = bitset_set( bs, 23 );
+        bit_test( bs, 0, 6, passed, failed );
+        bit_test( bs, 7, 12, passed, failed );
+        bit_test( bs, 13, 23, passed, failed );
+        bit_test( bs, 24, -1, passed, failed );
+        bitset_dispose( bs );
+        
     }
 }
 #endif

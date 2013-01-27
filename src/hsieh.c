@@ -85,9 +85,8 @@ static char *random_str()
  * and hashing them
  * @param passed VAR param update number of passed tests
  * @param failed VAR param update unber of failed tests
- * @return 1 if everything worked
  */
-int test_hsieh( int *passed, int *failed )
+void test_hsieh( int *passed, int *failed )
 {
     int i;
     int non_unique = 0;
@@ -101,10 +100,7 @@ int test_hsieh( int *passed, int *failed )
             uint32_t hash = hsieh_hash( str, 15 );
             snprintf( key, 32, "%u", hash );
             if ( !hashmap_contains(hm,key) )
-            {
                 hashmap_put( hm, key, str );
-                free( str );
-            }
             else
                 non_unique++;
         }
@@ -116,13 +112,12 @@ int test_hsieh( int *passed, int *failed )
         }
         else
             *passed += 1;
-        hashmap_dispose( hm );
+        hashmap_dispose( hm, free );
     }
     else
     {
         *failed += 1;
         fprintf(stderr,"hsieh: failed to allocate test hashmap\n");
     }
-    return *failed == 0;
 }
 #endif

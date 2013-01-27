@@ -457,7 +457,7 @@ static int mvd_serialise_pairs( MVD *mvd, char *data, int len, int p )
         +mvd->versionTableSize+mvd->pairsTableSize;
     int dataOffset = 0;
     int parentDataOffset = 0;
-    int parentId = 1;
+    short parentId = 1;
     for ( i=0;i<psize;i++ )
     {
         // this is set if known

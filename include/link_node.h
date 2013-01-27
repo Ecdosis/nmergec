@@ -19,7 +19,7 @@ link_node *link_node_next( link_node *ln );
 void *link_node_obj( link_node *ln );
 void link_node_dispose( link_node *ln );
 #ifdef MVD_TEST
-int test_link_node( int *passed, int *failed );
+void test_link_node( int *passed, int *failed );
 #endif
 
 #ifdef	__cplusplus

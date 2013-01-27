@@ -93,7 +93,7 @@ int dyn_array_add( dyn_array *da, void *obj )
     return res;
 }
 #ifdef MVD_TEST
-int test_dyn_array( int *passed, int *failed )
+void test_dyn_array( int *passed, int *failed )
 {
     dyn_array *da = dyn_array_create( 2 );
     if ( da != NULL )

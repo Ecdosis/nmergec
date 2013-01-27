@@ -38,8 +38,8 @@
       <compileType>
         <cTool>
           <incDir>
-            <pElem>../../NMergeC/include</pElem>
-            <pElem>../../NMergeC/include/mvd</pElem>
+            <pElem>../../include</pElem>
+            <pElem>../../include/mvd</pElem>
           </incDir>
         </cTool>
       </compileType>

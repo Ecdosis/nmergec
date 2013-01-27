@@ -14,7 +14,7 @@ extern "C" {
 
 uint32_t hsieh_hash (const char * data, int len);
 #ifdef MVD_TEST
-int test_hsieh( int *passed, int *failed );
+void test_hsieh( int *passed, int *failed );
 #endif
 
 #ifdef	__cplusplus
