@@ -600,15 +600,13 @@ static int readPairsTable( unsigned char *mvd_data, int len,
                 if ( tpl2 == NULL )
                     break;
             }
-            if ( i == 2018 )
-                printf("2018!\n");
             if ( !mvd_add_pair(mvd,tpl2) )
                 break;
             versions = bitset_dispose( versions );
         }
         res = (i== nPairs);
     }
-    printf("direct=%d parent=%d\n",directDataLen,parentDataLen);
+    //printf("direct=%d parent=%d\n",directDataLen,parentDataLen);
     return res;
 }
 /**

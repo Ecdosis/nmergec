@@ -548,8 +548,6 @@ static int mvd_serialise_pairs( MVD *mvd, char *data, int len, int p )
         UChar u_key[KEYLEN];
         int tempPId = NULL_PID;
         pair *t = dyn_array_get( mvd->pairs, i );
-        if ( i == 2018 )
-            printf("%d\n",dataOffset );
         if ( pair_is_child(t) )
         {
             // Do we have a registered parent?
@@ -647,7 +645,7 @@ static int mvd_serialise_pairs( MVD *mvd, char *data, int len, int p )
         dataOffset += dataBytes;
         parentDataOffset = 0;
     }
-    printf("serialising: direct=%d parent=%d\n",directDataBytes,parentDataBytes);
+    //printf("serialising: direct=%d parent=%d\n",directDataBytes,parentDataBytes);
     // ancestors though will be full
     if ( !hashmap_is_empty(orphans) )
     {

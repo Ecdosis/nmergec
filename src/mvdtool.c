@@ -353,8 +353,6 @@ static int test_mvd( char *path, int *passed, int *failed )
                         if ( mvd2 != NULL && mvd_equals(mvd1,mvd2) )
                         {
                             *passed += 1;
-                            printf("mvds %s %s were equal\n",
-                                path,write_path);
                             mvd_dispose( mvd2 );
                         }
                         else
