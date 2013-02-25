@@ -1,10 +1,13 @@
 #include <stdio.h>
 #include <string.h>
 #include "mvd/chunk_state.h"
+#ifdef MVD_TEST
+#include "memwatch.h"
+#endif
 static const char *table[] = {"a_chunk","added","backup","child",
 "deleted","found","merged","parent","partial" };
 /**
- * Convert a string to uppercase
+ * Convert a string to lowercase
  * @param str
  */
 static void str_to_lower( char *str )

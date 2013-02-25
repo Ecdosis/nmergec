@@ -40,6 +40,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/zip/zip.o \
 	${OBJECTDIR}/src/mvd/mvdfile.o \
 	${OBJECTDIR}/src/char_buf.o \
+	${OBJECTDIR}/plugins/mvd_add/src/encoding.o \
 	${OBJECTDIR}/src/mvd/group.o \
 	${OBJECTDIR}/src/plugin.o \
 	${OBJECTDIR}/src/benchmark.o \
@@ -118,6 +119,11 @@ ${OBJECTDIR}/src/char_buf.o: src/char_buf.c
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/char_buf.o src/char_buf.c
+
+${OBJECTDIR}/plugins/mvd_add/src/encoding.o: plugins/mvd_add/src/encoding.c 
+	${MKDIR} -p ${OBJECTDIR}/plugins/mvd_add/src
+	${RM} $@.d
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/plugins/mvd_add/src/encoding.o plugins/mvd_add/src/encoding.c
 
 ${OBJECTDIR}/src/mvd/group.o: src/mvd/group.c 
 	${MKDIR} -p ${OBJECTDIR}/src/mvd

@@ -1,6 +1,12 @@
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
+#include "unicode/uchar.h"
+#include "unicode/ustring.h"
 #include "mvd/serialiser.h"
+#include "encoding.h"
+#ifdef MVD_TEST
+#include "memwatch.h"
+#endif
 /**
  * Write the given int value to the byte array. MSB first 
  * (BigEndian order)
@@ -24,31 +30,44 @@ void write_int( unsigned char *data, int len, int p, int value )
         fprintf(stderr,"serialiser: attempt to write int beyond end of data\n");
 }
 /**
- * Serialise a string, which may have any encoding
+ * Serialise an ascii string
  * @param data the byte array to write to
  * @param len the overall length of data
  * @param p the offset within data to write to
- * @param str the value to serialise
+ * @param str the value to serialise in C string format
  * @return the number of bytes including the count int consumed
  */
-int write_string( unsigned char *data, int len, int p, unsigned char *str ) 
+int write_ascii_string( unsigned char *data, int len, int p, char *str ) 
 {
     short slen = (short)strlen(str);
-    if ( 2+slen < len )
-    {
-        int i;
-        write_short( data, len, p, slen );
-        p += 2;
-        for ( i=0;i<slen;i++ )
-           data[i+p] = str[i];
-        return 2+slen;
-    }
-    else
-    {
-        fprintf(stderr,
-            "serialiser: attempt to write short beyond end of data\n");
-        return 0;
-    }
+    write_short( data, len, p, slen );
+    p += 2;
+    int nchars = write_data( data, len, p, str, slen );
+    if ( nchars==0 )
+        fprintf(stderr,"encoding: failed to write string\n");
+    return 2+nchars;
+    
+}/**
+ * Serialise a string
+ * @param data the byte array to write to
+ * @param len the overall length of data
+ * @param p the offset within data to write to
+ * @param str the value to serialise in unicode UChar format
+ * @param encoding the string's desired encoding
+ * @return the number of bytes including the count int consumed
+ */
+int write_string( unsigned char *data, int len, int p, UChar *str, 
+    char *encoding ) 
+{
+    short ulen = (short)u_strlen(str);
+    int p_start = p;
+    p += 2;
+    int nchars = convert_to_encoding( str, ulen, &data[p], len-p, 
+        encoding );
+    if ( nchars==0 )
+        fprintf(stderr,"encoding: failed to write string\n");
+    write_short( data, len, p_start, nchars );
+    return 2+nchars; 
 }
 /**
  * Write the given short value to the byte array. MSB first 

@@ -5,7 +5,7 @@
 #ifdef MVD_TEST 
 #include "memwatch.h"
 #endif
-#define MIN_BITS 32
+#define MIN_BITS 16
 #define DATA_MINSIZE 2
 // variable size bitsets
 struct bitset_struct
@@ -23,9 +23,9 @@ bitset *bitset_create_exact( int bits )
     if ( bits < MIN_BITS )
         bits = MIN_BITS;
     size_t byteSize = bits/8;
-    size_t size = sizeof(int)+byteSize;
-    bitset *bs = malloc( size );
-    memset( bs, 0, size );
+    size_t extraBytes = byteSize-DATA_MINSIZE;
+    size_t size = sizeof(bitset)+extraBytes;
+    bitset *bs = calloc( size, 1 );
     if ( bs == NULL )
         fprintf(stderr,"bitset: failed to allocate object\n");
     else

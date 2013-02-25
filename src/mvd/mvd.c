@@ -3,6 +3,8 @@
 #include <string.h>
 #include "bitset.h"
 #include "link_node.h"
+#include "unicode/uchar.h"
+#include "unicode/ustring.h"
 #include "mvd/pair.h"
 #include "mvd/version.h"
 #include "mvd/mvd.h"
@@ -11,19 +13,27 @@
 #include "mvd/mvdfile.h"
 #include "mvd/serialiser.h"
 #include "mvd/group.h"
-#include "utils.h"
 #include "hashmap.h"
+#include "utils.h"
+#ifdef MVD_TEST
+#include "memwatch.h"
+#endif
 
+#define KEYLEN 16
 #define DEFAULT_VERSION_SIZE 32
 #define DEFAULT_PAIRS_SIZE 4096
-#define DEFAULT_ENCODING "UTF-8"
+#define DEFAULT_ENCODING "utf-8"
 #define DEFAULT_SET_SIZE 32
-	
+#ifdef __LITTLE_ENDIAN__
+#define SLASH (UChar*)"\x2F\x00"
+#else
+#define SLASH (UChar*)"\x00\x2F"
+#endif
 struct MVD_struct
 {
     dyn_array *versions;	// id = position in table+1
 	dyn_array *pairs;
-	char *description;
+	UChar *description;
 	char *encoding;
     /** #bytes needed to cover all versions (8-bit chunks)*/
     int set_size; 
@@ -45,7 +55,7 @@ MVD *mvd_create()
     {
         mvd->versions = dyn_array_create( DEFAULT_VERSION_SIZE );
         mvd->pairs = dyn_array_create( DEFAULT_PAIRS_SIZE );
-        mvd->description = "";
+        mvd->description = (UChar*)"\x0000";
         mvd->encoding = DEFAULT_ENCODING;
         mvd->set_size = DEFAULT_SET_SIZE;
         if ( mvd->versions==NULL||mvd->pairs==NULL )
@@ -67,7 +77,7 @@ MVD *mvd_create()
  */
 void *mvd_dispose( MVD *mvd )
 {
-    if ( mvd->versions == NULL )
+    if ( mvd->versions != NULL )
     {
         int i;
         for ( i=0;i<dyn_array_size(mvd->versions);i++ )
@@ -87,7 +97,7 @@ void *mvd_dispose( MVD *mvd )
         }
         dyn_array_dispose( mvd->pairs );
     }
-    if ( mvd->description != NULL && strlen(mvd->description)>0 )
+    if ( mvd->description != NULL && u_strlen(mvd->description)>0 )
         free( mvd->description );
     if ( strcmp(mvd->encoding,DEFAULT_ENCODING) != 0 )
         free( mvd->encoding );
@@ -107,13 +117,14 @@ static hashmap *mvd_get_groups( MVD *mvd )
         int gid = 1;
         for ( i=0;i<dyn_array_size(mvd->versions);i++ )
         {
-            char *parent = NULL;
-            char *gname = NULL;
-            char *tok = NULL;
+            UChar *parent = NULL;
+            UChar *gname = NULL;
+            UChar *tok = NULL;
+            UChar *state;
             version *v = dyn_array_get(mvd->versions,i);
-            char *vid = strdup( version_id(v) );
+            UChar *vid = u_strdup( version_id(v) );
             if ( vid != NULL )
-                tok = strtok( vid, "/" );
+                tok = u_strtok_r( vid, SLASH, &state );
             while ( tok != NULL )
             {
                 if ( gname != NULL && tok != NULL 
@@ -131,7 +142,17 @@ static hashmap *mvd_get_groups( MVD *mvd )
                 }
                 parent = gname;
                 gname = tok;
-                tok = strtok( NULL, "/" );
+/*              if ( gname != NULL )
+                {
+                    char buf[64];
+                    printf("gname=%s\n",u_print(gname,buf,64));
+                }*/
+                tok = u_strtok_r( NULL, SLASH, &state );
+/*              if ( tok != NULL )
+                {
+                    char buf[64];
+                    printf("tok=%s\n",u_print(tok,buf,64));
+                }*/
             }
             if ( vid != NULL )
                 free( vid );
@@ -148,14 +169,47 @@ static hashmap *mvd_get_groups( MVD *mvd )
  * <li>version-table offset: 4-byte int offset from start of file</li>
  * <li>pairs-table offset: 4-byte int offset from start of file</li>
  * <li>data-table offset: 4-byte int offset from start of file</li>
- * <li>description: 2-byte int preceded utf-8 string</li></ul>
- * <li>encoding: 2-byte int preceded utf-8 string</li></ul>
+ * <li>description: 2-byte int preceded string</li></ul>
+ * <li>encoding: 2-byte int preceded string</li></ul>
  * @param mvd the MVD in question 
  * @param old equals 1 if the old format is being written
  * @return the byte-size of the serialised mvd or 0 on error
+ * int dataSize() throws UnsupportedEncodingException
+	{
+		headerSize = groupTableSize = versionTableSize = 
+			pairsTableSize = dataTableSize = 0;
+		// header
+		headerSize = MVDFile.MVD_MAGIC.length; // magic
+		headerSize += 5 * 4; // table offsets etc
+		headerSize += measureUtf8String( description );
+		headerSize += measureUtf8String( encoding );
+		groupTableSize = 2; // number of groups
+		for ( int i=0;i<groups.size();i++ )
+		{
+			Group g = groups.get( i );
+			groupTableSize += g.dataSize();
+		}
+		versionTableSize = 2 + 2; // number of versions + setSize
+		for ( int i=0;i<versions.size();i++ )
+		{
+			Version v = versions.get( i );
+			versionTableSize += v.dataSize();
+		}
+		pairsTableSize = 4;	// number of pairs
+		versionSetSize = (versions.size()+8)/8;
+		for ( int i=0;i<pairs.size();i++ )
+		{
+			Pair p = pairs.get( i );
+			pairsTableSize += p.pairSize(versionSetSize);
+			dataTableSize += p.dataSize();
+		}
+		return headerSize + groupTableSize + versionTableSize 
+			+ pairsTableSize + dataTableSize;
+	}
  */
 int mvd_datasize( MVD *mvd, int old )
 {
+    char *encoding = mvd_get_encoding(mvd);
     mvd->headerSize = mvd->groupTableSize = mvd->versionTableSize = 
         mvd->pairsTableSize = mvd->dataTableSize = 0;
     // header
@@ -165,7 +219,8 @@ int mvd_datasize( MVD *mvd, int old )
         mvd->headerSize += 5 * 4; 
     else
         mvd->headerSize += 3 * 4;
-    mvd->headerSize += strlen( mvd->description ) + 2;
+    mvd->headerSize += measure_to_encoding(mvd->description,
+        u_strlen(mvd->description),mvd->encoding) + 2;
     mvd->headerSize += strlen( mvd->encoding ) + 2;
     if ( old )
     {
@@ -174,14 +229,14 @@ int mvd_datasize( MVD *mvd, int old )
         if ( groups != NULL )
         {
             int i,gsize = hashmap_size(groups);
-            char **array = calloc( gsize, sizeof(char*) );
+            UChar **array = calloc( gsize, sizeof(UChar*) );
             if ( array != NULL )
             {
                 hashmap_to_array( groups, array );
                 for ( i=0;i<gsize;i++ )
                 {
                     group *g = hashmap_get( groups, array[i] );
-                    mvd->groupTableSize += group_datasize( g );
+                    mvd->groupTableSize += group_datasize( g, mvd->encoding );
                 }
                 free( array );
             }
@@ -204,7 +259,9 @@ int mvd_datasize( MVD *mvd, int old )
     for ( i=0;i<vsize;i++ )
     {
         version *v = dyn_array_get( mvd->versions, i );
-        mvd->versionTableSize += version_datasize(v,old);
+        int versize = version_datasize(v,old,encoding);
+        //printf("old=%d measured vsize=%d \n",old,versize);
+        mvd->versionTableSize += versize;
     }
     mvd->pairsTableSize = 4;	// number of pairs
     mvd->set_size = (dyn_array_size(mvd->versions)+8)/8;
@@ -212,8 +269,12 @@ int mvd_datasize( MVD *mvd, int old )
     {
         pair *p = dyn_array_get(mvd->pairs, i );
         mvd->pairsTableSize += pair_size(p,mvd->set_size);
-        mvd->dataTableSize += pair_datasize(p);
+        mvd->dataTableSize += pair_datasize(p,encoding);
     }
+    //printf("headerSize=%d, groupTableSize=%d versionTableSize=%d "
+    //    "pairstableSize=%d dataTableSize=%d\n",
+    //    mvd->headerSize,mvd->groupTableSize,mvd->versionTableSize,
+    //    mvd->pairsTableSize,mvd->dataTableSize);
     return mvd->headerSize + mvd->groupTableSize + mvd->versionTableSize 
         + mvd->pairsTableSize + mvd->dataTableSize;
 }
@@ -255,12 +316,20 @@ static int mvd_serialise_header( MVD *mvd, unsigned char *data, int len,
        +mvd->groupTableSize+mvd->versionTableSize
        +mvd->pairsTableSize );
     nBytes += 4;
-    nBytes += write_string( data, len, nBytes, mvd->description );
-    nBytes += write_string( data, len, nBytes, mvd->encoding );
+    if ( old )
+    {
+        nBytes += write_string( data, len, nBytes, mvd->description, mvd->encoding );
+        nBytes += write_ascii_string( data, len, nBytes, mvd->encoding );
+    }
+    else
+    {
+        nBytes += write_ascii_string( data, len, nBytes, mvd->encoding );
+        nBytes += write_string( data, len, nBytes, mvd->description, mvd->encoding );
+    }
     return nBytes;
 }
 /**
- * Serialise the versions table in the old format
+ * Serialise the versions table in the new format
  * @param mvd the mvd object
  * @param data the byte array to write to
  * @param len the overall length of data
@@ -268,8 +337,8 @@ static int mvd_serialise_header( MVD *mvd, unsigned char *data, int len,
  * @return the number of serialised bytes or 0 on failure
  * <li>version-table (new): number of versions: 2-byte int; version-set size: 
  * 2-byte int;<br/>
- * for each version: versionID: 2-byte int preceded utf-8 string;
- * version-description: 2-byte preceded utf8 string;  
+ * for each version: versionID: 2-byte int preceded string;
+ * version-description: 2-byte preceded string;  
  * version numbers implied by position in table starting at 1</li>
  */
 int mvd_serialise_versions_new( MVD *mvd, char *data, int len, int p )
@@ -285,10 +354,10 @@ int mvd_serialise_versions_new( MVD *mvd, char *data, int len, int p )
         for ( i=0;i<vsize;i++ )
         {
             version *v = dyn_array_get( mvd->versions, i );
-            char *versionID = version_id( v );
-            char *description = version_description( v );
-            p += write_string( data, len, p, versionID );
-            p += write_string( data, len, p, description );
+            UChar *versionID = version_id( v );
+            UChar *description = version_description( v );
+            p += write_string( data, len, p, versionID, mvd->encoding );
+            p += write_string( data, len, p, description, mvd->encoding );
         }
     }
     else
@@ -300,7 +369,7 @@ int mvd_serialise_versions_new( MVD *mvd, char *data, int len, int p )
  * <li>version-table (old): number of versions: 2-byte int; version-set size: 
  * 2-byte int;<br/>
  * for each version: group: 2 byte int; shortName: 2-byte int 
- * preceded utf-8 string; longName: 2-byte int preceded utf-8 string; 
+ * preceded utf-8 string; longName: 2-byte int preceded string; 
  * version numbers implied by position in table starting at 1</li>
  * @param mvd the mvd object
  * @param data the byte array to write to
@@ -322,35 +391,46 @@ int mvd_serialise_versions_old( MVD *mvd, char *data, int len, int p,
         p += 2;
         for ( i=0;i<vsize;i++ )
         {
+            int oldvp = p;
             version *v = dyn_array_get( mvd->versions, i );
-            char *gname = NULL;
-            char *version = NULL;
-            char *tok = NULL;
-            char *vid = strdup(version_id(v));
+            UChar *gname = NULL;
+            UChar *version = NULL;
+            UChar *tok = NULL;
+            UChar *state;
+            UChar *vid = u_strdup(version_id(v));
             if ( vid != NULL )
-                tok = strtok( vid, "/" );
+                tok = u_strtok_r( vid, SLASH, &state );
             while ( tok != NULL )
             {
                 gname = version;
                 version = tok;
-                tok = strtok( NULL, "/" );
+                tok = u_strtok_r( NULL, SLASH, &state );
             }
             if ( version != NULL )
             {
+                char buf[128];
                 int gid = 0;
                 if ( gname != NULL )
                 {
                     group *g = hashmap_get( groups, gname );
                     gid = group_id( g );
                 }
+                else
+                {
+                    if ( version != NULL )
+                        fprintf(stderr,"couldn't find group. version=%s\n",
+                            u_print(version_id(v),buf,128));
+                    if ( vid != NULL )
+                        fprintf(stderr,"description=%s\n",
+                            u_print(version_description(v),buf,128));
+                }
                 write_short( data, len, p, (short)gid );
                 p += 2;
-                write_string( data, len, p, version );
-                p += 2 + strlen( version );
-                char *longName = version_description(v);
-                write_string( data, len, p, longName );
-                p += 2 + strlen( longName );
+                p += write_string( data, len, p, version, mvd->encoding );
+                UChar *longName = version_description(v);
+                p += write_string( data, len, p, longName, mvd->encoding );
             }
+            //printf("serialised vsize=%d\n",(p-oldvp));
         }
     }
     else
@@ -378,8 +458,8 @@ static int serialise_groups( MVD *mvd, unsigned char *data, int len, int p,
     int i;
     int oldP = p;
     int gsize = hashmap_size( groups );
-    char **keys = calloc(gsize,sizeof(char*));
-    char **sorted = calloc(gsize,sizeof(char*));
+    UChar **keys = calloc(gsize,sizeof(UChar*));
+    UChar **sorted = calloc(gsize,sizeof(UChar*));
     if ( sorted != NULL && keys != NULL )
     {
         hashmap_to_array( groups, keys );
@@ -404,7 +484,7 @@ static int serialise_groups( MVD *mvd, unsigned char *data, int len, int p,
             int pid = group_parent( g );
             write_short( data, len, p, pid );
             p += 2;
-            p += write_string( data, len, p, sorted[i] );
+            p += write_string( data, len, p, sorted[i], mvd->encoding );
         }
     }
     bail:
@@ -446,6 +526,7 @@ static void fixDataOffset( unsigned char *data, int len, int p,
 static int mvd_serialise_pairs( MVD *mvd, char *data, int len, int p ) 
 {
     int i,nBytes = 0;
+    int totalDataBytes = 0;
     int psize = dyn_array_size(mvd->pairs);
     hashmap *ancestors = hashmap_create( 12, 0 );
     hashmap *orphans = hashmap_create( 12, 0 );
@@ -461,14 +542,14 @@ static int mvd_serialise_pairs( MVD *mvd, char *data, int len, int p )
     for ( i=0;i<psize;i++ )
     {
         // this is set if known
+        UChar u_key[KEYLEN];
         int tempPId = NULL_PID;
         pair *t = dyn_array_get( mvd->pairs, i );
         if ( pair_is_child(t) )
         {
             // Do we have a registered parent?
-            char str[32];
-            snprintf( str, 32, "%lx", (long)pair_parent(t) );
-            char *value = hashmap_get( ancestors, str );
+            calc_ukey( u_key, (long)pair_parent(t), KEYLEN );
+            char *value = hashmap_get( ancestors, u_key );
             // value is the parent's data offset
             if ( value != NULL )
             {
@@ -487,13 +568,12 @@ static int mvd_serialise_pairs( MVD *mvd, char *data, int len, int p )
             {
                 // the value in orphans is the offset 
                 // pointing to the orphan pair entry
-                char *loc = malloc( 32 );
+                char *loc = malloc( KEYLEN );
                 if ( loc != NULL )
                 {
-                    char key[32];// will be duplicated in map
-                    snprintf( key, 32, "%lx", (long)t );
+                    calc_ukey( u_key, (long)t, KEYLEN );
                     snprintf( loc, 32, "%d", p );
-                    hashmap_put( orphans, key, loc );
+                    hashmap_put( orphans, u_key, loc );
                 }
                 else
                 {
@@ -507,8 +587,7 @@ static int mvd_serialise_pairs( MVD *mvd, char *data, int len, int p )
         }
         else if ( pair_is_parent(t) )
         {
-            char str[32];
-            snprintf( str, 32, "%lx", (long)t );
+            calc_ukey( u_key, (long)t, KEYLEN );
             // first assign this parent an id
             tempPId = pair_set_id( t, parentId++ );
             // then put ourselves in the ancestors list
@@ -516,7 +595,7 @@ static int mvd_serialise_pairs( MVD *mvd, char *data, int len, int p )
             if ( offset != NULL )
             {
                 snprintf( offset, 32, "%d", dataOffset );
-                hashmap_put( ancestors, str, offset );
+                hashmap_put( ancestors, u_key, offset );
             }
             else
             {
@@ -529,9 +608,8 @@ static int mvd_serialise_pairs( MVD *mvd, char *data, int len, int p )
             while ( node != NULL )
             {
                 pair *child = link_node_obj( node );
-                char child_str[32];
-                snprintf( child_str, 32, "%lx", (long)child );
-                char *value = hashmap_get( orphans, child_str );
+                calc_ukey( u_key, (long)child, KEYLEN );
+                char *value = hashmap_get( orphans, u_key );
                 if ( value != NULL )
                 {
                     // copy the parent's data offset 
@@ -540,20 +618,30 @@ static int mvd_serialise_pairs( MVD *mvd, char *data, int len, int p )
                     fixDataOffset( data, len, int_val, dataOffset, 
                         mvd->set_size, pair_id(t) );
                     // remove the child from the orphan list
-                    hashmap_remove( orphans, child_str, free );
+                    hashmap_remove( orphans, u_key, free );
                 }
                 node = link_node_next( node );
             }
         }
         // if we set the parent data offset use that
         // otherwise use the current pair's data offset
-        nBytes += pair_serialise(t, data, len, p, mvd->set_size, 
+        int dataBytes = 0;
+        if ( parentDataOffset==0) 
+        {
+            dataBytes = pair_serialise_data( t, data, len, dataTableOffset, 
+                dataOffset, mvd->encoding );
+            totalDataBytes += dataBytes;
+            nBytes += dataBytes;
+        }
+        int pair_len = pair_serialise(t, data, len, p, mvd->set_size, 
             (parentDataOffset!=0)?parentDataOffset:dataOffset, 
-            dataTableOffset, tempPId );
-        p += pair_size( t, mvd->set_size );
-        dataOffset += pair_datasize(t);
+            dataBytes, tempPId );
+        p += pair_len;
+        nBytes += pair_len;
+        dataOffset += dataBytes;
         parentDataOffset = 0;
     }
+    //printf("totalDataBytes=%d\n",totalDataBytes);
     // ancestors though will be full
     if ( !hashmap_is_empty(orphans) )
     {
@@ -576,18 +664,22 @@ static int mvd_serialise_pairs( MVD *mvd, char *data, int len, int p )
  */
 int mvd_serialise( MVD *mvd, unsigned char *data, int len, int old )
 {
-    int p = mvd_serialise_header( mvd, data, len, old );
+    int oldP,p = mvd_serialise_header( mvd, data, len, old );
     if ( old )
     {
+        //printf("header=%d\n",p);
         hashmap *groups = mvd_get_groups( mvd );
         if ( groups != NULL )
         {
-            int oldP = p;
+            oldP = p;
             p += serialise_groups( mvd, data, len, p, groups );
             if ( p-oldP != mvd->groupTableSize )
                 fprintf(stderr,"mvd: expected groupTableSize %d actual %d\n",
                 mvd->groupTableSize,p-oldP);
+            //printf("grouptable=%d\n",(p-oldP));
+            oldP = p;
             p += mvd_serialise_versions_old( mvd, data, len, p, groups );
+            //printf("versions=%d\n",(p-oldP));
             // special dispose routine
             hashmap_dispose( groups, group_dispose );
         }
@@ -596,8 +688,89 @@ int mvd_serialise( MVD *mvd, unsigned char *data, int len, int old )
     }
     else
         p += mvd_serialise_versions_new( mvd, data, len, p );
+    oldP = p;
     p += mvd_serialise_pairs( mvd, data, len, p );
+    //printf("pairs=%d\n",(p-oldP));
     return p;
+}
+/**
+ * Compare two MVDs roughly for equality
+ * @param mvd1 the first mvd
+ * @param mvd2 the other one
+ * @return 1 if they are identical else 0
+ */
+int mvd_equals( MVD *mvd1, MVD *mvd2 )
+{
+    int datasize1 = mvd_datasize( mvd1, 0 );
+    int datasize2 = mvd_datasize( mvd2, 0 );
+    if ( datasize1 != datasize2 )
+    {
+        if ( mvd1->headerSize != mvd2->headerSize )
+            fprintf(stderr,"mvd: header sizes were different: %d %d\n",
+                mvd1->headerSize,mvd2->headerSize );
+        if ( mvd1->groupTableSize != mvd2->groupTableSize )
+            fprintf(stderr,"mvd: group table sizes were different: %d %d\n",
+                mvd1->groupTableSize,mvd2->groupTableSize );
+        if ( mvd1->versionTableSize != mvd2->versionTableSize )
+        {
+            int i;
+            unsigned char buf1[512],buf2[512];
+            fprintf(stderr,"mvd: version table sizes were different: %d %d\n",
+                mvd1->versionTableSize,mvd2->versionTableSize );
+            mvd_serialise_versions_old(mvd1,buf1,512,0,mvd_get_groups(mvd1));
+            mvd_serialise_versions_old(mvd2,buf2,512,0,mvd_get_groups(mvd2));
+            for ( i=0;i<mvd1->versionTableSize&&i<mvd2->versionTableSize;i++ )
+            {
+                if ( buf1[i]!=buf2[i] )
+                {
+                    printf("mismatch at %d\n",i);
+                    break;
+                }
+            }
+        }
+        if ( mvd1->pairsTableSize != mvd2->pairsTableSize )
+            fprintf(stderr,"mvd: pairs table sizes were different: %d %d\n",
+                mvd1->pairsTableSize,mvd2->pairsTableSize );
+        if ( mvd1->dataTableSize != mvd2->dataTableSize )
+            fprintf(stderr,"mvd: data table sizes were different: %d %d\n",
+                mvd1->dataTableSize,mvd2->dataTableSize );
+        fprintf(stderr,"mvd: overall datasizes (%d %d) not equal\n", 
+            datasize1, datasize2);
+        return 0;
+    }
+    if ( dyn_array_size(mvd1->versions)!=dyn_array_size(mvd2->versions))
+    {
+        fprintf(stderr,"mvd: #versions not equal: %d vs %d\n",
+            dyn_array_size(mvd1->versions),dyn_array_size(mvd2->versions) );
+        return 0;
+    }
+    if ( dyn_array_size(mvd1->pairs)!=dyn_array_size(mvd2->pairs))
+    {
+        fprintf(stderr,"mvd: #pairs not equal: %d vs %d\n",
+            dyn_array_size(mvd1->pairs),dyn_array_size(mvd2->pairs) );
+        return 0;
+    }
+    if ( u_strcmp(mvd1->description,mvd2->description)!=0 )
+    {
+        char buf1[32],buf2[32];
+        fprintf(stderr,"descriptions not equal: %s %s\n",
+            u_print(mvd1->description,buf1,32),
+            u_print(mvd2->description,buf2,32));
+        return 0;
+    }
+	if ( strcmp(mvd1->encoding,mvd2->encoding)!= 0)
+    {
+        fprintf(stderr,"encodings not the same: %s %s\n",mvd1->encoding,
+            mvd2->encoding);
+        return 0;
+    }
+    if ( mvd1->set_size != mvd2->set_size )
+    {
+        fprintf(stderr,"set sizes not equal: %d %d\n",
+            mvd1->set_size,mvd2->set_size);
+        return 0; 
+    }
+    return 1;
 }
 /**
  * Set the size of the bitset required to represent all versions
@@ -616,6 +789,15 @@ void mvd_set_bitset_size( MVD *mvd, int setSize )
 int mvd_get_set_size( MVD *mvd )
 {
     return mvd->set_size;
+}
+/**
+ * Get this MVD's encoding in US-ASCII format
+ * @param mvd the mvd in question
+ * @return an ASCII string
+ */
+char *mvd_get_encoding( MVD *mvd )
+{
+    return mvd->encoding;
 }
 /**
  * Add a new version path to the dynamic list
@@ -650,17 +832,17 @@ int mvd_add_pair( MVD *mvd, pair *tpl2 )
  * @param description the desired description string
  * @return 1 if it worked
  */
-int mvd_set_description( MVD *mvd, char *description )
+int mvd_set_description( MVD *mvd, UChar *description )
 {
-    if ( mvd->description != NULL && strlen(mvd->description)>0 )
+    if ( mvd->description != NULL && u_strlen(mvd->description)>0 )
         free( mvd->description );
-    mvd->description = strdup( description );
+    mvd->description = u_strdup( description );
     return mvd->description!= NULL;
 }
 /** 
  * Set the encoding for this MVD
  * @param mvd the mvd in question
- * @param encoding the desired encoding 
+ * @param encoding the desired encoding in USASCII format
  * @return 1 if it worked
  */
 int mvd_set_encoding( MVD *mvd, char *encoding )
@@ -689,8 +871,6 @@ int mvd_check_pairs( MVD *mvd )
     {
         pair *p = dyn_array_get( mvd->pairs, i );
         bitset *bs = pair_versions( p );
-        if ( bitset_allocated(bs) > 4 )
-            printf("stop\n");
     }
 }
 #ifdef MVD_TEST
@@ -706,11 +886,11 @@ int mvd_test_versions( MVD *mvd )
     for ( i=0;i<vsize;i++ )
     {
         version *v = dyn_array_get( mvd->versions, i );
-        char *id = version_id(v);
+        UChar *id = version_id(v);
         if ( hashmap_contains(hm,id) )
         {
             res = 0;
-            fprintf(stderr,"mvd: version %s is non-unique\n",id);
+            fprintf(stderr,"mvd: version is non-unique\n");
             break;
         }
         else

@@ -1,14 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "unicode/uchar.h"
 #include "mvd/group.h"
+#include "utils.h"
+#ifdef MVD_TEST
+#include "memwatch.h"
+#endif
 /** Stores group information for old-format MVDs */
 struct group_struct
 {
     int id;
     int parent;
     int size;
-    char *name;
+    UChar *name;
 };
 
 /**
@@ -18,14 +23,14 @@ struct group_struct
  * @param name the group's name
  * @return the finished group or NULL on failure
  */
-group *group_create( int id, int parent, char *name )
+group *group_create( int id, int parent, UChar *name )
 {
     group *g = calloc( 1, sizeof(group) );
     if ( g != NULL )
     {
         g->id = id;
         g->parent = parent;
-        g->name = strdup( name );
+        g->name = u_strdup( name );
         if ( name == NULL )
         {
             group_dispose( g );
@@ -77,11 +82,17 @@ int group_parent( group *g )
 }
 /**
  * Return the size of this Group object for serialization
+ * @param g the group to measure
+ * @param encoding its destination encoding
  * @return the size in bytes
  */
-int group_datasize( group *g )
+int group_datasize( group *g, char *encoding )
 {
    if ( g->size == 0 )
-       g->size = 2 + 2 + strlen(g->name);
+   {
+       int name_len = measure_to_encoding( g->name, u_strlen(g->name), 
+           encoding );
+       g->size = 2 + 2 + name_len;
+   }
    return g->size;
 }

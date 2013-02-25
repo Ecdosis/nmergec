@@ -12,11 +12,11 @@
 extern "C" {
 #endif
 typedef struct version_struct version;
-version *version_create( char *id, char *description );
+version *version_create( UChar *id, UChar *description );
 void version_dispose( version *v );
-char *version_description( version *v );
-char *version_id( version *v );
-int version_datasize( version *v, int old );
+UChar *version_description( version *v );
+UChar *version_id( version *v );
+int version_datasize( version *v, int old, char *encoding );
 
 #ifdef	__cplusplus
 }

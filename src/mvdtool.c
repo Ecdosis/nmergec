@@ -7,6 +7,7 @@
 #include "mvd/chunk_state.h"
 #include "bitset.h"
 #include "link_node.h"
+#include "unicode/uchar.h"
 #include "mvd/pair.h"
 #include "mvd/version.h"
 #include "mvd/mvd.h"
@@ -42,14 +43,58 @@ plugin_list *plugins=NULL;
 int old = 0;
 /** operations */
 operation op=EMPTY;
+/** optional user data */
+unsigned char *user_data;
+/** optional user data length */
+int user_data_len;
+static int file_size( const char *file_name )
+{
+    FILE *fp = fopen( file_name, "r" );
+    long sz = -1;
+    if ( fp != NULL )
+    {
+        fseek(fp, 0L, SEEK_END);
+        sz = ftell(fp);
+        fclose( fp );
+    }
+    return (int) sz;
+}
+char *read_file( char *file, int *len )
+{
+	FILE *fp = fopen(file,"r");
+	char *buf = NULL;
+	int res = 0;
+	if ( fp == NULL )
+	{
+		fprintf(stderr, "couldn't open %s\n", file);
+        return NULL;
+	}
+	*len = file_size(file);
+	if ( *len > 0 )
+	{
+		buf = malloc( (*len)+1 );
+		if ( buf != NULL )
+			res = fread( buf, 1, *len, fp );
+		if ( res != *len )
+		{
+			free( buf );
+			buf = NULL;
+		}
+	}
+	else
+	{
+		fprintf(stderr,"file %s length is 0\n", file);
+	}
+	return buf;
+}
 /**
  * Tell the user about how to use this program
  */
 static void usage()
 {
    fprintf(stdout,
-    "usage: nmerge [-l] [-p] [-v COMMAND] [-h COMMAND] -m <MVD> -c <COMMAND> \n"
-       "-o <OPT-string> \n");
+    "usage: nmerge [-l] [-p] [-v COMMAND] [-h COMMAND] [-u USER_DATA_FILE]\n"
+       "-m <MVD> -c <COMMAND> -o <OPT-string> \n");
 }
 /**
  * Read in the arguments
@@ -88,6 +133,9 @@ static int read_args( int argc, char **argv )
                     case 'h':
                         op = HELP;
                         command = argv[++i];
+                        break;
+                    case 'u':
+                        user_data = read_file( argv[i+1], &user_data_len );
                         break;
                     case 'v':
                         op = VERSION;
@@ -137,7 +185,7 @@ static int read_args( int argc, char **argv )
 static void open_plugin( char *path )
 {
 	void *handle = dlopen( path, RTLD_LOCAL|RTLD_LAZY );
-	if ( handle != NULL )
+    if ( handle != NULL )
 	{
 		if ( plugins == NULL )
 			plugins = plugin_list_create();
@@ -214,7 +262,8 @@ void do_command()
             MVD *mvd = mvdfile_load( mvdFile );
             if ( mvd != NULL )
             {
-                int res = plugin_process( plug, mvd, options, &output );
+                int res = plugin_process( plug, mvd, options, &output, 
+                    user_data, user_data_len );
                 if ( res && output != NULL )
                     printf( "%s\n", output );
             }
@@ -274,11 +323,11 @@ int main( int argc, char **argv )
  */
 static int test_mvd( char *path, int *passed, int *failed )
 {
-    MVD *mvd = mvdfile_load( path );
-    if ( mvd != NULL )
+    MVD *mvd1 = mvdfile_load( path );
+    if ( mvd1 != NULL )
     {
         *passed += 1;
-        if ( mvd_test_versions(mvd) )
+        if ( mvd_test_versions(mvd1) )
             *passed += 1;
         else
             *failed += 1;
@@ -289,26 +338,50 @@ static int test_mvd( char *path, int *passed, int *failed )
             if ( dot_pos != NULL )
             {
                 strcpy( dot_pos, ".old" );
-                int res = mvdfile_save( mvd, write_path, 1 );
+                //printf("mvd_datasize=%d\n",mvd_datasize(mvd1,0));
+                int res = mvdfile_save( mvd1, write_path, 1 );
                 if ( res )
                 {
                     *passed += 1;
                     strcpy( dot_pos, ".new" );
-                    res = mvdfile_save( mvd, write_path, 0 );
+                    //printf("mvd_datasize=%d\n",mvd_datasize(mvd1,0));
+                    res = mvdfile_save( mvd1, write_path, 0 );
                     if ( res )
+                    {
                         *passed += 1;
+                        MVD *mvd2 = mvdfile_load( write_path );
+                        if ( mvd2 != NULL && mvd_equals(mvd1,mvd2) )
+                        {
+                            *passed += 1;
+                            printf("mvds %s %s were equal\n",
+                                path,write_path);
+                            mvd_dispose( mvd2 );
+                        }
+                        else
+                        {
+                            printf("mvds %s and %s were NOT equal\n",
+                                path,write_path);
+                            *failed += 1;
+                        }
+                    }
                     else
-                        *failed += 1;
+                    {
+                        *failed += 2;
+                        fprintf(stderr,"mvdtool: failed to save new format\n");
+                    }
                 }
                 else
+                {
+                    fprintf(stderr,"mvdtool: failed to save old format\n");
                     *failed += 2;
+                }
             }
             free( write_path );
         }
-        mvd_dispose( mvd );
+        mvd_dispose( mvd1 );
     }
     else    // failed all tests in effect
-        *failed += 3;
+        *failed += 4;
 }
 static void test_mvd_dir( char *folder, int *passed, int *failed )
 {
@@ -381,6 +454,7 @@ void test_mvdtool( int *passed, int *failed )
         }
         else
             *passed += 1;
+        plugin_list_dispose( plugins );
     }
     if ( read_args(sizeof(args3)/sizeof(char*),args3) )
     {

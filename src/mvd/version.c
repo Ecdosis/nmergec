@@ -1,11 +1,17 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
+#include "unicode/uchar.h"
 #include "mvd/version.h"
+#include "utils.h"
+#include "unicode/ustring.h"
+#include "encoding.h"
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 struct version_struct
 {
-    char *id;
-    char *description;
+    UChar *id;
+    UChar *description;
 };
 /**
  * Create a version
@@ -13,13 +19,13 @@ struct version_struct
  * @param description the long name or description of the version
  * @return the competed version obejct or NULL on failure
  */
-version *version_create( char *id, char *description )
+version *version_create( UChar *id, UChar *description )
 {
     version *v = calloc( 1, sizeof(version) );
     if ( v != NULL )
     {
-        v->id = strdup( id );
-        v->description = strdup( description );
+        v->id = u_strdup( id );
+        v->description = u_strdup( description );
         if ( v->id == NULL || v->description == NULL )
         {
             version_dispose( v );
@@ -49,7 +55,7 @@ void version_dispose( version *v )
  * @param v the version in question
  * @return the description
  */
-char *version_description( version *v )
+UChar *version_description( version *v )
 {
     return v->description;
 }
@@ -58,23 +64,27 @@ char *version_description( version *v )
  * @param v the version in question
  * @return the id
  */
-char *version_id( version *v )
+UChar *version_id( version *v )
 {
     return v->id;
 }
 /**
  * Compute the amount of store the version requires on serialisation
  * @param v the version in question
+ * @param old 1 if using the old MVD format
+ * @param encoding the encoding of the version data
  * @return the serialised length
  */
-int version_datasize( version *v, int old )
+int version_datasize( version *v, int old, char *encoding )
 {
-    int nBytes = 4+strlen(v->description);
-    char *slash_pos = strrchr(v->id,'/');
+    int nbytes = 4+measure_to_encoding( v->description, 
+        u_strlen(v->description), encoding );
+    UChar *slash_pos = u_strrchr( v->id, (UChar)0x2F );
     if ( old )
-        nBytes += 2;    // add gid
+        nbytes += 2;    // add gid
     if ( slash_pos == NULL || !old )
-        return nBytes+strlen(v->id);
+        return nbytes+measure_to_encoding(v->id,u_strlen(v->id),encoding);
     else
-        return nBytes+strlen(slash_pos)-1;
+        return nbytes+measure_to_encoding(slash_pos+1,u_strlen(slash_pos+1),
+            encoding);
 }

@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include "bitset.h"
 #include "link_node.h"
+#include "unicode/uchar.h"
 #include "mvd/pair.h"
 #include "mvd/version.h"
 #include "mvd/mvd.h"
@@ -42,7 +43,7 @@ plugin *plugin_create( void *handle )
         if ( plug->help == NULL )
             fprintf(stderr,"plugin: failed to find help function: %s\n", 
                 dlerror() );
-        plug->version = dlsym(handle, "version");
+        plug->version = dlsym(handle, "plug_version");
         if ( plug->version == NULL )
             fprintf(stderr,"plugin: failed to find version function: %s\n", 
                 dlerror() );
@@ -73,12 +74,14 @@ void plugin_dispose( plugin *plug )
  * @param mvd the mvd to read or modify
  * @param options a string containing the plugin options
  * @param output VAR param containing the output in a byte array
+ * @param data optional user supplied data or NULL
+ * @param data_len optional length of user data or 0
  * @return 1 if it worked else 0
  */
 int plugin_process( plugin *plug, MVD *mvd, char *options, 
-    unsigned char **output )
+    unsigned char **output, unsigned char *data, size_t data_len )
 {
-	return (plug->process)(mvd,options,output);
+    return (plug->process)(mvd,options,output,data,data_len);
 }
 /**
  * Print the help for this plugin

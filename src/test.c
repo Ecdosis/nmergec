@@ -12,6 +12,7 @@
 #include "mvd/chunk_state.h"
 #include "bitset.h"
 #include "link_node.h"
+#include "unicode/uchar.h"
 #include "mvd/pair.h"
 #include "mvd/version.h"
 #include "mvd/mvd.h"

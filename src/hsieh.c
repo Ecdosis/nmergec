@@ -4,6 +4,10 @@
  */
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 #undef get16bits
 #if (defined(__GNUC__) && defined(__i386__)) || defined(__WATCOMC__) \
   || defined(_MSC_VER) || defined (__BORLANDC__) || defined (__TURBOC__)
@@ -61,25 +65,9 @@ int rem;
 }
 #ifdef MVD_TEST
 #include <stdio.h>
-#include <hashmap.h>
-/**
- * Generate a 16 byte random string for testing
- * @return the allocated string
- */
-static char *random_str()
-{
-    static char *alphabetti = "abcdefghijklmnopqrstuvwxyz";
-    char *str = malloc( 16 );
-    if ( str != NULL )
-    {
-        int i;
-        for ( i=0;i<15;i++ )
-            str[i] = alphabetti[rand()%26];
-        str[15] = 0;
-        return str;
-    }
-    return "banana";
-}
+#include "unicode/uchar.h"
+#include "hashmap.h"
+#include "utils.h"
 /**
  * Test the hash function by generating lots of random strings 
  * and hashing them
@@ -88,7 +76,7 @@ static char *random_str()
  */
 void test_hsieh( int *passed, int *failed )
 {
-    int i;
+    int i,j;
     int non_unique = 0;
     hashmap *hm = hashmap_create( 1200, 0 );
     if ( hm != NULL )
@@ -96,13 +84,29 @@ void test_hsieh( int *passed, int *failed )
         for ( i=0;i<1000;i++ )
         {
             char key[32];
-            char *str = random_str();
-            uint32_t hash = hsieh_hash( str, 15 );
-            snprintf( key, 32, "%u", hash );
-            if ( !hashmap_contains(hm,key) )
-                hashmap_put( hm, key, str );
+            UChar *str = random_str();
+            if ( str != NULL )
+            {
+                uint32_t hash = hsieh_hash( (unsigned char *)str, 15 );
+                //printf("allocated %lx\n",(long)str);
+                snprintf( key, 32, "%u", hash );
+                int klen = strlen( key );
+                UChar *ukey = (UChar*)key;
+                for ( j=klen-1;j>=0;j-- )
+                {
+                    ukey[j] = key[j];
+                }
+                if ( !hashmap_contains(hm,(UChar*)key) )
+                    hashmap_put( hm, (UChar*)key, str );
+                else
+                {
+                    free( str );
+                    non_unique++;
+                }
+                
+            }
             else
-                non_unique++;
+                fprintf(stderr,"failed to create random string\n");
         }
         if ( non_unique > 3 )
         {

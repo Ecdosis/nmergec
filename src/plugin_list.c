@@ -12,6 +12,7 @@
 #include <stdarg.h>
 #include "bitset.h"
 #include "link_node.h"
+#include "unicode/uchar.h"
 #include "mvd/pair.h"
 #include "mvd/version.h"
 #include "mvd/mvd.h"
@@ -41,7 +42,7 @@ plugin_list *plugin_list_create()
     else
     {
         list->block_size = 12;
-        list->plugins = malloc( sizeof(plugin*)*(list->block_size) );
+        list->plugins = calloc( list->block_size,sizeof(plugin*) );
         if ( list->plugins == NULL )
         {
             fprintf(stderr,"plugin_list: failed to allocate plugin array\n" );
@@ -59,20 +60,25 @@ plugin_list *plugin_list_create()
 void plugin_list_add( plugin_list *list, void *handle )
 {
     int i;
-    if ( list->num_plugins+1 > list->block_size )
+    if ( list->num_plugins == list->block_size )
     {
         int new_size = list->block_size+8;
-        plugin **temp = malloc(sizeof(plugin*)*new_size );
+        plugin **temp = calloc( new_size,sizeof(plugin*) );
         if ( temp == NULL )
         {
             fprintf(stderr,
                 "plugin_list: failed to reallocate list of plugins\n");
         }
-        list->block_size = new_size;
-        for ( i=0;i<list->num_plugins;i++ )
-            temp[i] = list->plugins[i];
-        free( list->plugins );
-        list->plugins = temp;
+        else
+        {
+            list->block_size = new_size;
+            for ( i=0;i<list->num_plugins;i++ )
+            {
+                temp[i] = list->plugins[i];
+            }
+            free( list->plugins );
+            list->plugins = temp;
+        }
     }
 	list->plugins[list->num_plugins++] = plugin_create( handle );
 }
@@ -117,7 +123,7 @@ void plugin_list_all( plugin_list *list )
     for ( i=0;i<list->num_plugins;i++ )
 	{
 		const char *plug_name = plugin_name(list->plugins[i]);
-        printf("%s\n",plug_name);
+        //printf("%s\n",plug_name);
 	}
 }
 // NB: can't really test this without creating plugins per se

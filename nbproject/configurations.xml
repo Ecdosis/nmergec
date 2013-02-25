@@ -19,6 +19,7 @@
       <itemPath>include/char_buf.h</itemPath>
       <itemPath>include/dyn_array.h</itemPath>
       <itemPath>include/dyn_string.h</itemPath>
+      <itemPath>plugins/mvd_add/include/encoding.h</itemPath>
       <itemPath>include/hashmap.h</itemPath>
       <itemPath>include/hsieh.h</itemPath>
       <itemPath>include/link_node.h</itemPath>
@@ -64,6 +65,7 @@
       <itemPath>src/char_buf.c</itemPath>
       <itemPath>src/dyn_array.c</itemPath>
       <itemPath>src/dyn_string.c</itemPath>
+      <itemPath>plugins/mvd_add/src/encoding.c</itemPath>
       <itemPath>src/hashmap.c</itemPath>
       <itemPath>src/hsieh.c</itemPath>
       <itemPath>src/link_node.c</itemPath>
@@ -96,19 +98,22 @@
       </toolsSet>
       <compileType>
         <cTool>
+          <commandlineTool>gcc</commandlineTool>
           <incDir>
             <pElem>include</pElem>
             <pElem>include/zip</pElem>
             <pElem>src/mvd</pElem>
+            <pElem>plugins/mvd_add/include</pElem>
+            <pElem>/usr/local/include</pElem>
           </incDir>
           <preprocessorList>
-            <Elem>MEMWATCH</Elem>
             <Elem>MVD_TEST</Elem>
           </preprocessorList>
         </cTool>
         <linkerTool>
           <linkerLibItems>
             <linkerLibStdlibItem>DynamicLinking</linkerLibStdlibItem>
+            <linkerLibLibItem>icuuc</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>

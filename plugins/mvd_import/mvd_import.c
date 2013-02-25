@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include "bitset.h"
+#include "unicode/uchar.h"
+#include "link_node.h"
+#include "mvd/version.h"
 #include "mvd/pair.h"
 #include "mvd.h"
 #include "plugin.h"
@@ -11,7 +14,8 @@
  * @param output VAR param set to NULL if not needed else the output
  * @return 1 if the process completed successfully
  */
-int process( MVD *mvd, char *options, unsigned char **output )
+int process( MVD *mvd, char *options, unsigned char **output, 
+unsigned char *data, size_t data_len )
 {
     return 1;
 }
@@ -25,7 +29,7 @@ void help()
 /**
  * Report the plugin's version and author to stdout
  */
-void version()
+void plug_version()
 {
     printf( "version 0.1 (c) 2013 Desmond Schmidt\n");
 }

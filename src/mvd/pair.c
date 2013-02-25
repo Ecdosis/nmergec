@@ -1,16 +1,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <wchar.h>
 #include "bitset.h"
+#include "unicode/uchar.h"
 #include "link_node.h"
 #include "mvd/pair.h"
+#include "encoding.h"
 
-// assuming we are on an 8 byte system
 #define DATA_MINSIZE 1
 #define BASIC_PAIR 0
 #define CHILD_PAIR 1
 #define PARENT_PAIR 2
-// this should usually be at least of size 24 
 struct pair_struct
 {
     bitset *versions;
@@ -22,29 +23,43 @@ struct pair_struct
     int id;
 	short len;
     unsigned char type;
-    unsigned char data[DATA_MINSIZE];
+    UChar data[DATA_MINSIZE];
 };
 /**
- * Create a basic pair. 
+ * Private construction method
  * @param versions the versions of this bitset
  * @param data the data of the pair
- * @param len the data length
- * @return an allocate pair object or NULL
+ * @param len the data length in UChar characters
+ * @param type the type of pair
+ * @return an allocated pair object or NULL
  */
-pair *pair_create_basic( bitset *versions, unsigned char *data, int len )
+static pair *pair_create( bitset*versions, UChar *data, int len, int type )
 {
-    size_t extraDataSize = (len-DATA_MINSIZE>0)?len-DATA_MINSIZE:0;
+    int ulen = len*sizeof(UChar);
+    size_t extraDataSize = (len-DATA_MINSIZE>0)?ulen-DATA_MINSIZE:0;
     pair *p = calloc( 1, sizeof(pair)+extraDataSize );
     if ( p != NULL )
     {
         p->versions = bitset_clone(versions);
-        memcpy( p->data, data, len );
-        p->type = BASIC_PAIR;
+        if ( ulen > 0 )
+            memcpy( p->data, data, ulen );
+        p->type = (unsigned char)type;
         p->len = len;
     }
     else
-        fprintf( stderr,"pair: failed to create basic pair\n");
+        fprintf( stderr,"pair: failed to create pair\n");
     return p;
+}
+/**
+ * Create a basic pair. 
+ * @param versions the versions of this bitset
+ * @param data the data of the pair
+ * @param len the data length in UChar characters
+ * @return an allocate pair object or NULL
+ */
+pair *pair_create_basic( bitset *versions, UChar *data, int len )
+{
+    return pair_create( versions, data, len, BASIC_PAIR );
 }
 /**
  * Create a child pair (set parent later). 
@@ -67,23 +82,12 @@ pair *pair_create_child( bitset *versions )
  * Create a child pair (transpose pair depends on parent). 
  * @param versions the versions of this bitset
  * @param data the data of the pair
- * @param len the data length
+ * @param len the data length in UChar characters
  * @return an allocate pair object or NULL
  */
-pair *pair_create_parent( bitset *versions, unsigned char *data, int len )
+pair *pair_create_parent( bitset *versions, UChar *data, int len )
 {
-    size_t extraDataSize = (len-DATA_MINSIZE>0)?len-DATA_MINSIZE:0;
-    pair *p = calloc( 1, sizeof(pair)+extraDataSize );
-    if ( p != NULL )
-    {
-        p->versions = bitset_clone(versions);
-        memcpy( p->data, data, len );
-        p->type = PARENT_PAIR;
-        p->len = len;
-    }
-    else
-        fprintf( stderr,"pair: failed to create parent pair\n");
-    return p;
+    return pair_create( versions, data, len, PARENT_PAIR );
 }
 /**
  * Dispose of a single pair
@@ -171,18 +175,19 @@ int pair_size( pair *p, int versionSetSize )
     return pSize;
 }
 /**
-* Return the size of the data used by this pair
+ * Return the size of the data used by this pair
  * @param p the pair in question
-* @return the size of the data only
-*/
-int pair_datasize( pair *p )
+ * @param encoding the destination encoding of the data
+ * @return the size of the data only
+ */
+int pair_datasize( pair *p, char *encoding )
 {
     if ( p->parent!=NULL || pair_is_hint(p) )
         return 0;
-    else if ( p->data == NULL )
+    else if ( p->data == NULL || p->len == 0 )
         return 0;
     else
-        return p->len;
+        return measure_to_encoding( p->data, p->len, encoding );
 }
 /**
  * Is this pair really a hint?
@@ -229,21 +234,20 @@ static int serialise_versions( pair *q, unsigned char *data, int len, int p,
     }
 }
 /**
- * Write the pair itself in serialised form and also its data.
+ * Write the pair itself in serialised form but not its data.
  * Versions get written out LSB first.
  * @param p the pair to serialise
  * @param data the byte array to write to
  * @param len the overall length of data
  * @param p the offset within bytes to start writing this pair
  * @param setSize the number of bytes in the version info
- * @param dataOffset offset reserved in the dataTable for this 
- * @param dataTableOffset the start of the data table within data
- * pair's data (might be the same as some other pair's)
+ * @param dataOffset the offset into the data table of this pair's data
+ * @param dataLen the length of that data
  * @param parentId the id of the parent or NULL_PID if none
  * @return the number of bytes written to data
  */
 int pair_serialise( pair *p, unsigned char *data, int len, int offset, 
-    int setSize, int dataOffset, int dataTableOffset, int parentId ) 
+    int setSize, int dataOffset, int dataLen, int parentId ) 
 {
     int oldOff = offset;
     int flag = 0;
@@ -253,25 +257,42 @@ int pair_serialise( pair *p, unsigned char *data, int len, int offset,
        flag = PARENT_FLAG;
     offset += serialise_versions( p, data, len, offset, setSize );
     // write data offset
-    // can't see the point of this any more
-    //writeInt( bytes, p, (children==null)?dataOffset:-dataOffset );
     write_int( data, len, offset, dataOffset );
     offset += 4;
-    // write data length ORed with the parent/child flag
-    int dataLength = (p->data==NULL)?0:p->len; 
-    dataLength |= flag;
-    write_int( data, len, offset, dataLength );
+    // write data len
+    dataLen |= flag;
+    write_int( data, len, offset, dataLen );
     offset += 4;
     if ( parentId != NULL_PID )
     {
         write_int( data, len, offset, parentId );
         offset += 4;
     }
-    // write actual data
-    if ( p->parent == NULL && !pair_is_hint(p) )
-        offset += write_data( data, len, dataTableOffset+dataOffset, 
-            p->data, p->len );
     return offset - oldOff;
+}
+/**
+ * Write the data for the pair
+ * @param p the pair whose data is to be serialised
+ * @param data the byte array to write to
+ * @param len the overall length of data
+ * @param dataTableOffset offset of the data table
+ * @param dataOffset offset into data table of this pair's data
+ * @param encoding the encoding of the data
+ * @return number of bytes written
+ */
+int pair_serialise_data( pair *p, unsigned char *data, int len, 
+    int dataTableOffset, int dataOffset, char *encoding )
+{
+    int nchars=0;
+    if ( p->parent == NULL && !pair_is_hint(p) && p->len > 0 )
+    {
+        int offset = dataTableOffset+dataOffset;
+        nchars = convert_to_encoding( p->data, p->len, 
+            &data[offset], len-offset, encoding );
+        if ( nchars == 0 )
+            fprintf(stderr,"pair: failed to encode pair data\n");
+    }
+    return nchars;
 }
 /**
  * Is this pair a child of something?

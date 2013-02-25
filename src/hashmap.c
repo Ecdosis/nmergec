@@ -2,8 +2,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include "unicode/uchar.h"
+#include "unicode/ustring.h"
+#include "utils.h"
 #include "hashmap.h"
 #include "hsieh.h"
+#include "utils.h"
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
@@ -21,7 +25,7 @@ struct hashmap_struct
 };
 struct hm_bucket
 {
-	char *key;
+	UChar *key;
 	void *value;
 	struct hm_bucket *next;
 };
@@ -49,11 +53,11 @@ hashmap *hashmap_create( int initial_size, int int_keys )
 		{
 			free( map );
 			map = NULL;
-			printf("hashmap: failed to allocate hashmap buckets\n");
+			fprintf(stderr,"hashmap: failed to allocate hashmap buckets\n");
 		}
 	}
 	else
-		printf("hashmap: couldn't allocate hashmap\n");
+		fprintf(stderr,"hashmap: couldn't allocate hashmap\n");
 	return map;
 }
 /**
@@ -63,7 +67,7 @@ hashmap *hashmap_create( int initial_size, int int_keys )
  */
 void hashmap_dispose( hashmap *map, dispose_func func )
 {
-    int i;
+    int i,j;
     for ( i=0;i<map->num_buckets;i++ )
     {
         if ( map->buckets[i] != NULL )
@@ -72,11 +76,17 @@ void hashmap_dispose( hashmap *map, dispose_func func )
             while ( hm != NULL )
             {
                 struct hm_bucket *next = hm->next;
-                // printf("freeing key %s value %s address %lx\n",
-                // hm->key,hm->value,(long)hm->value);
-                free( hm->key );
+                // this fails when memwatch is turned on
                 if ( func != NULL )
+#ifdef MEMWATCH
+                    if ( func == free )
+                        free( hm->value );
+                    else
+                        (func)( hm->value );
+#else
                     (func)(hm->value);
+#endif
+                free( hm->key );
                 free( hm );
                 hm = next;
             }
@@ -92,10 +102,11 @@ void hashmap_dispose( hashmap *map, dispose_func func )
  * @param key the key to get the index of
  * @return the index of that key (whether or not it exists)
  */
-static int key_to_bucket( hashmap *map, char *key )
+static int key_to_bucket( hashmap *map, UChar *key )
 {
-    uint32_t hashval = (map->use_ints)?(uint32_t)atoi(key)
-        :hsieh_hash(key,strlen(key));
+    int keylen = u_strlen(key);
+    uint32_t hashval = (map->use_ints)?(uint32_t)u_atoi(key)
+        :hsieh_hash((char*)key,keylen*sizeof(UChar));
     return hashval % map->num_buckets;
 }
 /**
@@ -104,17 +115,16 @@ static int key_to_bucket( hashmap *map, char *key )
  * @param key the key for it
  * @param value the value that goes with the key
  */
-static void hashmap_bucket_set( struct hm_bucket *b, char *key, void *value )
+static void hashmap_bucket_set( struct hm_bucket *b, UChar *key, void *value )
 {
-	b->key = strdup( key );
+	b->key = u_strdup( key );
 	if ( b->key == NULL )
-		printf("hashmap: failed to reallocate key\n");
-    // it fails here
-	b->value = value;
-    if ( b->value == NULL )
-		printf("hashmap: failed to reallocate value\n");
-    // we are always at the end of the list or in a virgin bucket
-    b->next = NULL;
+		fprintf(stderr,"hashmap: failed to reallocate key\n");
+    else
+    {
+        b->value = value;
+        b->next = NULL;
+    }
 }
 /**
  * Reallocate all the keys in a new bucket set that must be
@@ -131,7 +141,7 @@ static int hashmap_rehash( hashmap *map )
     //printf("resizing\n");
 	if ( map->buckets == NULL )
     {
-		printf("hashmap: failed to resize hashmap\n");
+		fprintf(stderr,"hashmap: failed to resize hashmap\n");
         return 0;
     }
     else
@@ -147,9 +157,8 @@ static int hashmap_rehash( hashmap *map )
                 struct hm_bucket *old = b;
                 hashmap_put( map, b->key, b->value );
                 b = b->next;
+                //printf("freeing %lx\n",(long)old->key);
                 free( old->key );
-                // we don't own the values
-                //free( old->value );
                 free( old );
             }
         }
@@ -167,12 +176,12 @@ static int hashmap_rehash( hashmap *map )
  * @param value the value at this key
  * @return 1 if it was added, 0 otherwise (already there)
  */
-int hashmap_put( hashmap *map, char *key, void *value )
+int hashmap_put( hashmap *map, UChar *key, void *value )
 {
     if ( key==NULL||value==NULL )
     {
-        printf("Key or value is NULL. Stopping\n");
-        exit(0);
+        fprintf(stderr,"hashmap: key or value is NULL.\n");
+        return 0;
     }
 	int bucket = key_to_bucket( map, key );
     if ( map->buckets[bucket] == NULL )
@@ -180,7 +189,7 @@ int hashmap_put( hashmap *map, char *key, void *value )
 		map->buckets[bucket] = calloc( 1,sizeof(struct hm_bucket) );
 		if ( map->buckets[bucket] == NULL )
         {
-			printf("hashmap: failed to allocate store for bucket\n");
+			fprintf(stderr,"hashmap: failed to allocate store for bucket\n");
             return 0;
         }
         else
@@ -203,7 +212,7 @@ int hashmap_put( hashmap *map, char *key, void *value )
         while ( b->next != NULL )
 		{
 			// if key already present, just return
-			if ( strcmp(key,b->key)==0 )
+			if ( u_strcmp(key,b->key)==0 )
 				return 0;
 			else
 				b = b->next;
@@ -212,7 +221,7 @@ int hashmap_put( hashmap *map, char *key, void *value )
 		b->next = calloc( 1,sizeof(struct hm_bucket) );
 		if ( b->next == NULL )
         {
-			printf("hashmap: failed to allocate store for bucket\n");
+			fprintf(stderr,"hashmap: failed to allocate store for bucket\n");
             return 0;
         }
         else
@@ -229,14 +238,14 @@ int hashmap_put( hashmap *map, char *key, void *value )
  * @param key the key to test for
  * @return the key's value or NULL if not found
  */
-void *hashmap_get( hashmap *map, char *key )
+void *hashmap_get( hashmap *map, UChar *key )
 {
 	int bucket = key_to_bucket( map, key );
 	struct hm_bucket *b = map->buckets[bucket];
 	while ( b != NULL )
 	{
 		// if key already present, just return
-		if ( strcmp(key,b->key)==0 )
+		if ( u_strcmp(key,b->key)==0 )
 			return b->value;
 		else
 			b = b->next;
@@ -250,14 +259,14 @@ void *hashmap_get( hashmap *map, char *key )
  * @param key the key to test for
  * @return 1 if present, 0 otherwise
  */
-int hashmap_contains( hashmap *map, char *key )
+int hashmap_contains( hashmap *map, UChar *key )
 {
 	int bucket = key_to_bucket( map, key );
 	struct hm_bucket *b = map->buckets[bucket];
     while ( b != NULL )
     {
         // if key already present, just return
-        if ( strcmp(key,b->key)==0 )
+        if ( u_strcmp(key,b->key)==0 )
             return 1;
         else
             b = b->next;
@@ -280,7 +289,7 @@ int hashmap_size( hashmap *map )
  * @param func to dispose of the value
  * @retiurn 1 if it was there and removed
  */
-int hashmap_remove( hashmap *map, char *key, dispose_func func )
+int hashmap_remove( hashmap *map, UChar *key, dispose_func func )
 {
     int res = 0;
     int bucket = key_to_bucket( map, key );
@@ -290,7 +299,7 @@ int hashmap_remove( hashmap *map, char *key, dispose_func func )
         struct hm_bucket *prev = NULL;
         while ( b != NULL )
         {
-            if ( strcmp(b->key,key)==0 )
+            if ( u_strcmp(b->key,key)==0 )
             {
                 free( b->key );
                 if ( prev == NULL )
@@ -315,7 +324,7 @@ int hashmap_remove( hashmap *map, char *key, dispose_func func )
  * @param map the map in question
  * @param array an array just big enough for the keys
  */
-void hashmap_to_array( hashmap *map, char **array )
+void hashmap_to_array( hashmap *map, UChar **array )
 {
 	int i,j;
 	for ( j=0,i=0;i<map->num_buckets;i++ )
@@ -363,24 +372,6 @@ void hashmap_clear( hashmap *map )
 }
 #ifdef MVD_TEST
 /**
- * Generate a 16 byte random string for testing
- * @return the allocated string
- */
-static char *random_str()
-{
-    static char *alphabetti = "abcdefghijklmnopqrstuvwxyz";
-    char *str = malloc( 16 );
-    if ( str != NULL )
-    {
-        int i;
-        for ( i=0;i<15;i++ )
-            str[i] = alphabetti[rand()%26];
-        str[15] = 0;
-        return str;
-    }
-    return "banana";
-}
-/**
  * Test the hashmap
  * @param passed VAR param update number of passed tests
  * @param failed VAR param update number of failed tests
@@ -394,14 +385,14 @@ void test_hashmap( int *passed, int *failed )
         int i;
         for ( i=0;i<10000;i++ )
         {
-            char *key = random_str();
-            char *value = random_str();
+            UChar *key = random_str();
+            UChar *value = random_str();
             if ( !hashmap_contains(hm,key) )
             {
                 if ( hashmap_put(hm,key,value) )
                     total++;
             }
-            if ( strcmp(key,"banana")!=0 )
+            if ( u_strcmp(key,(UChar*)"\x0062\x0061\x006E\x0061\x006E\x0061")!=0 )
                 free( key );
         }
         if ( total == hashmap_size(hm) )
@@ -409,7 +400,7 @@ void test_hashmap( int *passed, int *failed )
         else
             *failed += 1;
         // test to_array and delete values
-        char **array = calloc( hashmap_size(hm), sizeof(char*) );
+        UChar **array = calloc( hashmap_size(hm), sizeof(char*) );
         if ( array != NULL )
         {
             hashmap_to_array( hm, array );

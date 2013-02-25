@@ -4,8 +4,27 @@
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
-      <itemPath>../../NMergeC/include/mvd/mvd.h</itemPath>
-      <itemPath>../../NMergeC/include/plugin.h</itemPath>
+      <logicalFolder name="f1" displayName="mvd" projectFiles="true">
+        <itemPath>../../include/mvd/group.h</itemPath>
+        <itemPath>../../include/mvd/mvd.h</itemPath>
+        <itemPath>../../include/mvd/pair.h</itemPath>
+        <itemPath>../../include/mvd/serialiser.h</itemPath>
+        <itemPath>../../include/mvd/version.h</itemPath>
+      </logicalFolder>
+      <itemPath>include/benchmark.h</itemPath>
+      <itemPath>../../include/bitset.h</itemPath>
+      <itemPath>../../include/dyn_array.h</itemPath>
+      <itemPath>include/encoding.h</itemPath>
+      <itemPath>../../include/hashmap.h</itemPath>
+      <itemPath>../../include/hsieh.h</itemPath>
+      <itemPath>../../include/link_node.h</itemPath>
+      <itemPath>include/node.h</itemPath>
+      <itemPath>include/path.h</itemPath>
+      <itemPath>../../include/plugin.h</itemPath>
+      <itemPath>include/plugin_log.h</itemPath>
+      <itemPath>include/print_tree.h</itemPath>
+      <itemPath>include/suffixtree.h</itemPath>
+      <itemPath>../../include/utils.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
@@ -14,7 +33,27 @@
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
-      <itemPath>mvd_add.c</itemPath>
+      <logicalFolder name="f1" displayName="mvd" projectFiles="true">
+        <itemPath>../../src/mvd/group.c</itemPath>
+        <itemPath>../../src/mvd/mvd.c</itemPath>
+        <itemPath>../../src/mvd/pair.c</itemPath>
+        <itemPath>../../src/mvd/serialiser.c</itemPath>
+        <itemPath>../../src/mvd/version.c</itemPath>
+      </logicalFolder>
+      <itemPath>src/benchmark.c</itemPath>
+      <itemPath>../../src/bitset.c</itemPath>
+      <itemPath>../../src/dyn_array.c</itemPath>
+      <itemPath>src/encoding.c</itemPath>
+      <itemPath>../../src/hashmap.c</itemPath>
+      <itemPath>../../src/hsieh.c</itemPath>
+      <itemPath>../../src/link_node.c</itemPath>
+      <itemPath>src/mvd_add.c</itemPath>
+      <itemPath>src/node.c</itemPath>
+      <itemPath>src/path.c</itemPath>
+      <itemPath>src/plugin_log.c</itemPath>
+      <itemPath>src/suffixtree.c</itemPath>
+      <itemPath>src/test.c</itemPath>
+      <itemPath>../../src/utils.c</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
                    displayName="Test Files"
@@ -40,8 +79,15 @@
           <incDir>
             <pElem>../../include</pElem>
             <pElem>../../include/mvd</pElem>
+            <pElem>include</pElem>
+            <pElem>/usr/local/include</pElem>
           </incDir>
         </cTool>
+        <linkerTool>
+          <linkerLibItems>
+            <linkerLibLibItem>icuuc</linkerLibLibItem>
+          </linkerLibItems>
+        </linkerTool>
       </compileType>
     </conf>
     <conf name="Release" type="2">
