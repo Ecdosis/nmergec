@@ -182,9 +182,7 @@ int pair_size( pair *p, int versionSetSize )
  */
 int pair_datasize( pair *p, char *encoding )
 {
-    if ( p->parent!=NULL || pair_is_hint(p) )
-        return 0;
-    else if ( p->data == NULL || p->len == 0 )
+    if ( p->type==CHILD_PAIR || pair_is_hint(p) || p->len == 0 )
         return 0;
     else
         return measure_to_encoding( p->data, p->len, encoding );
@@ -197,6 +195,10 @@ int pair_datasize( pair *p, char *encoding )
 int pair_is_hint( pair *p )
 {
     return bitset_get(p->versions,0)==1;
+}
+int pair_is_ordinary( pair *p )
+{
+    return p->type==BASIC_PAIR&&!pair_is_hint(p);
 }
 /**
  * Serialise the versions of the pair
@@ -214,16 +216,9 @@ static int serialise_versions( pair *q, unsigned char *data, int len, int p,
     if ( p+setSize < len )
     {
         int i;
-        for ( i=bitset_get(q->versions,0); i>=0; 
-            i=bitset_next_set_bit(q->versions,i+1) ) 
+        for ( i=0;i<setSize;i++ ) 
         {
-            int index = ((setSize*8-1)-i)/8;
-            if ( index < 0 )
-            {    
-                fprintf(stderr,"pair: serialising versions: byte index < 0\n");
-                break;
-            }
-            data[p+index] |= 1 << (i%8);
+            data[p+i] = bitset_get_byte( q->versions, i );
         }
         return setSize;
     }
@@ -284,7 +279,7 @@ int pair_serialise_data( pair *p, unsigned char *data, int len,
     int dataTableOffset, int dataOffset, char *encoding )
 {
     int nchars=0;
-    if ( p->parent == NULL && !pair_is_hint(p) && p->len > 0 )
+    if ( p->type != CHILD_PAIR && !pair_is_hint(p) && p->len > 0 )
     {
         int offset = dataTableOffset+dataOffset;
         nchars = convert_to_encoding( p->data, p->len, 
@@ -293,6 +288,23 @@ int pair_serialise_data( pair *p, unsigned char *data, int len,
             fprintf(stderr,"pair: failed to encode pair data\n");
     }
     return nchars;
+}
+int pair_equals( pair *p, pair *q, char *encoding )
+{
+    if ( p->type!=q->type )
+        return 0;
+    else if ( p->len != q->len )
+        return 0;
+    else if ( bitset_get(p->versions,0)!=bitset_get(q->versions,0))
+        return 0;
+    else if ( p->len > 0 )
+    {
+        int len1 = measure_to_encoding(p->data,p->len,encoding);
+        int len2 = measure_to_encoding(q->data,q->len,encoding);
+        if ( len1!=len2 )
+            return 0;
+    }
+    return 1;
 }
 /**
  * Is this pair a child of something?

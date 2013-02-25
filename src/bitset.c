@@ -106,8 +106,8 @@ bitset *bitset_set( bitset *bs, int i )
         bs = bitset_resize(bs,index+1);
     if ( bs != NULL )
     {
-        unsigned char bit = 128;
-        bs->data[index] |= bit>>mod;
+        unsigned char bit = 1;
+        bs->data[index] |= bit<<mod;
     }
     return bs;
 }
@@ -121,8 +121,8 @@ int bitset_get( bitset *bs, int index )
 {
     int i = index/8;
     int mod = index%8;
-    unsigned char mask = 128;
-    return bs->data[i] & mask>>mod != 0;
+    unsigned char mask = 1;
+    return bs->data[i] & mask<<mod != 0;
 }
 /**
  * Get the next set bit 
@@ -133,23 +133,20 @@ int bitset_get( bitset *bs, int index )
 int bitset_next_set_bit( bitset *bs, int bit )
 {
     int i;
+    int mod = (bit%8);
     for ( i=bit/8;i<bs->allocated;i++ )
     {
         int j;
-        unsigned char mask = 128>>(bit%8);
-        for ( j=bit%8;j<8;j++ )
+        unsigned char mask = 1<<mod;
+        for ( j=mod;j<8;j++ )
         {
             if ( bs->data[i] & mask )
             {
-                int res = i*8+j;
-                if ( res == 15 )
-                    printf("stop\n");
-                return res;
+                return i*8+j;
             }
-            else
-                bit++;
-            mask >>= 1;
+            mask <<= 1;
         }
+        mod = 0;
     }
     return -1;
 }
@@ -203,6 +200,19 @@ void bitset_and( bitset *bs, bitset *other )
         bs->data[i] &= other->data[i];
 }
 /**
+ * Get a whole byte of bitset info
+ * @param bs the bitset to get it from
+ * @param index the index of the byte
+ * @return the byte
+ */
+unsigned char bitset_get_byte( bitset *bs, int index )
+{
+    if ( index < bs->allocated )
+        return bs->data[index];
+    else
+        return 0;
+}
+/**
  * How many bits have been set?
  * @param bs the bitset in question
  * @return the bitset's cardinality
@@ -214,12 +224,12 @@ int bitset_cardinality( bitset *bs )
     for ( i=0;i<bs->allocated;i++ )
     {
         int j;
-        unsigned char mask = 128;
+        unsigned char mask = 1;
         for ( j=0;j<8;j++ )
         {
             if ( bs->data[i] & mask )
                 count++;
-            mask >>= 1;
+            mask <<= 1;
         }
     }
     return count;
@@ -244,10 +254,10 @@ static void bitset_print( bitset *bs )
     int i,j;
     for ( i=0;i<bs->allocated;i++ )
     {
-        unsigned char mask = 128;
+        unsigned char mask = 1;
         for ( j=0;j<8;j++ )
         {
-            if ( bs->data[i] & mask>>j )
+            if ( bs->data[i] & mask<<j )
                 printf("%d",1);
             else
                 printf("%d",0);
@@ -360,7 +370,6 @@ void test_bitset( int *passed, int *failed )
         bit_test( bs, 13, 23, passed, failed );
         bit_test( bs, 24, -1, passed, failed );
         bitset_dispose( bs );
-        
     }
 }
 #endif

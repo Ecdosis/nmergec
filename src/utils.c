@@ -100,11 +100,13 @@ void ascii_to_uchar( char *str, UChar *u_str, int u_len )
 }
 void calc_ukey( UChar *u_key, long value, int len )
 {
-    char *key = malloc( len );
+    memset( u_key, 0, len*sizeof(UChar) );
+    char *key = calloc( len, 1 );
     if ( key != NULL )
     {
         snprintf( key, len, "%lx", value );
         ascii_to_uchar( key, u_key, len );
+        free( key );
     }
     else
     {

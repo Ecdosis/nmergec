@@ -483,6 +483,8 @@ static int readPairsTable( unsigned char *mvd_data, int len,
     int p, int dataTableOffset, MVD *mvd )
 {
     int res = 0;
+    int parentDataLen=0;
+    int directDataLen=0;
     bitset *versions = NULL;
     // record any pairs declaring themselves as parents
     hashmap *parents = hashmap_create( 128, 1 );
@@ -517,6 +519,7 @@ static int readPairsTable( unsigned char *mvd_data, int len,
                 int offset = dataTableOffset+data_offset;
                 // read special parent id field 
                 int pId = readInt( mvd_data, len, p );
+                parentDataLen += data_len;
                 p += 4;
                 // transpose parent
                 int ulen;
@@ -588,6 +591,7 @@ static int readPairsTable( unsigned char *mvd_data, int len,
             {
                 int offset = dataTableOffset+data_offset;
                 int ulen;
+                directDataLen += data_len;
                 UChar *pair_data = read_pair_data( &mvd_data[offset], 
                     data_len, &ulen, mvd_get_encoding(mvd) ); 
                 tpl2 = pair_create_basic( versions, pair_data, ulen );
@@ -596,12 +600,15 @@ static int readPairsTable( unsigned char *mvd_data, int len,
                 if ( tpl2 == NULL )
                     break;
             }
+            if ( i == 2018 )
+                printf("2018!\n");
             if ( !mvd_add_pair(mvd,tpl2) )
                 break;
             versions = bitset_dispose( versions );
         }
         res = (i== nPairs);
     }
+    printf("direct=%d parent=%d\n",directDataLen,parentDataLen);
     return res;
 }
 /**

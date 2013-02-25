@@ -26,6 +26,7 @@ void test_bitset( int *passed, int *failed );
 int bitset_next_set_bit( bitset *bs, int index );
 void bitset_clear( bitset *bs );
 int bitset_allocated( bitset *bs );
+unsigned char bitset_get_byte( bitset *bs, int index );
 
 #ifdef	__cplusplus
 }

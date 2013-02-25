@@ -89,8 +89,7 @@ int measure_to_encoding( UChar *src, size_t srclen, char *encoding )
             printf("encoding: %s\n",u_errorName(status));
             len = 0;
         }
-        len *= ucnv_getMinCharSize(	conv );	
-	  	ucnv_close(conv);
+        ucnv_close(conv);
 	}
     return len;
 }

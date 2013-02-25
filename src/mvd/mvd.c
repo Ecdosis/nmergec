@@ -209,6 +209,7 @@ static hashmap *mvd_get_groups( MVD *mvd )
  */
 int mvd_datasize( MVD *mvd, int old )
 {
+    //int nhints = 0;
     char *encoding = mvd_get_encoding(mvd);
     mvd->headerSize = mvd->groupTableSize = mvd->versionTableSize = 
         mvd->pairsTableSize = mvd->dataTableSize = 0;
@@ -255,7 +256,6 @@ int mvd_datasize( MVD *mvd, int old )
     }
     mvd->versionTableSize = 2 + 2; // number of versions + setSize
     int i,vsize = dyn_array_size( mvd->versions );
-    int psize = dyn_array_size( mvd->pairs );
     for ( i=0;i<vsize;i++ )
     {
         version *v = dyn_array_get( mvd->versions, i );
@@ -265,12 +265,14 @@ int mvd_datasize( MVD *mvd, int old )
     }
     mvd->pairsTableSize = 4;	// number of pairs
     mvd->set_size = (dyn_array_size(mvd->versions)+8)/8;
+    int psize = dyn_array_size( mvd->pairs );
     for ( i=0;i<psize;i++ )
     {
         pair *p = dyn_array_get(mvd->pairs, i );
         mvd->pairsTableSize += pair_size(p,mvd->set_size);
         mvd->dataTableSize += pair_datasize(p,encoding);
     }
+    //printf("nhints=%d\n",nhints);
     //printf("headerSize=%d, groupTableSize=%d versionTableSize=%d "
     //    "pairstableSize=%d dataTableSize=%d\n",
     //    mvd->headerSize,mvd->groupTableSize,mvd->versionTableSize,
@@ -526,7 +528,8 @@ static void fixDataOffset( unsigned char *data, int len, int p,
 static int mvd_serialise_pairs( MVD *mvd, char *data, int len, int p ) 
 {
     int i,nBytes = 0;
-    int totalDataBytes = 0;
+    int directDataBytes = 0;
+    int parentDataBytes = 0;
     int psize = dyn_array_size(mvd->pairs);
     hashmap *ancestors = hashmap_create( 12, 0 );
     hashmap *orphans = hashmap_create( 12, 0 );
@@ -545,6 +548,8 @@ static int mvd_serialise_pairs( MVD *mvd, char *data, int len, int p )
         UChar u_key[KEYLEN];
         int tempPId = NULL_PID;
         pair *t = dyn_array_get( mvd->pairs, i );
+        if ( i == 2018 )
+            printf("%d\n",dataOffset );
         if ( pair_is_child(t) )
         {
             // Do we have a registered parent?
@@ -623,14 +628,15 @@ static int mvd_serialise_pairs( MVD *mvd, char *data, int len, int p )
                 node = link_node_next( node );
             }
         }
-        // if we set the parent data offset use that
-        // otherwise use the current pair's data offset
         int dataBytes = 0;
-        if ( parentDataOffset==0) 
+        if ( parentDataOffset == 0 ) 
         {
             dataBytes = pair_serialise_data( t, data, len, dataTableOffset, 
                 dataOffset, mvd->encoding );
-            totalDataBytes += dataBytes;
+            if ( !pair_is_parent(t) ) 
+                directDataBytes += dataBytes;
+            else
+                parentDataBytes += dataBytes;
             nBytes += dataBytes;
         }
         int pair_len = pair_serialise(t, data, len, p, mvd->set_size, 
@@ -641,7 +647,7 @@ static int mvd_serialise_pairs( MVD *mvd, char *data, int len, int p )
         dataOffset += dataBytes;
         parentDataOffset = 0;
     }
-    //printf("totalDataBytes=%d\n",totalDataBytes);
+    printf("serialising: direct=%d parent=%d\n",directDataBytes,parentDataBytes);
     // ancestors though will be full
     if ( !hashmap_is_empty(orphans) )
     {
@@ -712,18 +718,18 @@ int mvd_equals( MVD *mvd1, MVD *mvd2 )
             fprintf(stderr,"mvd: group table sizes were different: %d %d\n",
                 mvd1->groupTableSize,mvd2->groupTableSize );
         if ( mvd1->versionTableSize != mvd2->versionTableSize )
-        {
-            int i;
-            unsigned char buf1[512],buf2[512];
             fprintf(stderr,"mvd: version table sizes were different: %d %d\n",
                 mvd1->versionTableSize,mvd2->versionTableSize );
-            mvd_serialise_versions_old(mvd1,buf1,512,0,mvd_get_groups(mvd1));
-            mvd_serialise_versions_old(mvd2,buf2,512,0,mvd_get_groups(mvd2));
-            for ( i=0;i<mvd1->versionTableSize&&i<mvd2->versionTableSize;i++ )
+        else
+        {
+            int i,psize=dyn_array_size(mvd1->pairs);
+            for ( i=0;i<psize;i++ )
             {
-                if ( buf1[i]!=buf2[i] )
+                pair *p1 = dyn_array_get(mvd1->pairs,i);
+                pair *p2 = dyn_array_get(mvd2->pairs,i);
+                if ( !pair_equals(p1,p2,mvd_get_encoding(mvd1)) )
                 {
-                    printf("mismatch at %d\n",i);
+                    fprintf(stderr,"mvd: pairs not equal at offset %d\n",i);
                     break;
                 }
             }

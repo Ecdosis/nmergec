@@ -27,6 +27,8 @@ pair *pair_set_parent( pair *p, pair *parent );
 pair *pair_add_child( pair *p, pair *child );
 int pair_is_child( pair *p );
 int pair_is_parent( pair *p );
+int pair_is_ordinary( pair *p );
+int pair_equals( pair *p, pair *q, char *encoding );
 pair *pair_parent( pair *p );
 int pair_set_id( pair *p, int id );
 int pair_id( pair *p );
