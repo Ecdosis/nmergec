@@ -2,7 +2,7 @@
 #include <string.h>
 #include "unicode/uchar.h"
 #include "unicode/ustring.h"
-#include "mvd/serialiser.h"
+#include "serialiser.h"
 #include "encoding.h"
 #ifdef MVD_TEST
 #include "memwatch.h"
@@ -17,7 +17,7 @@
  */
 void write_int( unsigned char *data, int len, int p, int value )
 {
-    if ( 4+p<len )
+    if ( 4+p<=len )
     {
         int i,mask = 0xFF;
         for ( i=3;i>=0;i-- )
@@ -27,7 +27,8 @@ void write_int( unsigned char *data, int len, int p, int value )
         }
     }
     else
-        fprintf(stderr,"serialiser: attempt to write int beyond end of data\n");
+        fprintf(stderr,"serialiser: attempt to write int at %d beyond "
+        "end of data at %d\n",p,len);
 }
 /**
  * Serialise an ascii string
@@ -79,7 +80,7 @@ int write_string( unsigned char *data, int len, int p, UChar *str,
  */
 void write_short( unsigned char *data, int len, int p, short value )
 {
-    if ( p+2 < len )
+    if ( p+2 <= len )
     {
         int i,mask = 0xFF;
         for ( i=1;i>=0;i-- )
@@ -89,8 +90,8 @@ void write_short( unsigned char *data, int len, int p, short value )
         }
     }
     else
-        fprintf(stderr,
-            "serialiser: attempt to write short beyond end of data\n");
+        fprintf(stderr,"serialiser: attempt to write short at %d beyond "
+            "end of data at %d\n",p,len);
 }
 /**
  * Write bytes from source to destination

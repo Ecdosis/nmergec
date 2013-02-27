@@ -4,14 +4,14 @@
 #include <dlfcn.h>
 #include <dirent.h>
 #include "mvdtool.h"
-#include "mvd/chunk_state.h"
+#include "chunk_state.h"
 #include "bitset.h"
 #include "link_node.h"
 #include "unicode/uchar.h"
-#include "mvd/pair.h"
-#include "mvd/version.h"
-#include "mvd/mvd.h"
-#include "mvd/mvdfile.h"
+#include "pair.h"
+#include "version.h"
+#include "mvd.h"
+#include "mvdfile.h"
 #include "plugin.h"
 #include "plugin_list.h"
 #include "operation.h"
@@ -249,6 +249,21 @@ void do_version()
     }
 }
 /**
+ * Check whether a file exists
+ * @param file the file to test
+ * @return 1 if it does, 0 otherwise
+ */
+static int file_exists( const char *file )
+{
+    FILE *EXISTS = fopen( file, "r" );
+    if ( EXISTS )
+    {
+        fclose( EXISTS );
+        return 1;
+    }
+    return 0;
+}
+/**
  * Execute the preset command with its options
  */
 void do_command()
@@ -259,14 +274,19 @@ void do_command()
         plugin *plug = plugin_list_get( plugins, command );
         if ( plug != NULL )
         {
-            MVD *mvd = mvdfile_load( mvdFile );
-            if ( mvd != NULL )
+            MVD *mvd = NULL;
+            if ( file_exists(mvdFile) )
             {
-                int res = plugin_process( plug, mvd, options, &output, 
-                    user_data, user_data_len );
-                if ( res && output != NULL )
-                    printf( "%s\n", output );
+                mvd = mvdfile_load( mvdFile );
+                if ( mvd == NULL )
+                    remove( mvdFile );
             }
+            int res = plugin_process( plug, &mvd, options, &output, 
+                user_data, user_data_len );
+            if ( output != NULL )
+                fprintf(stderr, "%s", output );
+            if ( mvd != NULL )
+                res = mvdfile_save( mvd, mvdFile, 0 );
         } 
     }
 }

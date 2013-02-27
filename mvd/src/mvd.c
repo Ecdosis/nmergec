@@ -5,14 +5,13 @@
 #include "link_node.h"
 #include "unicode/uchar.h"
 #include "unicode/ustring.h"
-#include "mvd/pair.h"
-#include "mvd/version.h"
-#include "mvd/mvd.h"
+#include "pair.h"
+#include "version.h"
+#include "mvd.h"
 #include "dyn_array.h"
-#include "mvd/version.h"
-#include "mvd/mvdfile.h"
-#include "mvd/serialiser.h"
-#include "mvd/group.h"
+#include "version.h"
+#include "serialiser.h"
+#include "group.h"
 #include "hashmap.h"
 #include "utils.h"
 #ifdef MVD_TEST
@@ -243,14 +242,14 @@ int mvd_datasize( MVD *mvd, int old )
             }
             else
             {
-                fprintf(stderr,"mvdfile: failed to create hashmap array\n");
+                fprintf(stderr,"mvd: failed to create hashmap array\n");
                 return 0;
             }
             hashmap_dispose( groups, group_dispose );
         }
         else
         {
-            fprintf(stderr,"mvdfile: failed to create groups table\n");
+            fprintf(stderr,"mvd: failed to create groups table\n");
             return 0;
         }
     }
@@ -272,11 +271,9 @@ int mvd_datasize( MVD *mvd, int old )
         mvd->pairsTableSize += pair_size(p,mvd->set_size);
         mvd->dataTableSize += pair_datasize(p,encoding);
     }
-    //printf("nhints=%d\n",nhints);
-    //printf("headerSize=%d, groupTableSize=%d versionTableSize=%d "
-    //    "pairstableSize=%d dataTableSize=%d\n",
-    //    mvd->headerSize,mvd->groupTableSize,mvd->versionTableSize,
-    //    mvd->pairsTableSize,mvd->dataTableSize);
+    /*printf("datasise: header=%d groups=%d versions=%d pairs=%d data=%d\n",
+        mvd->headerSize,mvd->groupTableSize,mvd->versionTableSize,
+        mvd->pairsTableSize,mvd->dataTableSize);*/
     return mvd->headerSize + mvd->groupTableSize + mvd->versionTableSize 
         + mvd->pairsTableSize + mvd->dataTableSize;
 }
@@ -328,6 +325,7 @@ static int mvd_serialise_header( MVD *mvd, unsigned char *data, int len,
         nBytes += write_ascii_string( data, len, nBytes, mvd->encoding );
         nBytes += write_string( data, len, nBytes, mvd->description, mvd->encoding );
     }
+    //printf("header: %d\n",nBytes);
     return nBytes;
 }
 /**
@@ -347,23 +345,19 @@ int mvd_serialise_versions_new( MVD *mvd, char *data, int len, int p )
 {
     int i,oldP = p;
     int vsize = dyn_array_size(mvd->versions);
-    if ( dyn_array_size(mvd->versions) > 0 )
+    write_short( data, len, p, (short)vsize );
+    p += 2;
+    write_short( data, len, p, (short)mvd->set_size );
+    p += 2;
+    for ( i=0;i<vsize;i++ )
     {
-        write_short( data, len, p, (short)vsize );
-        p += 2;
-        write_short( data, len, p, (short)mvd->set_size );
-        p += 2;
-        for ( i=0;i<vsize;i++ )
-        {
-            version *v = dyn_array_get( mvd->versions, i );
-            UChar *versionID = version_id( v );
-            UChar *description = version_description( v );
-            p += write_string( data, len, p, versionID, mvd->encoding );
-            p += write_string( data, len, p, description, mvd->encoding );
-        }
+        version *v = dyn_array_get( mvd->versions, i );
+        UChar *versionID = version_id( v );
+        UChar *description = version_description( v );
+        p += write_string( data, len, p, versionID, mvd->encoding );
+        p += write_string( data, len, p, description, mvd->encoding );
     }
-    else
-        fprintf(stderr,"mvdfile: no versions defined\n");
+    //printf("versions: %d\n",(p-oldP));
     return p - oldP;
 }
 /**
@@ -393,7 +387,6 @@ int mvd_serialise_versions_old( MVD *mvd, char *data, int len, int p,
         p += 2;
         for ( i=0;i<vsize;i++ )
         {
-            int oldvp = p;
             version *v = dyn_array_get( mvd->versions, i );
             UChar *gname = NULL;
             UChar *version = NULL;
@@ -435,8 +428,6 @@ int mvd_serialise_versions_old( MVD *mvd, char *data, int len, int p,
             //printf("serialised vsize=%d\n",(p-oldvp));
         }
     }
-    else
-        fprintf(stderr,"mvdfile: no versions defined\n");
     if ( p-oldP != mvd->versionTableSize )
         fprintf(stderr,"mvd: expected versionTableSize %d actual %d\n",
             mvd->versionTableSize,p-oldP);
@@ -530,6 +521,7 @@ static int mvd_serialise_pairs( MVD *mvd, char *data, int len, int p )
     int i,nBytes = 0;
     int directDataBytes = 0;
     int parentDataBytes = 0;
+    //int totalDataBytes = 0;
     int psize = dyn_array_size(mvd->pairs);
     hashmap *ancestors = hashmap_create( 12, 0 );
     hashmap *orphans = hashmap_create( 12, 0 );
@@ -636,6 +628,7 @@ static int mvd_serialise_pairs( MVD *mvd, char *data, int len, int p )
             else
                 parentDataBytes += dataBytes;
             nBytes += dataBytes;
+            //totalDataBytes += dataBytes;
         }
         int pair_len = pair_serialise(t, data, len, p, mvd->set_size, 
             (parentDataOffset!=0)?parentDataOffset:dataOffset, 
@@ -654,6 +647,8 @@ static int mvd_serialise_pairs( MVD *mvd, char *data, int len, int p )
     // can't get rid of parents any other way
     hashmap_dispose( ancestors, free );
     hashmap_dispose( orphans, free );
+    //printf("pairs: %d\n",(nBytes-totalDataBytes));
+    //printf("data: %d\n",totalDataBytes);
     return nBytes;
 }
 /**

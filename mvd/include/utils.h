@@ -19,6 +19,7 @@ char *u_print( UChar *ustr, char *buf, int n );
 void lowercase( char *str );
 void ascii_to_uchar( char *str, UChar *u_str, int len );
 void calc_ukey( UChar *u_key, long value, int len );
+void strip_quotes( char *str );
 #ifdef __LITTLE_ENDIAN__
 #define SLASH (UChar*)"\x2F\x00"
 #else

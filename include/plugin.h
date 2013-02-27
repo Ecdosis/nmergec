@@ -14,7 +14,7 @@ extern "C" {
 
 typedef struct plugin_struct plugin;
 /* function typedefs used in plugin.c */
-typedef int (*plugin_process_type)( MVD *mvd, char *options, 
+typedef int (*plugin_process_type)( MVD **mvd, char *options, 
         unsigned char **output, unsigned char *data, size_t data_len );
 typedef void (*plugin_help_type)();
 typedef void (*plugin_version_type)();
@@ -22,7 +22,7 @@ typedef char *(*plugin_name_type)();
 typedef int (*plugin_test_type)(int *p,int *f);
 plugin *plugin_create( void *handle );
 void plugin_dispose( plugin *plug );
-int plugin_process( plugin *plug, MVD *mvd, char *options, 
+int plugin_process( plugin *plug, MVD **mvd, char *options, 
     unsigned char **output, unsigned char *data, size_t data_len );
 void plugin_help( plugin *plug );
 void plugin_version( plugin *plug );

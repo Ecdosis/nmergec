@@ -35,6 +35,7 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
+	${OBJECTDIR}/_ext/688439529/plugin_log.o \
 	${OBJECTDIR}/mvd_create.o
 
 
@@ -52,7 +53,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=
+LDLIBSOPTIONS=-licuuc -lmvd
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
@@ -62,10 +63,15 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_create.${CND_DLIB_EXT}: ${OBJE
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.c} -dynamiclib -install_name libmvd_create.${CND_DLIB_EXT} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_create.${CND_DLIB_EXT} -fPIC ${OBJECTFILES} ${LDLIBSOPTIONS} 
 
+${OBJECTDIR}/_ext/688439529/plugin_log.o: ../shared/src/plugin_log.c 
+	${MKDIR} -p ${OBJECTDIR}/_ext/688439529
+	${RM} $@.d
+	$(COMPILE.c) -g -I../../mvd/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/688439529/plugin_log.o ../shared/src/plugin_log.c
+
 ${OBJECTDIR}/mvd_create.o: mvd_create.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -g -I../../NMergeC/include/mvd -I../../NMergeC/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/mvd_create.o mvd_create.c
+	$(COMPILE.c) -g -I../../mvd/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/mvd_create.o mvd_create.c
 
 # Subprojects
 .build-subprojects:

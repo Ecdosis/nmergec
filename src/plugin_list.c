@@ -13,9 +13,9 @@
 #include "bitset.h"
 #include "link_node.h"
 #include "unicode/uchar.h"
-#include "mvd/pair.h"
-#include "mvd/version.h"
-#include "mvd/mvd.h"
+#include "pair.h"
+#include "version.h"
+#include "mvd.h"
 #include "plugin.h"
 #include "plugin_list.h"
 #ifdef MVD_TEST

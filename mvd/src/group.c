@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "unicode/uchar.h"
-#include "mvd/group.h"
+#include "group.h"
 #include "utils.h"
 #ifdef MVD_TEST
 #include "memwatch.h"

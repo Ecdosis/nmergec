@@ -25,6 +25,7 @@
       <runprofile version="9">
         <runcommandpicklist>
           <runcommandpicklistitem>"${OUTPUT_PATH}"</runcommandpicklistitem>
+          <runcommandpicklistitem>build/Debug/GNU-MacOSX/src/test.o</runcommandpicklistitem>
         </runcommandpicklist>
         <runcommand>build/Debug/GNU-MacOSX/src/test.o</runcommand>
         <rundir></rundir>

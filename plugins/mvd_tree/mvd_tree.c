@@ -16,7 +16,7 @@
  * @param output VAR param set to NULL if not needed else the output
  * @return 1 if the process completed successfully
  */
-int process( MVD *mvd, char *options, unsigned char **output, 
+int process( MVD **mvd, char *options, unsigned char **output, 
 unsigned char *data, size_t data_len )
 {
     return 1;

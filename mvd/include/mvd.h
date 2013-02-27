@@ -24,6 +24,10 @@ int mvd_count_versions( MVD *mvd );
 int mvd_set_description( MVD *mvd, UChar *description );
 int mvd_set_encoding( MVD *mvd, char *encoding );
 int mvd_add_pair( MVD *mvd, pair *tpl2 );
+#define MVD_MAGIC_LEN 4
+#define MVD_MAGIC_OLD_STR "\336\255\300\336"
+#define MVD_MAGIC_NEW_STR "\140\015\300\336"
+
 #ifdef MVD_TEST
 int mvd_test_versions( MVD *mvd );
 #endif

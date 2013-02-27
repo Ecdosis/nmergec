@@ -5,7 +5,7 @@
 #include "bitset.h"
 #include "unicode/uchar.h"
 #include "link_node.h"
-#include "mvd/pair.h"
+#include "pair.h"
 #include "encoding.h"
 
 #define DATA_MINSIZE 1

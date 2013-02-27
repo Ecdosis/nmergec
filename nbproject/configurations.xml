@@ -4,31 +4,16 @@
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
-      <logicalFolder name="f1" displayName="mvd" projectFiles="true">
-        <itemPath>include/mvd/chunk_state.h</itemPath>
-        <itemPath>include/mvd/group.h</itemPath>
-        <itemPath>include/mvd/mvd.h</itemPath>
-        <itemPath>include/mvd/mvdfile.h</itemPath>
-        <itemPath>include/mvd/pair.h</itemPath>
-        <itemPath>include/mvd/serialiser.h</itemPath>
-        <itemPath>include/mvd/version.h</itemPath>
-      </logicalFolder>
       <itemPath>include/b64.h</itemPath>
-      <itemPath>include/benchmark.h</itemPath>
-      <itemPath>include/bitset.h</itemPath>
       <itemPath>include/char_buf.h</itemPath>
-      <itemPath>include/dyn_array.h</itemPath>
       <itemPath>include/dyn_string.h</itemPath>
-      <itemPath>plugins/mvd_add/include/encoding.h</itemPath>
-      <itemPath>include/hashmap.h</itemPath>
-      <itemPath>include/hsieh.h</itemPath>
-      <itemPath>include/link_node.h</itemPath>
       <itemPath>include/memwatch.h</itemPath>
+      <itemPath>include/mvdfile.h</itemPath>
       <itemPath>include/mvdtool.h</itemPath>
       <itemPath>include/operation.h</itemPath>
       <itemPath>include/plugin.h</itemPath>
       <itemPath>include/plugin_list.h</itemPath>
-      <itemPath>include/utils.h</itemPath>
+      <itemPath>plugins/mvd_add/include/plugin_log.h</itemPath>
       <itemPath>include/zip/zip.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
@@ -38,15 +23,6 @@
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
-      <logicalFolder name="f1" displayName="mvd" projectFiles="true">
-        <itemPath>src/mvd/chunk_state.c</itemPath>
-        <itemPath>src/mvd/group.c</itemPath>
-        <itemPath>src/mvd/mvd.c</itemPath>
-        <itemPath>src/mvd/mvdfile.c</itemPath>
-        <itemPath>src/mvd/pair.c</itemPath>
-        <itemPath>src/mvd/serialiser.c</itemPath>
-        <itemPath>src/mvd/version.c</itemPath>
-      </logicalFolder>
       <logicalFolder name="f2" displayName="zip" projectFiles="true">
         <itemPath>src/zip/adler32.c</itemPath>
         <itemPath>src/zip/compress.c</itemPath>
@@ -60,22 +36,16 @@
         <itemPath>src/zip/zutil.c</itemPath>
       </logicalFolder>
       <itemPath>src/b64.c</itemPath>
-      <itemPath>src/benchmark.c</itemPath>
-      <itemPath>src/bitset.c</itemPath>
       <itemPath>src/char_buf.c</itemPath>
-      <itemPath>src/dyn_array.c</itemPath>
+      <itemPath>src/chunk_state.c</itemPath>
       <itemPath>src/dyn_string.c</itemPath>
-      <itemPath>plugins/mvd_add/src/encoding.c</itemPath>
-      <itemPath>src/hashmap.c</itemPath>
-      <itemPath>src/hsieh.c</itemPath>
-      <itemPath>src/link_node.c</itemPath>
       <itemPath>src/memwatch.c</itemPath>
+      <itemPath>src/mvdfile.c</itemPath>
       <itemPath>src/mvdtool.c</itemPath>
       <itemPath>src/operation.c</itemPath>
       <itemPath>src/plugin.c</itemPath>
       <itemPath>src/plugin_list.c</itemPath>
       <itemPath>src/test.c</itemPath>
-      <itemPath>src/utils.c</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
                    displayName="Test Files"
@@ -102,18 +72,15 @@
           <incDir>
             <pElem>include</pElem>
             <pElem>include/zip</pElem>
-            <pElem>src/mvd</pElem>
-            <pElem>plugins/mvd_add/include</pElem>
             <pElem>/usr/local/include</pElem>
+            <pElem>mvd/include</pElem>
           </incDir>
-          <preprocessorList>
-            <Elem>MVD_TEST</Elem>
-          </preprocessorList>
         </cTool>
         <linkerTool>
           <linkerLibItems>
             <linkerLibStdlibItem>DynamicLinking</linkerLibStdlibItem>
             <linkerLibLibItem>icuuc</linkerLibLibItem>
+            <linkerLibLibItem>mvd</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>

@@ -14,9 +14,6 @@ extern "C" {
 
 #define MVD_MAGIC_OLD 0xDEADC0DEU
 #define MVD_MAGIC_NEW 0x600DC0DEU
-#define MVD_MAGIC_OLD_STR "\336\255\300\336"
-#define MVD_MAGIC_NEW_STR "\140\015\300\336"
-#define MVD_MAGIC_LEN 4
 
 MVD *mvdfile_internalise( char *data, int len );
 char *mvdfile_externalise( MVD *mvd, int *len, int old );

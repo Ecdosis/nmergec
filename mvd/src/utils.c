@@ -114,3 +114,18 @@ void calc_ukey( UChar *u_key, long value, int len )
         u_key[0] = 0;
     }
 }
+/**
+ * Strip quotation marks form the end of a string
+ * @param str the string to strip
+ */
+void strip_quotes( char *str )
+{
+    int i = 0;
+    while ( str[i] != 0 && (str[i] == '"' || str[i]=='\'') )
+        i++;
+    int j = strlen(str)-1;
+    while ( j>=0 && (str[j] == '"' || str[j]=='\'') )
+        j--;
+    memcpy( str, &str[i], j-i+1 );
+    str[j-i+1] = 0;
+}

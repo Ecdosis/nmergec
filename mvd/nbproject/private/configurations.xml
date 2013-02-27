@@ -2,7 +2,7 @@
 <configurationDescriptor version="84">
   <projectmakefile>Makefile</projectmakefile>
   <confs>
-    <conf name="Debug" type="1">
+    <conf name="Debug" type="2">
       <toolsSet>
         <developmentServer>localhost</developmentServer>
         <platform>4</platform>
@@ -24,18 +24,9 @@
       </nativedebugger>
       <runprofile version="9">
         <runcommandpicklist>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -l</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -m mvds/kinglear.mvd</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -m mvds/kinglear.mvd -c ADD</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -m mvds/kinglear.mvd -c ADD -o "version=1"</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -m mvds/kinglear.mvd -c "add version" -o "version=1"</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -m mvds/kinglear.mvd -c add -o "version=1"</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -m mvds/test.mvd -c create -o "encoding=utf-8"</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -h</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c create -o "description=\"test\" encoding=\"utf-8\""</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c create -o "description=\"test\" encoding=\"utf-8\"" -m test.mvd</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>"${OUTPUT_PATH}" -c create -o "description=\"test\" encoding=\"utf-8\"" -m test.mvd</runcommand>
+        <runcommand>"${OUTPUT_PATH}"</runcommand>
         <rundir></rundir>
         <buildfirst>true</buildfirst>
         <terminal-type>0</terminal-type>
@@ -44,7 +35,7 @@
         </environment>
       </runprofile>
     </conf>
-    <conf name="Release" type="1">
+    <conf name="Release" type="2">
       <toolsSet>
         <developmentServer>localhost</developmentServer>
         <platform>4</platform>

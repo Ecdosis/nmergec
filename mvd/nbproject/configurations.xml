@@ -4,8 +4,19 @@
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
-      <itemPath>../../include/plugin.h</itemPath>
-      <itemPath>../shared/include/plugin_log.h</itemPath>
+      <itemPath>include/benchmark.h</itemPath>
+      <itemPath>include/bitset.h</itemPath>
+      <itemPath>include/dyn_array.h</itemPath>
+      <itemPath>include/encoding.h</itemPath>
+      <itemPath>include/group.h</itemPath>
+      <itemPath>include/hashmap.h</itemPath>
+      <itemPath>include/hsieh.h</itemPath>
+      <itemPath>include/link_node.h</itemPath>
+      <itemPath>include/mvd.h</itemPath>
+      <itemPath>include/pair.h</itemPath>
+      <itemPath>include/serialiser.h</itemPath>
+      <itemPath>include/utils.h</itemPath>
+      <itemPath>include/version.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
@@ -14,8 +25,19 @@
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
-      <itemPath>mvd_create.c</itemPath>
-      <itemPath>../shared/src/plugin_log.c</itemPath>
+      <itemPath>src/benchmark.c</itemPath>
+      <itemPath>src/bitset.c</itemPath>
+      <itemPath>src/dyn_array.c</itemPath>
+      <itemPath>src/encoding.c</itemPath>
+      <itemPath>src/group.c</itemPath>
+      <itemPath>src/hashmap.c</itemPath>
+      <itemPath>src/hsieh.c</itemPath>
+      <itemPath>src/link_node.c</itemPath>
+      <itemPath>src/mvd.c</itemPath>
+      <itemPath>src/pair.c</itemPath>
+      <itemPath>src/serialiser.c</itemPath>
+      <itemPath>src/utils.c</itemPath>
+      <itemPath>src/version.c</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
                    displayName="Test Files"
@@ -39,13 +61,13 @@
       <compileType>
         <cTool>
           <incDir>
-            <pElem>../../mvd/include</pElem>
+            <pElem>include</pElem>
+            <pElem>/usr/local/include</pElem>
           </incDir>
         </cTool>
         <linkerTool>
           <linkerLibItems>
             <linkerLibLibItem>icuuc</linkerLibLibItem>
-            <linkerLibLibItem>mvd</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>
