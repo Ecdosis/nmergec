@@ -131,9 +131,23 @@ void help()
 /**
  * Report the plugin's version and author to stdout
  */
-void plug_version()
+void plug_version( char **output )
 {
-    printf( "version 0.1 (c) 2013 Desmond Schmidt\n");
+    plugin_log *log = plugin_log_create();
+    plugin_log_add( "version 0.1 (c) 2013 Desmond Schmidt\n");
+    *output = plugin_log_buffer();
+    plugin_log_dispose( log );
+}
+/**
+ * Report the plugin's version and author to stdout
+ * @param output VAR param: set to description string
+ */
+void plug_description( char **output )
+{
+    plugin_log *log = plugin_log_create();
+    plugin_log_add( "creates an empty mvd\n");
+    *output = plugin_log_buffer();
+    plugin_log_dispose( log );
 }
 /**
  * Report the plugin's name

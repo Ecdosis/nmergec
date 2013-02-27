@@ -19,6 +19,8 @@ The nmergec program and its modules will normally be called via JNI and
 the Java REST service, although the commandline interface will remain. 
 It could also be turned into a PHP extension.
 
-Handling of transpositions will exploit adjacency as described in my 
-blogpost 
-http://multiversiondocs.blogspot.com.au/2012/03/better-way-to-do-transpositions.html
+Handling of transpositions will exploit adjacency. So if two transposed 
+sections are separated by a short non-matching section they can be 
+assessed together, as if they were one, although the transpositions 
+themselves will still be atomic. This should produce more natural 
+transposition detection.
