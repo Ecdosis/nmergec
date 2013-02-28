@@ -18,6 +18,9 @@
 #include <stdio.h>
 #include "plugin_log.h"
 #include "node.h"
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 /**
  * Represent the node structure of a tree but don't build it here
  */

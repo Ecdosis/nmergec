@@ -64,6 +64,9 @@
             <pElem>include</pElem>
             <pElem>/usr/local/include</pElem>
           </incDir>
+          <preprocessorList>
+            <Elem>MEMWATCH</Elem>
+          </preprocessorList>
         </cTool>
         <linkerTool>
           <linkerLibItems>

@@ -18,7 +18,7 @@
 #include "mvd.h"
 #include "plugin.h"
 #include "plugin_list.h"
-#ifdef MVD_TEST
+#ifdef MEMWATCH
 #include "memwatch.h"
 #endif
 
@@ -123,7 +123,7 @@ void plugin_list_all( plugin_list *list )
     for ( i=0;i<list->num_plugins;i++ )
 	{
 		const char *plug_name = plugin_name(list->plugins[i]);
-        //printf("%s\n",plug_name);
+        printf("%s - %s",plug_name, plugin_description(list->plugins[i]));
 	}
 }
 // NB: can't really test this without creating plugins per se

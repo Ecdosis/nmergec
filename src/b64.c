@@ -7,6 +7,9 @@
 #include <string.h>
 #include <stdio.h>
 #endif
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 #define LINE_END "\n"
 
 static char encoding_table[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',

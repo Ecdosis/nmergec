@@ -1,7 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "dyn_array.h"
-
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 struct dyn_array_struct
 {
     int allocated;

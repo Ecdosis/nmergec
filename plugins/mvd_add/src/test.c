@@ -7,6 +7,9 @@
 #include <string.h>
 #include "tree.h"
 #include "main.h"
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 static char *folder;
 typedef struct entry_struct entry;
 struct entry_struct

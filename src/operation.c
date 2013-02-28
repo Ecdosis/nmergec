@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "operation.h"
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 static const char *table[] = {"EMPTY", "HELP", "LIST", "RUN", "VERSION" };
 /**
  * Convert a string to uppercase

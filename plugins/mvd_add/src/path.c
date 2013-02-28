@@ -16,6 +16,9 @@
 #include <stdlib.h>
 #include "plugin_log.h"
 #include "path.h"
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 // for storing gamma (walking across the tree)
 struct path_struct
 {

@@ -13,9 +13,11 @@
 #include "encoding.h"
 #include "plugin_log.h"
 
+static UChar DEBUG_KEY[] = {'d','e','b','u','g',0};
 static UChar ENCODING_KEY[] = {'e','n','c','o','d','i','n','g',0};
 static UChar DESCRIPTION_KEY[] = {'d','e','s','c','r','i','p',
     't','i','o','n',0};
+static int debug = 0;
 
 /**
  * Parse the options string into a map of key-value pairs
@@ -60,16 +62,16 @@ static hashmap *parse_options( char *options )
  * Do the work of this plugin
  * @param mvd VAR param the mvd to create is stored here
  * @param options a string contianing the plugin's options
- * @param output VAR param set to NULL if not needed else the output
+ * @param output buffer of length SCRATCH_LEN
  * @param data ignored
  * @param data_len ignored
  * @return 1 if the process completed successfully
  */
-int process( MVD **mvd, char *options, unsigned char **output, 
+int process( MVD **mvd, char *options, unsigned char *scratch, 
 unsigned char *data, size_t data_len )
 {
     int res = 1;
-    plugin_log *log = plugin_log_create();
+    plugin_log *log = plugin_log_create( scratch );
     *mvd = mvd_create();
     if ( *mvd != NULL )
     {
@@ -82,6 +84,13 @@ unsigned char *data, size_t data_len )
                 encoding = "utf-8";
             else
                 lowercase( encoding );
+            if ( hashmap_contains(map,DEBUG_KEY) )
+                debug = atoi(hashmap_get(map,DEBUG_KEY));
+            if ( debug )
+            {
+                plugin_log_add(log,"encoding=%s description=%s\n",
+                    encoding,description);
+            }
             mvd_set_encoding( *mvd, encoding );
             if ( description != NULL )
             {
@@ -94,6 +103,9 @@ unsigned char *data, size_t data_len )
                         u_description, dlen+1, encoding );
                     if ( nchars > 0 )
                         mvd_set_description( *mvd, u_description );
+                    if ( debug )
+                        plugin_log_add(log,
+                            "converted description %d chars long\n",nchars);
                     free( u_description );
                 }
                 else
@@ -111,13 +123,13 @@ unsigned char *data, size_t data_len )
             plugin_log_add(log,"mvd_create: failed to create options map\n");
             res = 0;
         }
+        hashmap_dispose( map, NULL );
     }
     else
     {
         plugin_log_add(log,"mvd_create: failed to create mvd\n");
         res = 0;
     }
-    *output = plugin_log_buffer(log);
     plugin_log_dispose( log );
     return res;
 }

@@ -4,9 +4,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "plugin_log.h"
-#define SCRATCH_LEN 1024
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 struct plugin_log_struct
 {
+    // we don't own this
     char *scratch;
     // message buffer len
     int pos;
@@ -15,23 +18,13 @@ struct plugin_log_struct
  * Create a plugin log object
  * @return the log
  */
-plugin_log *plugin_log_create()
+plugin_log *plugin_log_create( char *buffer )
 {
     plugin_log *log = calloc( sizeof(plugin_log), 1 );
     if ( log == NULL )
         fprintf(stderr,"plugin_log: failed to create log\n");
     else
-    {
-        log->scratch = malloc( SCRATCH_LEN );
-        if ( log->scratch != NULL )
-            log->scratch[0] = 0;
-        else
-        {
-            fprintf(stderr,"plugin_log: failed to allocate\n");
-            free( log );
-            log = NULL;
-        }
-    }
+        log->scratch = buffer;
     return log;
 }
 /**
@@ -43,6 +36,10 @@ void plugin_log_dispose( plugin_log *log )
     if ( log != NULL )
         free( log );
     // leave the buffer: caller must dispose
+}
+int plugin_log_pos( plugin_log *log )
+{
+    return log->pos;
 }
 /**
  * Add to the plugin log
@@ -65,16 +62,18 @@ void plugin_log_add( plugin_log *log, char *fmt, ... )
         vsnprintf( str, 128, fmt, ap );
         if ( strlen(str)+log->pos < SCRATCH_LEN )
         {
-            strncat( log->scratch, str, SCRATCH_LEN-log->pos );
-            log->pos = strlen( log->scratch );
+            memcpy( &log->scratch[log->pos], str, strlen(str) );
+            log->pos += strlen(str);
+            log->scratch[log->pos] = 0;
         }
     }
     else
     {
         if ( strlen(fmt)+log->pos < SCRATCH_LEN )
         {
-            strncat( log->scratch, fmt, SCRATCH_LEN-log->pos );
-            log->pos = strlen( log->scratch );
+            memcpy( &log->scratch[log->pos], fmt, strlen(fmt) );
+            log->pos += strlen( fmt );
+            log->scratch[log->pos] = 0;
         }
     }
     va_end( ap );

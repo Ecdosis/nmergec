@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <string.h>
 #include "char_buf.h"
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 #define MIN_BLOCK_SIZE 1024
 #define max(a,b) (a>b)?a:b
 struct char_buf_struct

@@ -14,7 +14,7 @@
 #include "group.h"
 #include "hashmap.h"
 #include "utils.h"
-#ifdef MVD_TEST
+#ifdef MEMWATCH
 #include "memwatch.h"
 #endif
 

@@ -11,7 +11,9 @@
 #include "unicode/uchar.h"
 #include "unicode/uloc.h"
 #include "unicode/ustring.h"
-
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 
 /**
  * Convert from UTF-16 to another encoding

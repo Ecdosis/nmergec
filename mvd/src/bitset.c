@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "bitset.h"
-#ifdef MVD_TEST 
+#ifdef MEMWATCH
 #include "memwatch.h"
 #endif
 #define MIN_BITS 16

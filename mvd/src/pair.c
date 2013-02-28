@@ -7,7 +7,9 @@
 #include "link_node.h"
 #include "pair.h"
 #include "encoding.h"
-
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 #define DATA_MINSIZE 1
 #define BASIC_PAIR 0
 #define CHILD_PAIR 1

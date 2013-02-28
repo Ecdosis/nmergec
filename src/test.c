@@ -25,6 +25,9 @@
 #include <stdint.h>
 #include "hsieh.h"
 #include "zip.h"
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 static int total_passed = 0;
 static int total_failed = 0;
 /*

@@ -31,7 +31,9 @@
 #include "print_tree.h"
 #include "path.h"
 #include "suffixtree.h"
-
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 
 typedef struct pos_struct pos;
 // describes a character-position in the tree

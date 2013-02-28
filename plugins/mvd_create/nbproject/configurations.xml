@@ -41,6 +41,7 @@
           <incDir>
             <pElem>../../mvd/include</pElem>
             <pElem>../shared/include</pElem>
+            <pElem>../../include</pElem>
           </incDir>
         </cTool>
         <linkerTool>

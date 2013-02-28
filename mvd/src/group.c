@@ -4,7 +4,7 @@
 #include "unicode/uchar.h"
 #include "group.h"
 #include "utils.h"
-#ifdef MVD_TEST
+#ifdef MEMWATCH
 #include "memwatch.h"
 #endif
 /** Stores group information for old-format MVDs */

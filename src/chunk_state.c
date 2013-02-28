@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "chunk_state.h"
-#ifdef MVD_TEST
+#ifdef MEMWATCH
 #include "memwatch.h"
 #endif
 static const char *table[] = {"a_chunk","added","backup","child",

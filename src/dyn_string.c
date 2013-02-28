@@ -5,6 +5,9 @@
 #include "unicode/ustring.h"
 #include "dyn_string.h"
 #include "utils.h"
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 #define DYN_DEFAULT_LEN 128
 struct dyn_string_struct
 {

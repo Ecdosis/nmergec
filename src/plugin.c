@@ -9,7 +9,7 @@
 #include "version.h"
 #include "mvd.h"
 #include "plugin.h"
-#ifdef MVD_TEST
+#ifdef MEMWATCH
 #include "memwatch.h"
 #endif
 

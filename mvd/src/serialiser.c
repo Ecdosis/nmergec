@@ -4,7 +4,7 @@
 #include "unicode/ustring.h"
 #include "serialiser.h"
 #include "encoding.h"
-#ifdef MVD_TEST
+#ifdef MEMWATCH
 #include "memwatch.h"
 #endif
 /**

@@ -14,6 +14,9 @@
 #include "encoding.h"
 #include "plugin_log.h"
 #include "suffixtree.h"
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 
 // the version ID - a /-delimited string
 static char *vid=NULL;
@@ -215,16 +218,16 @@ static int parse_options( char *option_string, plugin_log *log )
  * Do the work of this plugin
  * @param mvd the mvd to manipulate or read
  * @param options a string containing the plugin's options
- * @param output VAR param set to NULL if not needed else the output
+ * @param output buffer of length SCRATCH_LEN
  * @param data data passed directly in or NULL
  * @param data_len length of data
  * @return 1 if the process completed successfully
  */
-int process( MVD *mvd, char *options, unsigned char **output, 
+int process( MVD *mvd, char *options, unsigned char *output, 
     unsigned char *data, size_t data_len )
 {
     int res = 0;
-    plugin_log *log = plugin_log_create();
+    plugin_log *log = plugin_log_create( output );
     if ( log != NULL )
     {
         res = parse_options( options, log );
@@ -257,7 +260,6 @@ int process( MVD *mvd, char *options, unsigned char **output,
                 res = 0;
             }
         }
-        *output = plugin_log_buffer(log);
     }
     return res;
 }

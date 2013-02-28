@@ -15,7 +15,10 @@
 #include "plugin.h"
 #include "plugin_list.h"
 #include "operation.h"
-
+#include "plugin_log.h"
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 #ifdef MVD_DEBUG
 #include "memwatch.h"
 #endif
@@ -271,7 +274,6 @@ void do_command()
 {
     if ( plugins != NULL )
     {
-        unsigned char *output;
         plugin *plug = plugin_list_get( plugins, command );
         if ( plug != NULL )
         {
@@ -282,12 +284,19 @@ void do_command()
                 if ( mvd == NULL )
                     remove( mvdFile );
             }
-            int res = plugin_process( plug, &mvd, options, &output, 
-                user_data, user_data_len );
+            unsigned char *output = malloc( SCRATCH_LEN );
             if ( output != NULL )
+            {
+                int res = plugin_process( plug, &mvd, options, &output, 
+                    user_data, user_data_len );
                 fprintf(stderr, "%s", output );
-            if ( mvd != NULL )
-                res = mvdfile_save( mvd, mvdFile, 0 );
+                if ( mvd != NULL )
+                {
+                    res = mvdfile_save( mvd, mvdFile, 0 );
+                    mvd_dispose( mvd );
+                }
+                free( output );
+            }
         } 
     }
 }

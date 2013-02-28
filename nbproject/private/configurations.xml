@@ -24,7 +24,6 @@
       </nativedebugger>
       <runprofile version="9">
         <runcommandpicklist>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -m mvds/kinglear.mvd -c ADD</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" -m mvds/kinglear.mvd -c ADD -o "version=1"</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" -m mvds/kinglear.mvd -c "add version" -o "version=1"</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" -m mvds/kinglear.mvd -c add -o "version=1"</runcommandpicklistitem>
@@ -34,8 +33,9 @@
           <runcommandpicklistitem>"${OUTPUT_PATH}" -c create -o "description=\"test\" encoding=\"utf-8\"" -m test.mvd</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" -c create -h</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" -h create</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -l</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>"${OUTPUT_PATH}" -h create</runcommand>
+        <runcommand>"${OUTPUT_PATH}" -l</runcommand>
         <rundir></rundir>
         <buildfirst>true</buildfirst>
         <terminal-type>0</terminal-type>

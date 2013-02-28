@@ -1,6 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "link_node.h"
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 struct link_node_struct
 {
     void *obj;

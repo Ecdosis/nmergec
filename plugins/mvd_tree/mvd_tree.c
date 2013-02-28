@@ -13,10 +13,10 @@
  * Do the work of this plugin
  * @param mvd the mvd to manipulte or read
  * @param options a string contianing the plugin's options
- * @param output VAR param set to NULL if not needed else the output
+ * @param output buffer of length SCRATCH_LEN
  * @return 1 if the process completed successfully
  */
-int process( MVD **mvd, char *options, unsigned char **output, 
+int process( MVD **mvd, char *options, unsigned char *output, 
 unsigned char *data, size_t data_len )
 {
     return 1;
