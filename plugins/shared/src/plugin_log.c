@@ -7,7 +7,7 @@
 #define SCRATCH_LEN 1024
 struct plugin_log_struct
 {
-    char scratch[SCRATCH_LEN];
+    char *scratch;
     // message buffer len
     int pos;
 };
@@ -20,6 +20,18 @@ plugin_log *plugin_log_create()
     plugin_log *log = calloc( sizeof(plugin_log), 1 );
     if ( log == NULL )
         fprintf(stderr,"plugin_log: failed to create log\n");
+    else
+    {
+        log->scratch = malloc( SCRATCH_LEN );
+        if ( log->scratch != NULL )
+            log->scratch[0] = 0;
+        else
+        {
+            fprintf(stderr,"plugin_log: failed to allocate\n");
+            free( log );
+            log = NULL;
+        }
+    }
     return log;
 }
 /**
@@ -30,6 +42,7 @@ void plugin_log_dispose( plugin_log *log )
 {
     if ( log != NULL )
         free( log );
+    // leave the buffer: caller must dispose
 }
 /**
  * Add to the plugin log

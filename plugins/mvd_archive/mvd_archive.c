@@ -2,8 +2,8 @@
 #include "bitset.h"
 #include "unicode/uchar.h"
 #include "link_node.h"
-#include "mvd/version.h"
-#include "mvd/pair.h"
+#include "version.h"
+#include "pair.h"
 #include "mvd.h"
 #include "plugin.h"
 
@@ -22,16 +22,23 @@ int process( MVD **mvd, char *options, unsigned char **output,
 /**
  * Print a help message to stdout explaining what the paramerts are
  */
-void help()
+char *help()
 {
-    printf("help\n");
+    return "help\n";
 }
 /**
  * Report the plugin's version and author to stdout
  */
-void plug_version()
+char *plug_version()
 {
-    printf( "version 0.1 (c) 2013 Desmond Schmidt\n");
+    return "version 0.1 (c) 2013 Desmond Schmidt\n";
+}
+/**
+ * Report the plugin's version and author to stdout
+ */
+char *description()
+{
+    return "converts an mvd into an archive of separate versions\n";
 }
 /**
  * Report the plugin's name
@@ -39,7 +46,7 @@ void plug_version()
  */
 char *name()
 {
-    return "export to archive";
+    return "archive";
 }
 /**
  * Test the plugin

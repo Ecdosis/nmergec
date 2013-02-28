@@ -30,7 +30,8 @@ extern "C" {
 
 typedef struct node_struct node;
 #define INFINITY INT_MAX
-node *node_create( int start, int len );
+node *node_create( int start, int len, plugin_log *log );
+node *node_create_leaf( int i, plugin_log *log );
 void node_dispose( node *v );
 void node_set_len( node *v, int len );
 int node_len( node *v );
@@ -39,9 +40,8 @@ node *node_next( node *v );
 int node_start( node *v );
 void node_add_child( node *parent, node *child );
 int node_is_leaf( node *v );
-node *node_create_leaf( int i );
-int node_add_leaf( node *parent, int i );
-node *node_split( node *v, int loc );
+int node_add_leaf( node *parent, int i, plugin_log *log );
+node *node_split( node *v, int loc, plugin_log *log );
 void node_set_link( node *v, node *link );
 node *node_link( node *v );
 node *node_parent( node *v );

@@ -6,7 +6,7 @@ if [ `uname` = "Darwin" ]
   RTLIB=-lrt
   LIBSUFFIX=so
 fi
-gcc -I. -I../../include -I../../include/mvd -fPIC *.c -shared $RTLIB -o lib${PWD##*/}.$LIBSUFFIX
+gcc -I. -I../../include -I../../mvd/include -fPIC *.c -shared $RTLIB -o lib${PWD##*/}.$LIBSUFFIX
 if [ ! -d "/usr/local/lib/nmerge-plugins" ]; then
     mkdir -p /usr/local/lib/nmerge-plugins
 fi

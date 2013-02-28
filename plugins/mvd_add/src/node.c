@@ -16,8 +16,8 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <stdio.h>
-#include "node.h"
 #include "plugin_log.h"
+#include "node.h"
 /**
  * Represent the node structure of a tree but don't build it here
  */
@@ -40,11 +40,11 @@ struct node_struct
  * Create a node safely
  * @return the finished node or fail
  */
-node *node_create( int start, int len )
+node *node_create( int start, int len, plugin_log *log )
 {
     node *n = calloc( 1, sizeof(node) );
     if ( n == NULL )
-        plugin_log( "couldn't create new node\n" );
+        plugin_log_add(log, "couldn't create new node\n" );
     else
     {
         n->start = start;
@@ -57,7 +57,7 @@ node *node_create( int start, int len )
  * @param i the offset into the string
  * @return the finished leaf or NULL on failure
  */
-node *node_create_leaf( int i )
+node *node_create_leaf( int i, plugin_log *log )
 {
     node *leaf = calloc( 1, sizeof(node) );
     if ( leaf != NULL )
@@ -66,7 +66,7 @@ node *node_create_leaf( int i )
         leaf->len = INFINITY;
     }
     else
-        plugin_log("tree: failed to create leaf\n");
+        plugin_log_add(log,"tree: failed to create leaf\n");
     return leaf;
 }
 /**
@@ -88,11 +88,12 @@ void node_dispose( node *v )
  * Add an initially single-char leaf to the tree
  * @param parent the node to hang it off
  * @param i start-index in str of the leaf
+ * @param log the log to record error messages in
  */
-int node_add_leaf( node *parent, int i )
+int node_add_leaf( node *parent, int i, plugin_log *log )
 {
     int res = 0;
-    node *leaf = node_create_leaf( i );
+    node *leaf = node_create_leaf( i, log );
     if ( leaf != NULL )
     {
         node_add_child( parent, leaf );
@@ -132,13 +133,14 @@ int node_is_leaf( node *v )
  * to preserve the "once a leaf always a leaf" property or f will be wrong.
  * @param v the node in question
  * @param loc the place on the edge after which to split it
+ * @param log the log to record errors in
  * @return the new internal node
  */
-node *node_split( node *v, int loc )
+node *node_split( node *v, int loc, plugin_log *log )
 {
     // create front edge leading to internal node u
     int u_len = loc-v->start+1;
-    node *u = node_create( v->start, u_len );
+    node *u = node_create( v->start, u_len, log );
     // now shorten the following node v
     if ( !node_is_leaf(v) )
         v->len -= u_len;

@@ -2,10 +2,10 @@
 #include "bitset.h"
 #include "unicode/uchar.h"
 #include "link_node.h"
-#include "mvd/version.h"
+#include "version.h"
 #include "link_node.h"
-#include "mvd/version.h"
-#include "mvd/pair.h"
+#include "version.h"
+#include "pair.h"
 #include "mvd.h"
 #include "plugin.h"
 
@@ -22,18 +22,27 @@ unsigned char *data, size_t data_len )
     return 1;
 }
 /**
- * Print a help message to stdout explaining what the paramerts are
+ * Print a help message to stdout explaining what the parameters are
+ * @return a string
  */
-void help()
+char *help()
 {
-    printf("help\n");
+    return "help\n";
 }
 /**
- * Report the plugin's version and author to stdout
+ * Report the plugin's version and author 
  */
-void plug_version()
+char *plug_version()
 {
-    printf( "version 0.1 (c) 2013 Desmond Schmidt\n");
+    return "version 0.1 (c) 2013 Desmond Schmidt\n";
+}
+/** 
+ * Tell the world what we do          
+ * @return a string
+ */
+char *description()
+{
+    return "generate a phylogentic tree from an mvd in Newick format\n";
 }
 /**
  * Report the plugin's name
@@ -41,7 +50,7 @@ void plug_version()
  */
 char *name()
 {
-    return "tree view";
+    return "tree";
 }
 /**
  * Test the plugin

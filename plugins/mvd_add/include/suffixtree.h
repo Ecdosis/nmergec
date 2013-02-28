@@ -14,7 +14,7 @@ extern "C"
 #endif
     
 typedef struct suffixtree_struct suffixtree;
-suffixtree *suffixtree_create( UChar *txt, size_t tlen );
+suffixtree *suffixtree_create( UChar *txt, size_t tlen, plugin_log *log );
 void suffixtree_dispose( suffixtree *st );
 
 #ifdef	__cplusplus

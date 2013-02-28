@@ -3,24 +3,41 @@ nmergec
 
 C based revision of NMergeNew (Java)
 
-This is a revision of NMergeNew in the C language. The idea is to make 
-it faster, improve handling of transpositions, and remove the limit on 
-file size, current around 100K.
+This is a revision of NMergeNew in the C language. 
 
-The program has been split up into a number of dynamic libraries of 
-plugins, one for each basic function. The MVD handling has also been 
-split off from the main program, as it is needed by each plugin. This 
-will make addition of new functionality easy.
+The planned improvements include:
 
-nmergec has a complete test suite built into it from the start. 
-So any modifications to the code can be quickly tested. 
+Simplify the alignment process by splitting up the existing functionality of 
+nmerge into a series of plugins. The only tasks that the core nmerge program 
+will perform will be to load and save MVD files, and to manage the plugins, of 
+course.
 
-The nmergec program and its modules will normally be called via JNI and 
-the Java REST service, although the commandline interface will remain. 
-It could also be turned into a PHP extension.
+Rewrite the entire program from scratch in the C language. This should overcome 
+memory problems with Java by dynamically allocating memory only as needed, 
+instead of wastefully at present. Also C gives the program great longevity and 
+portability as well as speed. Also provide language wrappers so it can be called 
+natively in PHP (as an extension) and Java (via JNI).
 
-Handling of transpositions will exploit adjacency. So if two transposed 
-sections are separated by a short non-matching section they can be 
-assessed together, as if they were one, although the transpositions 
-themselves will still be atomic. This should produce more natural 
-transposition detection.
+Use multi-threading to improve performance. Individual sub-alignments and 
+building of suffix trees can carry on simultaneously.
+
+Transpositions can be computed using a technique that exploits adjacency of 
+short transposed sections. In this way even transpositions containing minor 
+revisions can be detected. This should improve alignment quality.
+
+Alignment will be by shuffling the fragments of the MVD, not by pasting in 
+differences into a explicit variant graph. This should greatly improve the 
+program's simplicity.
+
+Changing the MVD file format so that versions and groups are merged into 
+version-IDs. This should make version specification simpler by using a 
+hierarchical naming system based on paths like /folios/F1, or /C376/add0, rather 
+than on tables of separate groups and versions.
+
+Change the default text encoding from UTF-8 to UTF-16. This will allow easy 
+comparison between Chinese and other languages like Bengali, which split almost 
+all characters across byte-boundaries.
+
+Provide a test-suite to verify every aspect of the program as it is being 
+written and to insulate it from damage if any changes are made later.
+

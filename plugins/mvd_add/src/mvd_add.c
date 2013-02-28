@@ -7,18 +7,18 @@
 #include "bitset.h"
 #include "link_node.h"
 #include "unicode/uchar.h"
-#include "mvd/pair.h"
-#include "mvd/version.h"
-#include "mvd/mvd.h"
+#include "pair.h"
+#include "version.h"
+#include "mvd.h"
 #include "plugin.h"
 #include "encoding.h"
-#include "suffixtree.h"
 #include "plugin_log.h"
+#include "suffixtree.h"
 
 // the version ID - a /-delimited string
 static char *vid=NULL;
 // description of the version to be added
-static UChar *description=NULL;
+static UChar *v_description=NULL;
 // the text itself - we use wide UTF-16 as the basic char type
 static UChar *text;
 // number of wchar_t characters in text 
@@ -74,9 +74,10 @@ static int file_length( FILE *fp )
  * Load the given text file 
  * @param path the path to the file
  * @param encoding the encoding of the file to be added
+ * @param log the log to record errors in
  * @return 1 if it loaded OK, else 0
  */
-static int load_text( char *path, char *encoding )
+static int load_text( char *path, char *encoding, plugin_log *log )
 {
     int res = 1;
     FILE *fp = fopen( path, "r" );
@@ -103,7 +104,8 @@ static int load_text( char *path, char *encoding )
                     }
                     else
                     {
-                        plugin_log("mvd_add: failed to allocate unicode buffer\n");
+                        plugin_log_add(log,
+                            "mvd_add: failed to allocate unicode buffer\n");
                         res = 0;
                     }
                 }
@@ -111,14 +113,14 @@ static int load_text( char *path, char *encoding )
             else
             {
                 res = 0;
-                plugin_log("add: failed to allocate %d bytes\n",len);
+                plugin_log_add(log,"add: failed to allocate %d bytes\n",len);
             }
         }
         fclose( fp );
     }
     else
     {
-        plugin_log("add: couldn't open %s\n",path);
+        plugin_log_add(log,"add: couldn't open %s\n",path);
         res = 0;
     }
     return res;
@@ -126,9 +128,10 @@ static int load_text( char *path, char *encoding )
 /**
  * Parse the options
  * @param option_string the options as passed-in, separated by "=" and spaces
+ * @param log the log to record errors in
  * @return 1 if the options were sane
  */
-static int parse_options( char *option_string )
+static int parse_options( char *option_string, plugin_log *log )
 {
     int sane = 1;
     char *opt = strtok( option_string, " ");
@@ -161,7 +164,7 @@ static int parse_options( char *option_string )
             {
                 lowercase( name );
                 if ( strcmp(name,"text")==0 )
-                    sane = load_text(value,encoding);
+                    sane = load_text(value,encoding,log);
                 else if ( strcmp(name,"vid") )
                 {
                     vid = strdup(value);
@@ -172,18 +175,19 @@ static int parse_options( char *option_string )
                     int nchars=0;
                     int slen = strlen(value);
                     int nbytes = measure_from_encoding( value, slen, "utf-8" );
-                    description = malloc( nbytes+sizeof(UChar) );
-                    if ( description != NULL )
+                    v_description = malloc( nbytes+sizeof(UChar) );
+                    if ( v_description != NULL )
                     {
-                        nchars = convert_from_encoding(value,slen,description, 
+                        nchars = convert_from_encoding(value,slen,v_description, 
                             nbytes+sizeof(UChar),"utf-8")/sizeof(UChar);        
                         if ( nchars==0 )
-                            plugin_log("mvd_add: failed to convert "
+                            plugin_log_add(log,"mvd_add: failed to convert "
                                 "description string\n");
                     }
                     else
-                        plugin_log("mvd_add: failed to allocate unicode buffer\n");
-                    sane = (description!=NULL);
+                        plugin_log_add(log,
+                            "mvd_add: failed to allocate unicode buffer\n");
+                    sane = (v_description!=NULL);
                 }
                 else if ( strcmp(name,"encoding")==0 )
                 {
@@ -192,7 +196,7 @@ static int parse_options( char *option_string )
                 }
                 else
                 {
-                    plugin_log("mvd_add: unknown option %s\n",name);
+                    plugin_log_add(log,"mvd_add: unknown option %s\n",name);
                     sane = 0;
                 }
             }
@@ -219,39 +223,42 @@ static int parse_options( char *option_string )
 int process( MVD *mvd, char *options, unsigned char **output, 
     unsigned char *data, size_t data_len )
 {
-    plugin_log_clear();
-    int res = parse_options( options );
-    if ( res && data != NULL && data_len > 0 )
+    int res = 0;
+    plugin_log *log = plugin_log_create();
+    if ( log != NULL )
     {
-        size_t *nchars;
-        char *mvd_encoding = mvd_get_encoding(mvd);
-        if ( strcmp(mvd_encoding,encoding)!=0 )
+        res = parse_options( options, log );
+        if ( res && data != NULL && data_len > 0 )
         {
-            plugin_log("file's encoding %s does not match mvd's (%s):"
-                " assimilating...\n",encoding,mvd_encoding);
-        }
-        int nbytes = measure_from_encoding( (char*)data, data_len, encoding );
-        text = malloc( nbytes+sizeof(UChar) );
-        if ( text != NULL )
-        {
-            nbytes = convert_from_encoding(data, data_len, text, 
-                nbytes/sizeof(UChar)+1, encoding)/sizeof(UChar);
-            if ( nbytes > 0 )
+            char *mvd_encoding = mvd_get_encoding(mvd);
+            if ( strcmp(mvd_encoding,encoding)!=0 )
             {
-                tlen = nbytes/sizeof(UChar);
-                suffixtree *st = suffixtree_create( text, tlen );
-                // then process the suffix tree...
+                plugin_log_add(log,"file's encoding %s does not match mvd's (%s):"
+                    " assimilating...\n",encoding,mvd_encoding);
+            }
+            int nbytes = measure_from_encoding( (char*)data, data_len, encoding );
+            text = malloc( nbytes+sizeof(UChar) );
+            if ( text != NULL )
+            {
+                nbytes = convert_from_encoding(data, data_len, text, 
+                    nbytes/sizeof(UChar)+1, encoding)/sizeof(UChar);
+                if ( nbytes > 0 )
+                {
+                    tlen = nbytes/sizeof(UChar);
+                    suffixtree *st = suffixtree_create( text, tlen, log );
+                    // then process the suffix tree...
+                }
+                else
+                    res = 0;
             }
             else
+            {
+                plugin_log_add(log,"failed to allocate uchar buffer\n");
                 res = 0;
+            }
         }
-        else
-        {
-            plugin_log("failed to allocate uchar buffer\n");
-            res = 0;
-        }
+        *output = plugin_log_buffer(log);
     }
-    *output = plugin_log_buffer();
     return res;
 }
 /**
@@ -259,11 +266,12 @@ int process( MVD *mvd, char *options, unsigned char **output,
  */
 char *help()
 {
-    return "options:\n"
-        "text=<file>: file to add to existing MVD (optional)\n"
-        "vid=<vid>: version ID as a /-delimited path\n"
-        "description=<utf8-string>: description of new version\n"
-        "encoding=<canonical-encoding-name>: the text encoding\n";
+    return "options:\n\t"
+        "text=<file>: file to add to existing MVD (optional)\n\t"
+        "vid=<vid>: version ID as a /-delimited path\n\t"
+        "encoding=<ascii-encoding-name>: the text encoding\n\t"
+        "description=<string>: description of new version in encoding\n\t"
+        "debug=1|0: turn debugging on (default off)\n";
 }
 /**
  * Report the plugin's version and author to stdout
@@ -279,6 +287,14 @@ char *plug_version()
 char *name()
 {
     return "add";
+}
+/**
+ * Provide a description of this plugin
+ * @return a string
+ */
+char *description()
+{
+    return "adds a new version to an existing mvd\n";
 }
 /**
  * Test the plugin

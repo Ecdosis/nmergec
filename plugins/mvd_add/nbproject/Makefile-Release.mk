@@ -36,24 +36,12 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 # Object Files
 OBJECTFILES= \
 	${OBJECTDIR}/src/node.o \
-	${OBJECTDIR}/_ext/1161271408/serialiser.o \
-	${OBJECTDIR}/_ext/1161271408/pair.o \
-	${OBJECTDIR}/_ext/1161271408/mvd.o \
-	${OBJECTDIR}/_ext/1445274692/hsieh.o \
 	${OBJECTDIR}/src/benchmark.o \
-	${OBJECTDIR}/_ext/1445274692/dyn_array.o \
-	${OBJECTDIR}/_ext/1161271408/version.o \
+	${OBJECTDIR}/_ext/688439529/plugin_log.o \
 	${OBJECTDIR}/src/suffixtree.o \
 	${OBJECTDIR}/src/path.o \
-	${OBJECTDIR}/src/encoding.o \
-	${OBJECTDIR}/_ext/1161271408/group.o \
 	${OBJECTDIR}/src/test.o \
-	${OBJECTDIR}/src/plugin_log.o \
-	${OBJECTDIR}/_ext/1445274692/link_node.o \
-	${OBJECTDIR}/_ext/1445274692/utils.o \
-	${OBJECTDIR}/src/mvd_add.o \
-	${OBJECTDIR}/_ext/1445274692/hashmap.o \
-	${OBJECTDIR}/_ext/1445274692/bitset.o
+	${OBJECTDIR}/src/mvd_add.o
 
 
 # C Compiler Flags
@@ -85,40 +73,15 @@ ${OBJECTDIR}/src/node.o: src/node.c
 	${RM} $@.d
 	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/node.o src/node.c
 
-${OBJECTDIR}/_ext/1161271408/serialiser.o: ../../src/mvd/serialiser.c 
-	${MKDIR} -p ${OBJECTDIR}/_ext/1161271408
-	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1161271408/serialiser.o ../../src/mvd/serialiser.c
-
-${OBJECTDIR}/_ext/1161271408/pair.o: ../../src/mvd/pair.c 
-	${MKDIR} -p ${OBJECTDIR}/_ext/1161271408
-	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1161271408/pair.o ../../src/mvd/pair.c
-
-${OBJECTDIR}/_ext/1161271408/mvd.o: ../../src/mvd/mvd.c 
-	${MKDIR} -p ${OBJECTDIR}/_ext/1161271408
-	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1161271408/mvd.o ../../src/mvd/mvd.c
-
-${OBJECTDIR}/_ext/1445274692/hsieh.o: ../../src/hsieh.c 
-	${MKDIR} -p ${OBJECTDIR}/_ext/1445274692
-	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1445274692/hsieh.o ../../src/hsieh.c
-
 ${OBJECTDIR}/src/benchmark.o: src/benchmark.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/benchmark.o src/benchmark.c
 
-${OBJECTDIR}/_ext/1445274692/dyn_array.o: ../../src/dyn_array.c 
-	${MKDIR} -p ${OBJECTDIR}/_ext/1445274692
+${OBJECTDIR}/_ext/688439529/plugin_log.o: ../shared/src/plugin_log.c 
+	${MKDIR} -p ${OBJECTDIR}/_ext/688439529
 	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1445274692/dyn_array.o ../../src/dyn_array.c
-
-${OBJECTDIR}/_ext/1161271408/version.o: ../../src/mvd/version.c 
-	${MKDIR} -p ${OBJECTDIR}/_ext/1161271408
-	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1161271408/version.o ../../src/mvd/version.c
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/688439529/plugin_log.o ../shared/src/plugin_log.c
 
 ${OBJECTDIR}/src/suffixtree.o: src/suffixtree.c 
 	${MKDIR} -p ${OBJECTDIR}/src
@@ -130,50 +93,15 @@ ${OBJECTDIR}/src/path.o: src/path.c
 	${RM} $@.d
 	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/path.o src/path.c
 
-${OBJECTDIR}/src/encoding.o: src/encoding.c 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/encoding.o src/encoding.c
-
-${OBJECTDIR}/_ext/1161271408/group.o: ../../src/mvd/group.c 
-	${MKDIR} -p ${OBJECTDIR}/_ext/1161271408
-	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1161271408/group.o ../../src/mvd/group.c
-
 ${OBJECTDIR}/src/test.o: src/test.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/test.o src/test.c
 
-${OBJECTDIR}/src/plugin_log.o: src/plugin_log.c 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/plugin_log.o src/plugin_log.c
-
-${OBJECTDIR}/_ext/1445274692/link_node.o: ../../src/link_node.c 
-	${MKDIR} -p ${OBJECTDIR}/_ext/1445274692
-	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1445274692/link_node.o ../../src/link_node.c
-
-${OBJECTDIR}/_ext/1445274692/utils.o: ../../src/utils.c 
-	${MKDIR} -p ${OBJECTDIR}/_ext/1445274692
-	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1445274692/utils.o ../../src/utils.c
-
 ${OBJECTDIR}/src/mvd_add.o: src/mvd_add.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvd_add.o src/mvd_add.c
-
-${OBJECTDIR}/_ext/1445274692/hashmap.o: ../../src/hashmap.c 
-	${MKDIR} -p ${OBJECTDIR}/_ext/1445274692
-	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1445274692/hashmap.o ../../src/hashmap.c
-
-${OBJECTDIR}/_ext/1445274692/bitset.o: ../../src/bitset.c 
-	${MKDIR} -p ${OBJECTDIR}/_ext/1445274692
-	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1445274692/bitset.o ../../src/bitset.c
 
 # Subprojects
 .build-subprojects:

@@ -21,6 +21,7 @@ struct plugin_struct
 	plugin_version_type version;
     plugin_test_type test;
     plugin_name_type name;
+    plugin_description_type description;
 };
 /**
  * Create a plugin from a loaded library handle
@@ -46,6 +47,10 @@ plugin *plugin_create( void *handle )
         plug->version = dlsym(handle, "plug_version");
         if ( plug->version == NULL )
             fprintf(stderr,"plugin: failed to find version function: %s\n", 
+                dlerror() );
+		plug->description = dlsym(handle, "description");
+        if ( plug->description == NULL )
+            fprintf(stderr,"plugin: failed to find description function: %s\n", 
                 dlerror() );
 		plug->test = dlsym(handle, "test");
         if ( plug->test == NULL )
@@ -87,17 +92,25 @@ int plugin_process( plugin *plug, MVD **mvd, char *options,
  * Print the help for this plugin
  * @param plug the plugin in question
  */
-void plugin_help( plugin *plug )
+char *plugin_help( plugin *plug )
 {
-	(plug->help)();
+	return (plug->help)();
 }
 /**
  * Print plugin version and authorship information
  * @param plug the plugin in question
  */
-void plugin_version( plugin *plug )
+char *plugin_version( plugin *plug )
 {
 	return (plug->version)();
+}
+/**
+ * Print plugin version and authorship information
+ * @param plug the plugin in question
+ */
+char *plugin_description( plugin *plug )
+{
+	return (plug->description)();
 }
 /**
  * Test this plugin

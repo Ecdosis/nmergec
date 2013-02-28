@@ -2,8 +2,8 @@
 #include "bitset.h"
 #include "unicode/uchar.h"
 #include "link_node.h"
-#include "mvd/version.h"
-#include "mvd/pair.h"
+#include "version.h"
+#include "pair.h"
 #include "mvd.h"
 #include "plugin.h"
 
@@ -22,16 +22,25 @@ unsigned char *data, size_t data_len )
 /**
  * Print a help message to stdout explaining what the paramerts are
  */
-void help()
+char *help()
 {
-    printf("help\n");
+    return "help\n";
 }
 /**
- * Report the plugin's version and author to stdout
+ * Tell the world what we do          
+ * @return a string
  */
-void plug_version()
+char *description()
 {
-    printf( "version 0.1 (c) 2013 Desmond Schmidt\n");
+    return "rename a versionID and/or its description in an mvd\n"; 
+}
+/**
+ * Report the plugin's version and author 
+ * @return a string
+ */
+char *plug_version()
+{
+    return "version 0.1 (c) 2013 Desmond Schmidt\n";
 }
 /**
  * Report the plugin's name
@@ -39,7 +48,7 @@ void plug_version()
  */
 char *name()
 {
-    return "rename mvd contents";
+    return "rename";
 }
 /**
  * Test the plugin

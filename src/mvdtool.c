@@ -94,7 +94,7 @@ static void usage()
 {
    fprintf(stdout,
     "usage: nmerge [-l] [-p] [-v COMMAND] [-h COMMAND] [-u USER_DATA_FILE]\n"
-       "-m <MVD> -c <COMMAND> -o <OPT-string> \n");
+       "[-m <MVD>] [-o <OPT-string>] -c <COMMAND>\n");
 }
 /**
  * Read in the arguments
@@ -234,7 +234,8 @@ void do_help()
     {
         plugin *plug = plugin_list_get( plugins, command );
         if ( plug != NULL )
-            plugin_help( plug );
+            
+            printf("%s%s",plugin_description(plug),plugin_help(plug) );
     }
 }/**
  * Display the specified plugin version

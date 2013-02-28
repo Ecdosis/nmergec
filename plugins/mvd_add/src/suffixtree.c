@@ -26,10 +26,12 @@
 #include <limits.h>
 #include <string.h>
 #include "unicode/uchar.h"
+#include "plugin_log.h"
 #include "node.h"
 #include "print_tree.h"
 #include "path.h"
 #include "suffixtree.h"
+
 
 typedef struct pos_struct pos;
 // describes a character-position in the tree
@@ -124,9 +126,10 @@ static pos *walk_down( suffixtree *st, node *v, path *p )
  * @param st the suffixtree in question
  * @param j the extension number counting from 0
  * @param i the current phase - 1
+ * @param log the log to record errors in
  * @return the position (combined node and edge-offset)
  */ 
-static pos *find_beta( suffixtree *st, int j, int i )
+static pos *find_beta( suffixtree *st, int j, int i, plugin_log *log )
 {
     pos *p;
     if ( st->old_j > 0 && st->old_j == j )
@@ -151,7 +154,7 @@ static pos *find_beta( suffixtree *st, int j, int i )
     {
         node *v = st->last.v;
         int len = st->last.loc-node_start(st->last.v)+1;
-        path *q = path_create( node_start(v), len );
+        path *q = path_create( node_start(v), len, log );
         v = node_parent( v );
         while ( v != st->root && node_link(v)==NULL )
         {
@@ -166,7 +169,7 @@ static pos *find_beta( suffixtree *st, int j, int i )
         else
         {
             path_dispose( q );
-            p = walk_down( st, st->root, path_create(j,i-j+1) );
+            p = walk_down( st, st->root, path_create(j,i-j+1,log) );
         }
     }
     st->last = *p;
@@ -236,12 +239,13 @@ static void update_old_beta( suffixtree *st, pos *p, int i )
  * @param st the current suffixtree
  * @param j the offset into str of the suffix's start
  * @param i the offset into str at the end of the current prefix
+ * @param log the log to record errors in
  * @return 1 if the phase continues else 0
  */
-static int extension( suffixtree *st, int j, int i )
+static int extension( suffixtree *st, int j, int i, plugin_log *log )
 {
     int res = 1;
-    pos *p = find_beta( st, j, i-1 );
+    pos *p = find_beta( st, j, i-1, log );
     // rule 1 (once a leaf always a leaf)
     if ( node_is_leaf(p->v) && pos_at_edge_end(st,p) )
         res = 1;
@@ -249,7 +253,7 @@ static int extension( suffixtree *st, int j, int i )
     else if ( !continues(st,p,st->str[i]) )
     {
         //printf("applying rule 2 at j=%d for phase %d\n",j,i);
-        node *leaf = node_create_leaf( i );
+        node *leaf = node_create_leaf( i, log );
         if ( p->v==st->root || pos_at_edge_end(st,p) )
         {
             node_add_child( p->v, leaf );
@@ -257,7 +261,7 @@ static int extension( suffixtree *st, int j, int i )
         }
         else
         {
-            node *u = node_split( p->v, p->loc );
+            node *u = node_split( p->v, p->loc, log );
             update_current_link( st, u );
             if ( i-j==1 )
             {
@@ -287,13 +291,14 @@ static int extension( suffixtree *st, int j, int i )
  * Process the prefix of str ending in the given offset
  * @param st the current suffixtree
  * @param i the inclusive end-offset of the prefix
+ * @param log the log to record errors in
  */
-static void phase( suffixtree *st, int i )
+static void phase( suffixtree *st, int i, plugin_log *log )
 {
     int j;
     st->current = NULL;
     for ( j=st->old_j;j<=i;j++ )            
-        if ( !extension(st,j,i) )
+        if ( !extension(st,j,i,log) )
             break;
     // remember number of last extension for next phase
     st->old_j = (j>i)?i:j;
@@ -322,11 +327,11 @@ static void set_e( suffixtree *st, node *v )
  * Build a tree using a given string
  * @param txt the text to build it from
  * @param tlen its length
+ * @param log the log to record errors in
  * @return the finished tree
  */
-suffixtree *suffixtree_create( UChar *txt, size_t tlen )
+suffixtree *suffixtree_create( UChar *txt, size_t tlen, plugin_log *log )
 {
-    // init globals
     suffixtree *st = calloc( 1, sizeof(suffixtree) );
     if ( st != NULL )
     {
@@ -336,16 +341,16 @@ suffixtree *suffixtree_create( UChar *txt, size_t tlen )
         st->str = txt;
         st->slen = tlen;
         // actually build the tree
-        st->root = node_create( 0, 0 );
+        st->root = node_create( 0, 0, log );
         if ( st->root != NULL )
         {
-            st->f = node_create_leaf( 0 );
+            st->f = node_create_leaf( 0, log );
             if ( st->f != NULL )
             {
                 int i;
                 node_add_child( st->root, st->f );
                 for ( i=1; i<=tlen; i++ )
-                    phase(st,i);
+                    phase(st,i,log);
                 set_e( st, st->root );
             }
         }

@@ -122,32 +122,26 @@ unsigned char *data, size_t data_len )
     return res;
 }
 /**
- * Print a help message to stdout explaining what the paramerts are
+ * Return a help message explaining what the parameters are
  */
-void help()
+char *help()
 {
-    printf("help\n");
+    return "options:\n\tencoding=<enc>\n\tdescription="
+        "<string encoded in enc>\n\tdebug=1|0\n";
 }
 /**
  * Report the plugin's version and author to stdout
  */
-void plug_version( char **output )
+char *plug_version()
 {
-    plugin_log *log = plugin_log_create();
-    plugin_log_add( "version 0.1 (c) 2013 Desmond Schmidt\n");
-    *output = plugin_log_buffer();
-    plugin_log_dispose( log );
+    return "version 0.1 (c) 2013 Desmond Schmidt\n";
 }
 /**
  * Report the plugin's version and author to stdout
- * @param output VAR param: set to description string
  */
-void plug_description( char **output )
+char *description()
 {
-    plugin_log *log = plugin_log_create();
-    plugin_log_add( "creates an empty mvd\n");
-    *output = plugin_log_buffer();
-    plugin_log_dispose( log );
+    return "creates an empty mvd\n";
 }
 /**
  * Report the plugin's name
@@ -163,7 +157,7 @@ char *name()
  * @param f VAR param update number of failed tests
  * @return 1 if all tests passed else 0
  */
-int test(int *p,int *f)
+int test(int *p, int *f)
 {
     return 1;
 }

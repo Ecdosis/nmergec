@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 #include <stdlib.h>
-#include "path.h"
 #include "plugin_log.h"
+#include "path.h"
 // for storing gamma (walking across the tree)
 struct path_struct
 {
@@ -26,13 +26,14 @@ struct path_struct
  * Create a path
  * @param start the start index into str
  * @param len the length of this path 
+ * @param log the log to record errors in
  * @return the complete path
  */
-path *path_create( int start, int len )
+path *path_create( int start, int len, plugin_log *log )
 {
     path *p = calloc( 1, sizeof(path) );
     if ( p == NULL )
-        plugin_log("failed to create path\n");
+        plugin_log_add(log,"failed to create path\n");
     else
     {
         p->start = start;

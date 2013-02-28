@@ -2,14 +2,14 @@
 #include "bitset.h"
 #include "unicode/uchar.h"
 #include "link_node.h"
-#include "mvd/version.h"
-#include "mvd/pair.h"
+#include "version.h"
+#include "pair.h"
 #include "mvd.h"
 #include "plugin.h"
 
 /**
  * Do the work of this plugin
- * @param mvd the mvd to manipulte or read
+ * @param mvd the mvd to manipulate or read
  * @param options a string contianing the plugin's options
  * @param output VAR param set to NULL if not needed else the output
  * @return 1 if the process completed successfully
@@ -22,16 +22,25 @@ unsigned char *data, size_t data_len )
 /**
  * Print a help message to stdout explaining what the paramerts are
  */
-void help()
+char *help()
 {
-    printf("help\n");
+    return "help\n";
 }
 /**
  * Report the plugin's version and author to stdout
+ * @return a string
  */
-void plug_version()
+char *plug_version()
 {
-    printf( "version 0.1 (c) 2013 Desmond Schmidt\n");
+    return "version 0.1 (c) 2013 Desmond Schmidt\n";
+}
+/**
+ * Tell the world what we do
+ * @return a string
+ */
+char *description()
+{
+    return "list the variants of a span of text in one version of an mvd\n"; 
 }
 /**
  * Report the plugin's name
@@ -39,7 +48,7 @@ void plug_version()
  */
 char *name()
 {
-    return "compute variants";
+    return "variants";
 }
 /**
  * Test the plugin

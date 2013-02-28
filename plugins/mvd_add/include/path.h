@@ -28,7 +28,7 @@ extern "C" {
 #endif
 
 typedef struct path_struct path;
-path *path_create( int start, int len );
+path *path_create( int start, int len, plugin_log *log );
 void path_prepend( path *p, int len );
 void path_dispose( path *p );
 int path_start( path *p );
