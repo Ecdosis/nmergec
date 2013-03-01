@@ -13,7 +13,7 @@
       <itemPath>include/operation.h</itemPath>
       <itemPath>include/plugin.h</itemPath>
       <itemPath>include/plugin_list.h</itemPath>
-      <itemPath>plugins/mvd_add/include/plugin_log.h</itemPath>
+      <itemPath>plugins/shared/include/plugin_log.h</itemPath>
       <itemPath>include/zip/zip.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"

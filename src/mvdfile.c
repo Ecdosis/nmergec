@@ -642,7 +642,6 @@ MVD *mvd_parse( unsigned char *mvd_data, int len, int old )
     p += 4;
     if ( old )
     {
-        char buf[64];
         // skip over description for now
         int desc_p = p;
         int desc_len = readShort( mvd_data, len, p );
@@ -655,7 +654,6 @@ MVD *mvd_parse( unsigned char *mvd_data, int len, int old )
     }
     else
     {
-        char buf[64];
         encoding = readAsciiString( mvd_data, len, &slen, p );
         p += 2 + slen;
         description = readEncodedString( mvd_data, len, &slen, p, encoding );

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "unicode/uchar.h"
 #include "version.h"
+#include "hashmap.h"
 #include "utils.h"
 #include "unicode/ustring.h"
 #include "encoding.h"

@@ -55,7 +55,7 @@ MVD *mvd_create()
         mvd->versions = dyn_array_create( DEFAULT_VERSION_SIZE );
         mvd->pairs = dyn_array_create( DEFAULT_PAIRS_SIZE );
         mvd->description = (UChar*)"\x0000";
-        mvd->encoding = DEFAULT_ENCODING;
+        mvd->encoding = strdup(DEFAULT_ENCODING);
         mvd->set_size = DEFAULT_SET_SIZE;
         if ( mvd->versions==NULL||mvd->pairs==NULL )
         {
@@ -98,7 +98,7 @@ void *mvd_dispose( MVD *mvd )
     }
     if ( mvd->description != NULL && u_strlen(mvd->description)>0 )
         free( mvd->description );
-    if ( strcmp(mvd->encoding,DEFAULT_ENCODING) != 0 )
+    if ( mvd->encoding != NULL )
         free( mvd->encoding );
     return NULL;
 }
@@ -846,9 +846,7 @@ int mvd_set_description( MVD *mvd, UChar *description )
  */
 int mvd_set_encoding( MVD *mvd, char *encoding )
 {
-    if ( mvd->encoding != NULL 
-        && strcmp(mvd->encoding,DEFAULT_ENCODING) 
-        && strcmp(mvd->encoding,encoding)!=0 )
+    if ( mvd->encoding != NULL )
     {
         free( mvd->encoding );
         mvd->encoding = NULL;

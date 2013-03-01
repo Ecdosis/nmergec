@@ -84,7 +84,7 @@ void plugin_dispose( plugin *plug )
  * @return 1 if it worked else 0
  */
 int plugin_process( plugin *plug, MVD **mvd, char *options, 
-    unsigned char **output, unsigned char *data, size_t data_len )
+    unsigned char *output, unsigned char *data, size_t data_len )
 {
     return (plug->process)(mvd,options,output,data,data_len);
 }

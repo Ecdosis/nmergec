@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include "unicode/uchar.h"
 #include "unicode/ustring.h"
-#include "utils.h"
 #include "hashmap.h"
 #include "hsieh.h"
 #include "utils.h"

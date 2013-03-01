@@ -12,52 +12,11 @@
 #include "utils.h"
 #include "encoding.h"
 #include "plugin_log.h"
+#include "utils.h"
+#include "option_keys.h"
 
-static UChar DEBUG_KEY[] = {'d','e','b','u','g',0};
-static UChar ENCODING_KEY[] = {'e','n','c','o','d','i','n','g',0};
-static UChar DESCRIPTION_KEY[] = {'d','e','s','c','r','i','p',
-    't','i','o','n',0};
 static int debug = 0;
 
-/**
- * Parse the options string into a map of key-value pairs
- * @param options the raw options string name=value
- * @return a map of key value pairs
- */
-static hashmap *parse_options( char *options )
-{
-    hashmap *map = hashmap_create( 6, 0 );
-    if ( map != NULL )
-    {
-        char *str = strdup( options );
-        if ( str != NULL )
-        {
-            char *token = strtok( str, " " );
-            while ( token != NULL )
-            {
-                char *value = strchr( token, '=' );
-                if ( value != NULL )
-                {
-                    *value = '\0';
-                    value++;
-                    strip_quotes( value );
-                    char *key = token;
-                    int klen = strlen(key);
-                    lowercase( key );
-                    UChar *u_key = calloc( klen+1, sizeof(UChar) );
-                    if ( u_key != NULL )
-                    {
-                        ascii_to_uchar( key, u_key, klen+1 );
-                        hashmap_put( map, u_key, value );
-                        free( u_key );
-                    }
-                }
-                token = strtok( NULL, " " );
-            }
-        }
-    }
-    return map;
-}
 /**
  * Do the work of this plugin
  * @param mvd VAR param the mvd to create is stored here
@@ -171,7 +130,30 @@ char *name()
  */
 int test(int *p, int *f)
 {
-    return 1;
+    MVD *mvd;
+    unsigned char *scratch = malloc( SCRATCH_LEN );
+    plugin_log *pl = plugin_log_create( scratch );
+    int res = process( &mvd, "encoding=utf-16 description=test", 
+        scratch, NULL, 0 );
+    if ( res )
+    {
+        *p += 1;
+        char *enc = mvd_get_encoding(mvd);
+        if ( strcmp(enc,"utf-16")==0 )
+            *p += 1;
+        else
+        {
+            plugin_log_add(pl,"encoding should be utf-16 but it is %s\n",enc);
+            *f += 1;
+        }
+    }
+    else
+    {
+        plugin_log_add(pl,"mvd not created\n");
+        *f += 1;
+    }
+    printf("%s",scratch );
+    free( scratch );
 }
 #ifdef MVD_CREATE_TEST
 int main( int argc, char **argv )

@@ -4,13 +4,13 @@
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
-      <itemPath>include/benchmark.h</itemPath>
-      <itemPath>include/node.h</itemPath>
-      <itemPath>include/path.h</itemPath>
+      <itemPath>benchmark.h</itemPath>
+      <itemPath>node.h</itemPath>
+      <itemPath>path.h</itemPath>
       <itemPath>../../include/plugin.h</itemPath>
       <itemPath>../shared/include/plugin_log.h</itemPath>
-      <itemPath>include/print_tree.h</itemPath>
-      <itemPath>include/suffixtree.h</itemPath>
+      <itemPath>suffixtree.h</itemPath>
+      <itemPath>../../mvd/include/utils.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
@@ -19,13 +19,13 @@
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
-      <itemPath>src/benchmark.c</itemPath>
-      <itemPath>src/mvd_add.c</itemPath>
-      <itemPath>src/node.c</itemPath>
-      <itemPath>src/path.c</itemPath>
+      <itemPath>benchmark.c</itemPath>
+      <itemPath>mvd_add.c</itemPath>
+      <itemPath>node.c</itemPath>
+      <itemPath>path.c</itemPath>
       <itemPath>../shared/src/plugin_log.c</itemPath>
-      <itemPath>src/suffixtree.c</itemPath>
-      <itemPath>src/test.c</itemPath>
+      <itemPath>suffixtree.c</itemPath>
+      <itemPath>test.c</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
                    displayName="Test Files"
@@ -49,10 +49,10 @@
       <compileType>
         <cTool>
           <incDir>
-            <pElem>../shared/include</pElem>
             <pElem>../../include</pElem>
             <pElem>../../mvd/include</pElem>
             <pElem>include</pElem>
+            <pElem>../shared/include</pElem>
           </incDir>
         </cTool>
         <linkerTool>

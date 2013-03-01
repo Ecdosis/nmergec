@@ -62,6 +62,12 @@ static int file_size( const char *file_name )
     }
     return (int) sz;
 }
+/**
+ * Read a file and return its contents as an allocated buffer
+ * @param file the file's path
+ * @param len VAR param to set to the length of the contents
+ * @return the file's contents, caller to free
+ */
 char *read_file( char *file, int *len )
 {
 	FILE *fp = fopen(file,"r");
@@ -138,7 +144,7 @@ static int read_args( int argc, char **argv )
                         command = argv[++i];
                         break;
                     case 'u':
-                        user_data = read_file( argv[i+1], &user_data_len );
+                        user_data = read_file( argv[++i], &user_data_len );
                         break;
                     case 'v':
                         op = VERSION;
@@ -287,7 +293,7 @@ void do_command()
             unsigned char *output = malloc( SCRATCH_LEN );
             if ( output != NULL )
             {
-                int res = plugin_process( plug, &mvd, options, &output, 
+                int res = plugin_process( plug, &mvd, options, output, 
                     user_data, user_data_len );
                 fprintf(stderr, "%s", output );
                 if ( mvd != NULL )

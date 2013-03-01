@@ -24,18 +24,18 @@
       </nativedebugger>
       <runprofile version="9">
         <runcommandpicklist>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -m mvds/kinglear.mvd -c ADD -o "version=1"</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -m mvds/kinglear.mvd -c "add version" -o "version=1"</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -m mvds/kinglear.mvd -c add -o "version=1"</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -m mvds/test.mvd -c create -o "encoding=utf-8"</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -h</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" -c create -o "description=\"test\" encoding=\"utf-8\""</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" -c create -o "description=\"test\" encoding=\"utf-8\"" -m test.mvd</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" -c create -h</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" -h create</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" -l</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -m test.mvd -o "" </runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c create -m test.mvd -o "encoding=utf-16 description=test"</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c create -o "encoding=utf-16 description=test" -m test.mvd</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c create -o "encoding=utf-16 description=test debug=1" -m test.mvd</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -m test.mvd -o "encoding=utf-8 description=\"text 1\" vid=\"english/test\"" -u output.txt</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>"${OUTPUT_PATH}" -l</runcommand>
+        <runcommand>"${OUTPUT_PATH}" -c add -m test.mvd -o "encoding=utf-8 description=\"text 1\" vid=\"english/test\"" -u output.txt</runcommand>
         <rundir></rundir>
         <buildfirst>true</buildfirst>
         <terminal-type>0</terminal-type>

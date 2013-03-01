@@ -4,6 +4,7 @@
 #include "unicode/uchar.h"
 #include "unicode/ustring.h"
 #include "dyn_string.h"
+#include "hashmap.h"
 #include "utils.h"
 #ifdef MEMWATCH
 #include "memwatch.h"

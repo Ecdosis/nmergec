@@ -43,6 +43,9 @@
             <pElem>../shared/include</pElem>
             <pElem>../../include</pElem>
           </incDir>
+          <preprocessorList>
+            <Elem>MEMWATCH</Elem>
+          </preprocessorList>
         </cTool>
         <linkerTool>
           <linkerLibItems>

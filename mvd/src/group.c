@@ -3,6 +3,7 @@
 #include <string.h>
 #include "unicode/uchar.h"
 #include "group.h"
+#include "hashmap.h"
 #include "utils.h"
 #ifdef MEMWATCH
 #include "memwatch.h"

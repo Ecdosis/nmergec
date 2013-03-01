@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include "unicode/uchar.h"
+#include "hashmap.h"
 #include "utils.h"
 #ifdef MEMWATCH
 #include "memwatch.h"
@@ -128,4 +129,43 @@ void strip_quotes( char *str )
         j--;
     memcpy( str, &str[i], j-i+1 );
     str[j-i+1] = 0;
+}
+/**
+ * Parse the options string into a map of key-value pairs
+ * @param options the raw options string name=value. values are allocated.
+ * @return a map of key value pairs
+ */
+hashmap *parse_options( char *options )
+{
+    hashmap *map = hashmap_create( 6, 0 );
+    if ( map != NULL )
+    {
+        char *str = strdup( options );
+        if ( str != NULL )
+        {
+            char *token = strtok( str, " " );
+            while ( token != NULL )
+            {
+                char *value = strchr( token, '=' );
+                if ( value != NULL )
+                {
+                    *value = '\0';
+                    value++;
+                    strip_quotes( value );
+                    char *key = token;
+                    int klen = strlen(key);
+                    lowercase( key );
+                    UChar *u_key = calloc( klen+1, sizeof(UChar) );
+                    if ( u_key != NULL )
+                    {
+                        ascii_to_uchar( key, u_key, klen+1 );
+                        hashmap_put( map, u_key, strdup(value) );
+                        free( u_key );
+                    }
+                }
+                token = strtok( NULL, " " );
+            }
+        }
+    }
+    return map;
 }
