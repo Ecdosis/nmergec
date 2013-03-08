@@ -26,8 +26,12 @@
         <runcommandpicklist>
           <runcommandpicklistitem>"${OUTPUT_PATH}"</runcommandpicklistitem>
           <runcommandpicklistitem>build/Debug/GNU-MacOSX/src/test.o</runcommandpicklistitem>
+          <runcommandpicklistitem>build/Debug/GNU-MacOSX/src/aatree.o</runcommandpicklistitem>
+          <runcommandpicklistitem>build/Debug/GNU-MacOSX/mvd_add.o</runcommandpicklistitem>
+          <runcommandpicklistitem>mvd_add</runcommandpicklistitem>
+          <runcommandpicklistitem>mvd_add tests</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>build/Debug/GNU-MacOSX/src/test.o</runcommand>
+        <runcommand>mvd_add tests</runcommand>
         <rundir></rundir>
         <buildfirst>true</buildfirst>
         <terminal-type>0</terminal-type>

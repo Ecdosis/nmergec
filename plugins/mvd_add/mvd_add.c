@@ -14,83 +14,166 @@
 #include "plugin.h"
 #include "encoding.h"
 #include "plugin_log.h"
+#include "node.h"
+#include "pos.h"
 #include "suffixtree.h"
 #include "hashmap.h"
 #include "utils.h"
 #include "option_keys.h"
+#include "matcher.h"
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
 
-// the version ID - a /-delimited string
-static UChar *vid=NULL;
-// description of the version to be added
-static UChar *v_description=NULL;
-// the text itself - we use wide UTF-16 as the basic char type
-static UChar *text;
-// number of wchar_t characters in text 
-static size_t tlen;
-// encoding of the input file
-static char *encoding="utf-8";
+struct add_struct
+{
+    // the version ID - a /-delimited string
+    UChar *vid;
+    // description of the version to be added
+    UChar *v_description;
+    // the text itself - we use wide UTF-16 as the basic char type
+    UChar *text;
+    // number of wchar_t characters in text 
+    size_t tlen;
+    // encoding of the input file
+    char *encoding;
+};
 
 /**
  * Convert an ascii string to unicode using the given encoding
- * @param str an 8-bit plain string
+ * @param src an 8-bit plain string
+ * @param src_len the length of src in BYTES
  * @param encoding the encoding's canonical name
+ * @param dst_len VAR param to whole number of UChars converted into
  * @param log a plugin log to record errors
  * @return an allocated UChar string or NULL
  */
-static UChar *ascii_to_unicode( char *str, char *encoding, plugin_log *log )
+static UChar *ascii_to_unicode( char *src, int src_len, char *encoding, 
+    int *dst_len, plugin_log *log )
 {
-    int u_len = measure_from_encoding( str, strlen(str), encoding );
+    int u_len = measure_from_encoding( src, src_len, encoding );
     UChar *dst = calloc( u_len+1, sizeof(UChar) );
     if ( dst != NULL )
     {
-        int nchars = convert_from_encoding( str,strlen(str),
+        int nchars = convert_from_encoding( src, src_len,
             dst,u_len+1,encoding);
         if ( nchars == 0 )
         {
             plugin_log_add(log,
                 "mvd_add: failed to convert %s via encoding %s\n",
-                str,encoding);
+                src, encoding);
             free( dst );
             dst = NULL;
         }
+        else
+            *dst_len = nchars/sizeof(UChar);
     }
     else
         plugin_log_add(log,"mvd_add: failed to allocate UChar buffer\n");
     return dst;
-}
+}                       
 /**
  * Parse the options
  * @param map of key-value pairs already parsed
  * @param log the log to record errors in
  * @return 1 if the options were sane
  */
-static int set_options( hashmap *map, plugin_log *log )
+static int set_options( struct add_struct *add, hashmap *map, plugin_log *log )
 {
     int sane = 1;
     if ( hashmap_contains(map,ENCODING_KEY) )
-        encoding = hashmap_get(map,ENCODING_KEY);
+        add->encoding = hashmap_get(map,ENCODING_KEY);
     if ( hashmap_contains(map,VID_KEY) )
     {
-        vid = ascii_to_unicode( hashmap_get(map,VID_KEY), encoding, log );
-        if ( vid == NULL )
+        int tlen;
+        char *value = hashmap_get(map,VID_KEY);
+        add->vid = ascii_to_unicode( value, strlen(value), add->encoding, 
+            &tlen, log );
+        if ( add->vid == NULL )
             sane = 0;
     }
     else
     {
-        plugin_log_add(log,"mvd_add: missing required version ID\n");
+        plugin_log_add(log,"mvd_add: missing version ID\n");
         sane = 0;
     }
     if ( hashmap_contains(map,DESCRIPTION_KEY) )
     {
-        v_description = ascii_to_unicode(hashmap_get(map,DESCRIPTION_KEY),
-            encoding,log );
-        if ( v_description == NULL )
+        char *key = hashmap_get(map,DESCRIPTION_KEY);
+        int tlen;
+        add->v_description = ascii_to_unicode(key,strlen(key),
+            add->encoding,&tlen,log );
+        if ( add->v_description == NULL )
+        {
             sane = 0;
+            plugin_log_add(log,"mvd_add: missing version description\n");
+        }
     }
     return sane;
+}
+/**
+ * Add the first version to an mvd
+ * @param mvd the mvd to add it to
+ * @param add the object representing this mvd_add operation
+ * @param text the unicode text that forms the version
+ * @param tlen the length in UChars
+ * @param log the log to record errors in
+ * @return 1 if it worked
+ */ 
+static int add_first_version( MVD *mvd, struct add_struct *add, UChar *text, 
+    int tlen, plugin_log *log )
+{
+    int res = 1;
+    bitset *bs = bitset_create();
+    if ( bs != NULL )
+    {
+        bitset_set( bs, 1 );
+        pair *p = pair_create_basic( bs, text, tlen );
+        res = mvd_add_pair( mvd, p );
+        if ( !res )
+            plugin_log_add(log,
+            "mvd_add: failed to add first version\n");
+        else
+        {
+            version *v = version_create( add->vid, add->v_description );
+            if ( v != NULL )
+                res = mvd_add_version( mvd, v );
+            if ( res == 0 )
+                plugin_log_add(log,
+            "mvd_add: failed to add version\n");
+            else
+                plugin_log_add(log,"success!\n");
+        }
+    }
+    return res;
+}
+/**
+ * Add a version tp an MVD that already has at least one
+ * @param mvd the mvd to add it to
+ * @param text the text to add
+ * @param tlen the length of text in UChars
+ * @param log the log to record errors in
+ * @return 1 if it worked
+ */
+static int add_subsequent_version( MVD *mvd, UChar *text, int tlen, 
+    plugin_log *log )
+{
+    int res = 1;
+    suffixtree *st = suffixtree_create( text, tlen, log );
+    // then process the suffix tree...
+    if ( st != NULL )
+    {
+        plugin_log_add( log, "created tree successfully!\n");
+        int end = mvd_count_pairs(mvd);
+        matcher *m = matcher_create( st, mvd_get_pairs(mvd), 0, end-1, 0, log );
+        res = matcher_align( m );
+        // 1. navigate the pairs list breadth-first
+        // 2. match successive characters in the suffixtree
+        // 3. store them in a priority queue of decreasing length
+        // 4. increase the match's frequency if already present
+        suffixtree_dispose( st );
+    }
+    return res;
 }
 /**
  * Do the work of this plugin
@@ -104,52 +187,64 @@ static int set_options( hashmap *map, plugin_log *log )
 int process( MVD **mvd, char *options, unsigned char *output, 
     unsigned char *data, size_t data_len )
 {
-    int res = 0;
+    int res = 1;
     plugin_log *log = plugin_log_create( output );
     if ( log != NULL )
     {
-        hashmap *map = parse_options( options );
-        if ( map != NULL )
+        struct add_struct *add = calloc( 1, sizeof(struct add_struct) );
+        if ( add != NULL )
         {
-            res = set_options( map, log );
-            if ( res && data != NULL && data_len > 0 )
+            hashmap *map = parse_options( options );
+            if ( map != NULL )
             {
-                char *mvd_encoding = mvd_get_encoding(*mvd);
-                printf("mvd_encoding=%s\n",mvd_encoding);
-                if ( strcmp(mvd_encoding,encoding)!=0 )
+                res = set_options( add, map, log );
+                if ( res && data != NULL && data_len > 0 )
                 {
-                    plugin_log_add(log,
-                        "file's encoding %s does not match mvd's (%s):"
-                        " assimilating...\n",encoding,mvd_encoding);
-                }
-                int nbytes = measure_from_encoding( 
-                    (char*)data, data_len, encoding );
-                text = malloc( nbytes+sizeof(UChar) );
-                if ( text != NULL )
-                {
-                    nbytes = convert_from_encoding(data, data_len, text, 
-                        nbytes/sizeof(UChar)+1, encoding)/sizeof(UChar);
-                    if ( nbytes > 0 )
+                    int tlen;
+                    char *mvd_encoding = mvd_get_encoding(*mvd);
+                    if ( strcmp(mvd_encoding,add->encoding)!=0 )
                     {
-                        tlen = nbytes/sizeof(UChar);
-                        suffixtree *st = suffixtree_create( text, tlen, log );
-                        // then process the suffix tree...
-                        if ( st != NULL )
-                        {
-                            plugin_log_add( log, "created tree successfully!\n");
-                            suffixtree_dispose( st );
-                        }
+                        plugin_log_add(log,
+                            "file's encoding %s does not match mvd's (%s):"
+                            " assimilating...\n",add->encoding,mvd_encoding);
+                    }
+                    UChar *text = ascii_to_unicode( data, data_len, 
+                        mvd_encoding, &tlen, log );
+                    if ( tlen > 0 )
+                    {
+                        if ( mvd_count_versions(*mvd)==0 )
+                            res = add_first_version( *mvd, add, text, tlen,log );
+                        else
+                            res = add_subsequent_version( *mvd, text, tlen,log );
                     }
                     else
+                    {
+                        plugin_log_add(log,"text is empty\n");
                         res = 0;
+                    }
+                }
+                else if ( data_len == 0 )
+                {
+                    plugin_log_add(log,"lacking new version text\n");
+                    res = 0;
                 }
                 else
                 {
-                    plugin_log_add(log,"failed to allocate uchar buffer\n");
+                    plugin_log_add(log,"length was 0\n");
                     res = 0;
                 }
             }
         }
+        else
+        {
+            plugin_log_add(log,"mvd_add: failed to create mvd_add object\n");
+            res = 0;
+        }
+    }
+    else
+    {
+        plugin_log_add(log,"mvd_add: failed to create log object\n");
+        res = 0;
     }
     return res;
 }

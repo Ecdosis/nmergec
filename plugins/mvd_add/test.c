@@ -1,49 +1,29 @@
-#ifdef TEST
+#ifdef MVD_ADD_TEST
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
 #include <limits.h>
 #include <errno.h>
 #include <string.h>
-#include "tree.h"
-#include "main.h"
+#include <unicode/uchar.h>
+#include "plugin_log.h"
+#include "node.h"
+#include "pos.h"
+#include "suffixtree.h"
+#include "version.h"
+#include "bitset.h"
+#include "link_node.h"
+#include "pair.h"
+#include "mvd.h"
+#include "plugin.h"
+#include "hashmap.h"
+#include "utils.h"
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
 static char *folder;
-typedef struct entry_struct entry;
-struct entry_struct
-{
-    char *file;
-    int size;
-    long time;
-    long space;
-    entry *next;
-};
-entry *entries=NULL;
-static void append_entry( entry *e )
-{
-    if (entries == NULL )
-        entries = e;
-    else
-    {
-        entry *f = entries;
-        while ( f->next != NULL )
-            f = f->next;
-        f->next = e;
-    }
-}
-void dispose_entries()
-{
-    entry *e = entries;
-    while ( e != NULL )
-    {
-        entry *next = e->next;
-        free( e->file );
-        free( e );
-        e = next;
-    }
-}
+static char output[SCRATCH_LEN];
+                    
 /**
  * Get the length of an open file
  * @param fp an open FILE handle
@@ -58,7 +38,7 @@ static int file_length( FILE *fp )
 		long long_len = ftell( fp );
 		if ( long_len > INT_MAX )
         {
-			fprintf( stderr,"mvdfile: file too long: %ld", long_len );
+			fprintf( stderr,"mvd_add: file too long: %ld", long_len );
             length = res = 0;
         }
 		else
@@ -72,7 +52,7 @@ static int file_length( FILE *fp )
 	}
 	if ( res != 0 )
     {
-		fprintf(stderr, "mvdfile: failed to read file. error %s\n",
+		fprintf(stderr, "mvd_add: failed to read file. error %s\n",
             strerror(errno) );
         length = 0;
     }
@@ -97,7 +77,7 @@ static char *read_file( char *file, int *flen )
             int read = fread( data, 1, len, fp );
             if ( read != len )
             {
-                fprintf(stderr,"failed to read %s\n",file);
+                fprintf(stderr,"mvd_add: failed to read %s\n",file);
                 free( data );
                 data = NULL;
                 *flen = 0;
@@ -109,7 +89,7 @@ static char *read_file( char *file, int *flen )
             }
         }
         else
-            fprintf(stderr,"failed to allocate file buffer\n");
+            fprintf(stderr,"mvd_add: failed to allocate file buffer\n");
         fclose( fp );
     }
     return data;
@@ -135,47 +115,39 @@ static int read_dir( char *folder )
 {
     int n_files = 0;
     DIR *dir;
+    int res = 1;
     struct dirent *ent;
+    UChar desc[6];
+    MVD *mvd=mvd_create();
+    mvd_set_encoding(mvd, "utf-8");
+    ascii_to_uchar( "test", desc, 6 );
+    mvd_set_description( mvd, desc);
     if ((dir = opendir(folder)) != NULL) 
     {
-        while ((ent = readdir(dir)) != NULL) 
+        while ((ent = readdir(dir)) != NULL && res) 
         {
             int flen;
             if ( strcmp(ent->d_name,".")!=0&&strcmp(ent->d_name,"..")!=0 )
             {
                 char *path = create_path(folder,ent->d_name);
-                char *txt = read_file( path, &flen );
-                if ( txt == NULL )
-                    break;
-                else
+                if ( path != NULL )
                 {
-                    long mem2,mem1 = get_mem_usage();
-                    int64_t time2,time1 = epoch_time();
-                    node *tree = build_tree( txt );
-                    mem2 = get_mem_usage();
-                    time2 = epoch_time();
-                    entry *e = calloc( 1, sizeof(entry) );
-                    if ( e != NULL )
-                    {
-                        e->file = strdup(ent->d_name);
-                        e->space = mem2-mem1;
-                        e->time = time2-time1;
-                        e->size = flen;
-                        append_entry( e );
-                        n_files++;
-                    }
+                    char *txt = read_file( path, &flen );
+                    if ( txt == NULL )
+                        break;
                     else
                     {
-                        n_files = 0;
-                        dispose_entries();
-                        fprintf(stderr,"test: failed to allocate entry\n");
-                        break;
+                        char options[128];
+                        options[0] = 0;
+                        strcat( options, "vid=" );
+                        strcat( options, ent->d_name );
+                        strcat( options, " encoding=utf-8" );
+                        strcat( options, " description=test" );
+                        res = process( &mvd, options, output, txt, flen );
+                        free( txt );
                     }
-                    node_dispose( tree );
-                    free( txt );
-                }
-                if ( path != NULL )
                     free( path );
+                }
             }
         }
         closedir( dir );
@@ -190,18 +162,6 @@ int main( int argc, char **argv )
     if ( argc == 2 )
     {
         int res = read_dir( argv[1] );
-        if ( res > 0 )
-        {
-            entry *e = entries;
-            while ( e != NULL )
-            {
-                printf("%s\t%d\t%ld\t%ld\n",e->file,e->size,e->time,e->space);
-                e = e->next;
-            }
-            dispose_entries();
-        }
     }
-    else
-        fprintf(stderr,"usage: ./suffixtree <dir>\n");
 }
 #endif

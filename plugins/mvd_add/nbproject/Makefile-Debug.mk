@@ -36,12 +36,15 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 # Object Files
 OBJECTFILES= \
 	${OBJECTDIR}/benchmark.o \
-	${OBJECTDIR}/mvd_add.o \
+	${OBJECTDIR}/match.o \
 	${OBJECTDIR}/_ext/688439529/plugin_log.o \
+	${OBJECTDIR}/mvd_add.o \
 	${OBJECTDIR}/suffixtree.o \
+	${OBJECTDIR}/aatree.o \
 	${OBJECTDIR}/test.o \
 	${OBJECTDIR}/path.o \
-	${OBJECTDIR}/node.o
+	${OBJECTDIR}/node.o \
+	${OBJECTDIR}/matcher.o
 
 
 # C Compiler Flags
@@ -71,37 +74,52 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_add.${CND_DLIB_EXT}: ${OBJECTF
 ${OBJECTDIR}/benchmark.o: benchmark.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -g -I../../include -I../../mvd/include -Iinclude -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/benchmark.o benchmark.c
+	$(COMPILE.c) -g -DMVD_ADD_TEST -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/benchmark.o benchmark.c
 
-${OBJECTDIR}/mvd_add.o: mvd_add.c 
+${OBJECTDIR}/match.o: match.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -g -I../../include -I../../mvd/include -Iinclude -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/mvd_add.o mvd_add.c
+	$(COMPILE.c) -g -DMVD_ADD_TEST -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/match.o match.c
 
 ${OBJECTDIR}/_ext/688439529/plugin_log.o: ../shared/src/plugin_log.c 
 	${MKDIR} -p ${OBJECTDIR}/_ext/688439529
 	${RM} $@.d
-	$(COMPILE.c) -g -I../../include -I../../mvd/include -Iinclude -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/688439529/plugin_log.o ../shared/src/plugin_log.c
+	$(COMPILE.c) -g -DMVD_ADD_TEST -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/688439529/plugin_log.o ../shared/src/plugin_log.c
+
+${OBJECTDIR}/mvd_add.o: mvd_add.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} $@.d
+	$(COMPILE.c) -g -DMVD_ADD_TEST -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/mvd_add.o mvd_add.c
 
 ${OBJECTDIR}/suffixtree.o: suffixtree.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -g -I../../include -I../../mvd/include -Iinclude -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/suffixtree.o suffixtree.c
+	$(COMPILE.c) -g -DMVD_ADD_TEST -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/suffixtree.o suffixtree.c
+
+${OBJECTDIR}/aatree.o: aatree.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} $@.d
+	$(COMPILE.c) -g -DMVD_ADD_TEST -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/aatree.o aatree.c
 
 ${OBJECTDIR}/test.o: test.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -g -I../../include -I../../mvd/include -Iinclude -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/test.o test.c
+	$(COMPILE.c) -g -DMVD_ADD_TEST -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/test.o test.c
 
 ${OBJECTDIR}/path.o: path.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -g -I../../include -I../../mvd/include -Iinclude -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/path.o path.c
+	$(COMPILE.c) -g -DMVD_ADD_TEST -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/path.o path.c
 
 ${OBJECTDIR}/node.o: node.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -g -I../../include -I../../mvd/include -Iinclude -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/node.o node.c
+	$(COMPILE.c) -g -DMVD_ADD_TEST -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/node.o node.c
+
+${OBJECTDIR}/matcher.o: matcher.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} $@.d
+	$(COMPILE.c) -g -DMVD_ADD_TEST -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/matcher.o matcher.c
 
 # Subprojects
 .build-subprojects:

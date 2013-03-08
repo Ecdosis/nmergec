@@ -30,18 +30,13 @@
 #include "node.h"
 #include "print_tree.h"
 #include "path.h"
+#include "node.h"
+#include "pos.h"
 #include "suffixtree.h"
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
 
-typedef struct pos_struct pos;
-// describes a character-position in the tree
-struct pos_struct
-{
-    node *v;
-    int loc;
-};
 struct suffixtree_struct
 {
     // the actual string we are building a tree of
@@ -176,6 +171,36 @@ static pos *find_beta( suffixtree *st, int j, int i, plugin_log *log )
     }
     st->last = *p;
     return p;
+}
+/**
+ * Advance a search by one character
+ * @param st the suffixtree to search
+ * @param p the position in the tree to start from, update if c found
+ * @param c the character to find next
+ * @return 1 if the next char was found else 0
+ */
+int suffixtree_advance_pos( suffixtree *st, pos *p, UChar c )
+{
+    int res = 1;
+    if ( node_end(p->v,st->e) > p->loc )
+    {
+        if ( st->str[p->loc+1] == c )
+            p->loc++;
+        else
+            res = 0;
+    }
+    else
+    {
+        node *n = find_child(st,p->v,c);
+        if ( n != NULL )
+        {
+            p->loc = node_start(n);
+            p->v = n;
+        }
+        else
+            res = 0;
+    }
+    return res;
 }
 /**
  * Does the position continue with the given character?
@@ -369,4 +394,13 @@ void suffixtree_dispose( suffixtree *st )
 {
     node_dispose( st->root );
     free( st );
+}
+/**
+ * Get the root node
+ * @param st the suffixtree object
+ * @return the node of the root
+ */
+node *suffixtree_root( suffixtree *st )
+{
+    return st->root;
 }

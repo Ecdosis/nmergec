@@ -53,13 +53,14 @@ unsigned char *data, size_t data_len )
             mvd_set_encoding( *mvd, encoding );
             if ( description != NULL )
             {
+                int slen = strlen(description);
                 int dlen = measure_from_encoding( description, 
-                    strlen(description), encoding );
+                    slen, encoding );
                 UChar *u_description = malloc ( dlen+sizeof(UChar) );
                 if ( u_description != NULL )
                 {
-                    int nchars = convert_from_encoding( description, dlen, 
-                        u_description, dlen+1, encoding );
+                    int nchars = convert_from_encoding( description, slen, 
+                        u_description, (dlen/sizeof(UChar))+1, encoding );
                     if ( nchars > 0 )
                         mvd_set_description( *mvd, u_description );
                     if ( debug )

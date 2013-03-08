@@ -36,12 +36,15 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 # Object Files
 OBJECTFILES= \
 	${OBJECTDIR}/benchmark.o \
-	${OBJECTDIR}/mvd_add.o \
+	${OBJECTDIR}/match.o \
 	${OBJECTDIR}/_ext/688439529/plugin_log.o \
+	${OBJECTDIR}/mvd_add.o \
 	${OBJECTDIR}/suffixtree.o \
+	${OBJECTDIR}/aatree.o \
 	${OBJECTDIR}/test.o \
 	${OBJECTDIR}/path.o \
-	${OBJECTDIR}/node.o
+	${OBJECTDIR}/node.o \
+	${OBJECTDIR}/matcher.o
 
 
 # C Compiler Flags
@@ -73,20 +76,30 @@ ${OBJECTDIR}/benchmark.o: benchmark.c
 	${RM} $@.d
 	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/benchmark.o benchmark.c
 
-${OBJECTDIR}/mvd_add.o: mvd_add.c 
+${OBJECTDIR}/match.o: match.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/mvd_add.o mvd_add.c
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/match.o match.c
 
 ${OBJECTDIR}/_ext/688439529/plugin_log.o: ../shared/src/plugin_log.c 
 	${MKDIR} -p ${OBJECTDIR}/_ext/688439529
 	${RM} $@.d
 	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/688439529/plugin_log.o ../shared/src/plugin_log.c
 
+${OBJECTDIR}/mvd_add.o: mvd_add.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} $@.d
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/mvd_add.o mvd_add.c
+
 ${OBJECTDIR}/suffixtree.o: suffixtree.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
 	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/suffixtree.o suffixtree.c
+
+${OBJECTDIR}/aatree.o: aatree.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} $@.d
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/aatree.o aatree.c
 
 ${OBJECTDIR}/test.o: test.c 
 	${MKDIR} -p ${OBJECTDIR}
@@ -102,6 +115,11 @@ ${OBJECTDIR}/node.o: node.c
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
 	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/node.o node.c
+
+${OBJECTDIR}/matcher.o: matcher.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} $@.d
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/matcher.o matcher.c
 
 # Subprojects
 .build-subprojects:

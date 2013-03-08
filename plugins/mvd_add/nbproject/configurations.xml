@@ -4,11 +4,16 @@
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
+      <itemPath>aatree.h</itemPath>
       <itemPath>benchmark.h</itemPath>
+      <itemPath>match.h</itemPath>
+      <itemPath>matcher.h</itemPath>
       <itemPath>node.h</itemPath>
       <itemPath>path.h</itemPath>
       <itemPath>../../include/plugin.h</itemPath>
       <itemPath>../shared/include/plugin_log.h</itemPath>
+      <itemPath>pos.h</itemPath>
+      <itemPath>state.h</itemPath>
       <itemPath>suffixtree.h</itemPath>
       <itemPath>../../mvd/include/utils.h</itemPath>
     </logicalFolder>
@@ -19,7 +24,10 @@
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
+      <itemPath>aatree.c</itemPath>
       <itemPath>benchmark.c</itemPath>
+      <itemPath>match.c</itemPath>
+      <itemPath>matcher.c</itemPath>
       <itemPath>mvd_add.c</itemPath>
       <itemPath>node.c</itemPath>
       <itemPath>path.c</itemPath>
@@ -51,9 +59,11 @@
           <incDir>
             <pElem>../../include</pElem>
             <pElem>../../mvd/include</pElem>
-            <pElem>include</pElem>
             <pElem>../shared/include</pElem>
           </incDir>
+          <preprocessorList>
+            <Elem>MVD_ADD_TEST</Elem>
+          </preprocessorList>
         </cTool>
         <linkerTool>
           <linkerLibItems>
