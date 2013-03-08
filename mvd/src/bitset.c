@@ -200,6 +200,44 @@ void bitset_and( bitset *bs, bitset *other )
         bs->data[i] &= other->data[i];
 }
 /**
+ * Do two bitsets intersect?
+ * @param s the first bitset
+ * @param b the second bitset
+ * @return 1
+ */
+int bitset_intersects( bitset *a, bitset *b )
+{
+    int i;
+    int res = 0;
+    for ( i=0;i<a->allocated&&i<b->allocated;i++ )
+    {
+        if ( (a->data[i] & b->data[i]) != 0 )
+        {
+            res = 1;
+            break;
+        }
+    }
+    return res;
+}
+/**
+ * Is this bitset empty?
+ * @param bs the bitset in question
+ * @return 1 if it has no bits set to 1
+ */
+int bitset_empty( bitset *bs )
+{
+    int i,res=1;
+    for ( i=0;i<bs->allocated;i++ )
+    {
+        if ( bs->data[i]!= 0 )
+        {
+            res = 0;
+            break;
+        }
+    }
+    return res;
+}
+/**
  * Get a whole byte of bitset info
  * @param bs the bitset to get it from
  * @param index the index of the byte

@@ -21,10 +21,12 @@ bitset *bitset_set( bitset *bs, int i );
 int bitset_get( bitset *bs, int i );
 bitset *bitset_or( bitset *bs, bitset *other );
 void bitset_and( bitset *bs, bitset *other );
+int bitset_intersects( bitset *a, bitset *b );
 int bitset_cardinality( bitset *bs );
 void test_bitset( int *passed, int *failed );
 int bitset_next_set_bit( bitset *bs, int index );
 void bitset_clear( bitset *bs );
+int bitset_empty( bitset *bs );
 int bitset_allocated( bitset *bs );
 unsigned char bitset_get_byte( bitset *bs, int index );
 

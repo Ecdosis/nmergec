@@ -31,6 +31,8 @@ int pair_is_ordinary( pair *p );
 int pair_equals( pair *p, pair *q, char *encoding );
 pair *pair_parent( pair *p );
 int pair_set_id( pair *p, int id );
+UChar *pair_data( pair *p );
+int pair_len( pair *p );
 int pair_id( pair *p );
 link_node *pair_first_child( pair *p );
 int pair_size( pair *p, int versionSetSize );

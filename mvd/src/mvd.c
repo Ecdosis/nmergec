@@ -103,6 +103,15 @@ void *mvd_dispose( MVD *mvd )
     return NULL;
 }
 /**
+ * Expose the pairs array for external manipulation
+ * @param mvd the mvd in question
+ * @return a resizeable array of pairs
+ */
+pair **mvd_get_pairs( MVD *mvd )
+{
+    return (pair**)dyn_array_data(mvd->pairs);
+}
+/**
  * Compute a hashmap of group names to their IDs (needed for old mvd format)
  * @param mvd the mvd in question
  * @return a map of group names to groups
@@ -815,6 +824,15 @@ int mvd_add_version( MVD *mvd, version *v )
 int mvd_count_versions( MVD *mvd )
 {
     return dyn_array_size(mvd->versions);
+}
+/**
+ * Get the number of defined versions
+ * @param mvd the mvd in question
+ * @return the number of versions
+ */
+int mvd_count_pairs( MVD *mvd )
+{
+    return dyn_array_size(mvd->pairs);
 }
 /**
  * Add a pair to the MVD

@@ -49,7 +49,7 @@ int convert_to_encoding( UChar *src, int srclen, char *dst,
  * @param dst the destination buffer
  * @param dstlen the length of the destination in UChars
  * @param charset the charset of the src
- * @return the number of bytes written
+ * @return the number of BYTES written
  */
 int convert_from_encoding( char *src, int srclen, UChar *dst, 
     int dstlen, char *charset )

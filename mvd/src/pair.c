@@ -64,6 +64,32 @@ pair *pair_create_basic( bitset *versions, UChar *data, int len )
     return pair_create( versions, data, len, BASIC_PAIR );
 }
 /**
+ * Get the pair's data. If it is a child, get the parent's data
+ * @param p the pair in question
+ * @return a UTF-16 encoded string
+ */
+UChar *pair_data( pair *p )
+{
+    UChar *data = NULL;
+    if ( p->type==CHILD_PAIR )
+        data = p->parent->data;
+    else
+        data = p->data;
+    return data;
+}
+/**
+ * Get the pair data's length
+ * @param p the pair in question
+ * @return the length
+ */
+int pair_len( pair *p )
+{
+    if ( p->type==CHILD_PAIR )
+        return p->parent->len;
+    else
+        return p->len;
+}
+/**
  * Create a child pair (set parent later). 
  * @param versions the versions of this bitset
  * @return an allocate pair object or NULL

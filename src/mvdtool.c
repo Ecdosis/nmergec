@@ -354,7 +354,7 @@ int main( int argc, char **argv )
  * 3. saving it in the new format
  * @param path the path of the src mvd
  * @param passed VAR param update with number of passed tests
- * @param failed VAR param update with teh number of failed tests
+ * @param failed VAR param update with the number of failed tests
  * @return 1 if the test succeeded
  */
 static int test_mvd( char *path, int *passed, int *failed )

@@ -94,6 +94,15 @@ int dyn_array_add( dyn_array *da, void *obj )
         da->items[da->pos++] = obj;
     return res;
 }
+/**
+ * Get a pointer to the items array
+ * @param da the dyn_array object
+ * @return an array of object pointers
+ */
+void **dyn_array_data( dyn_array *da )
+{
+    return da->items;
+}
 #ifdef MVD_TEST
 void test_dyn_array( int *passed, int *failed )
 {

@@ -76,9 +76,6 @@
             <pElem>mvd/include</pElem>
             <pElem>plugins/shared/include</pElem>
           </incDir>
-          <preprocessorList>
-            <Elem>MEMWATCH</Elem>
-          </preprocessorList>
         </cTool>
         <linkerTool>
           <linkerLibItems>

@@ -46,15 +46,15 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/mvdtool.o \
 	${OBJECTDIR}/src/mvdfile.o \
 	${OBJECTDIR}/src/operation.o \
-	${OBJECTDIR}/src/zip/inflate.o \
 	${OBJECTDIR}/src/memwatch.o \
+	${OBJECTDIR}/src/zip/inflate.o \
 	${OBJECTDIR}/src/plugin_list.o \
 	${OBJECTDIR}/src/test.o \
 	${OBJECTDIR}/src/zip/zutil.o \
 	${OBJECTDIR}/src/zip/inffast.o \
-	${OBJECTDIR}/src/zip/inftrees.o \
 	${OBJECTDIR}/src/zip/adler32.o \
 	${OBJECTDIR}/src/chunk_state.o \
+	${OBJECTDIR}/src/zip/inftrees.o \
 	${OBJECTDIR}/src/zip/trees.o
 
 
@@ -137,15 +137,15 @@ ${OBJECTDIR}/src/operation.o: src/operation.c
 	${RM} $@.d
 	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/operation.o src/operation.c
 
-${OBJECTDIR}/src/zip/inflate.o: src/zip/inflate.c 
-	${MKDIR} -p ${OBJECTDIR}/src/zip
-	${RM} $@.d
-	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/inflate.o src/zip/inflate.c
-
 ${OBJECTDIR}/src/memwatch.o: src/memwatch.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/memwatch.o src/memwatch.c
+
+${OBJECTDIR}/src/zip/inflate.o: src/zip/inflate.c 
+	${MKDIR} -p ${OBJECTDIR}/src/zip
+	${RM} $@.d
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/inflate.o src/zip/inflate.c
 
 ${OBJECTDIR}/src/plugin_list.o: src/plugin_list.c 
 	${MKDIR} -p ${OBJECTDIR}/src
@@ -167,11 +167,6 @@ ${OBJECTDIR}/src/zip/inffast.o: src/zip/inffast.c
 	${RM} $@.d
 	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/inffast.o src/zip/inffast.c
 
-${OBJECTDIR}/src/zip/inftrees.o: src/zip/inftrees.c 
-	${MKDIR} -p ${OBJECTDIR}/src/zip
-	${RM} $@.d
-	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/inftrees.o src/zip/inftrees.c
-
 ${OBJECTDIR}/src/zip/adler32.o: src/zip/adler32.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
@@ -181,6 +176,11 @@ ${OBJECTDIR}/src/chunk_state.o: src/chunk_state.c
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/chunk_state.o src/chunk_state.c
+
+${OBJECTDIR}/src/zip/inftrees.o: src/zip/inftrees.c 
+	${MKDIR} -p ${OBJECTDIR}/src/zip
+	${RM} $@.d
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/inftrees.o src/zip/inftrees.c
 
 ${OBJECTDIR}/src/zip/trees.o: src/zip/trees.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip

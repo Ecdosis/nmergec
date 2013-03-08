@@ -25,6 +25,7 @@
 #include "memwatch.h"
 #endif
 
+// object to store state during a call to process
 struct add_struct
 {
     // the version ID - a /-delimited string
