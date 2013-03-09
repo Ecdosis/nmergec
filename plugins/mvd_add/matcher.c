@@ -26,6 +26,7 @@ struct matcher_struct
     int start;
     int end;
     int transpose;
+    UChar *text;
     aatree *pq;
     plugin_log *log;
 };
@@ -33,6 +34,7 @@ struct matcher_struct
 /**
  * Create a matcher
  * @param st the suffix tree already computed for the new version
+ * @param text the text of the new version
  * @param pairs the pairs array from the MVD
  * @param start the index of the first pair to be aligned
  * @param end the index of the last pair to be aligned
@@ -40,7 +42,7 @@ struct matcher_struct
  * @param log record messages here
  * @return a matcher object ready to go
  */
-matcher *matcher_create( suffixtree *st, pair **pairs, int start, 
+matcher *matcher_create( suffixtree *st, UChar *text, pair **pairs, int start, 
     int end, int transpose, plugin_log *log )
 {
     matcher *m = calloc( 1, sizeof(matcher) );
@@ -50,6 +52,7 @@ matcher *matcher_create( suffixtree *st, pair **pairs, int start,
         m->start = start;
         m->end = end;
         m->pairs = pairs;
+        m->text = text;
         m->st = st;
         m->pq = aatree_create( match_compare, PQUEUE_LIMIT );
         m->transpose = transpose;
@@ -89,7 +92,7 @@ int matcher_align( matcher *m )
         int j,length = pair_len( p );
         for ( j=0;j<length;j++ )
         {
-            match *mt = match_create( i, j, m->pairs, m->end, m->log );
+            match *mt = match_create( i, j, m->pairs, m->st, m->end, m->log );
             if ( mt != NULL )
             {
                 match_set_versions(mt,bitset_clone(pair_versions(m->pairs[i])));
@@ -108,7 +111,8 @@ int matcher_align( matcher *m )
                         else
                             break;
                     } while ( 1 );
-                    if ( !aatree_add(m->pq,queued) )
+                    if ( !is_maximal(queued,m->text) 
+                        || !aatree_add(m->pq,queued) )
                         match_dispose( queued );
                 }
                 else

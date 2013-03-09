@@ -173,9 +173,9 @@ static pos *find_beta( suffixtree *st, int j, int i, plugin_log *log )
     return p;
 }
 /**
- * Advance a search by one character
+ * Advance a search by one character. 
  * @param st the suffixtree to search
- * @param p the position in the tree to start from, update if c found
+ * @param p the position in the tree of the last match, update if c found
  * @param c the character to find next
  * @return 1 if the next char was found else 0
  */

@@ -166,7 +166,8 @@ static int add_subsequent_version( MVD *mvd, UChar *text, int tlen,
     {
         plugin_log_add( log, "created tree successfully!\n");
         int end = mvd_count_pairs(mvd);
-        matcher *m = matcher_create( st, mvd_get_pairs(mvd), 0, end-1, 0, log );
+        matcher *m = matcher_create( st, text, mvd_get_pairs(mvd), 0, 
+            end-1, 0, log );
         res = matcher_align( m );
         // 1. navigate the pairs list breadth-first
         // 2. match successive characters in the suffixtree

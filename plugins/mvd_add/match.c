@@ -39,7 +39,8 @@ struct match_struct
     // next match in this sequence satisfying certain rigid criteria
     match *next;
 };
-match *match_create( int i, int j, pair **pairs, int end, plugin_log *log )
+match *match_create( int i, int j, pair **pairs, suffixtree *st, 
+    int end, plugin_log *log )
 {
     match *mt = calloc( 1, sizeof(match) );
     if ( mt != NULL )
@@ -47,6 +48,7 @@ match *match_create( int i, int j, pair **pairs, int end, plugin_log *log )
         mt->prev_p = mt->end_p = mt->start_p = i;
         mt->prev_pos = mt->end_pos = mt->start_pos = j;
         mt->pairs = pairs;
+        mt->st = st;
         mt->end = end;
     }
     else
@@ -69,7 +71,9 @@ match *match_clone( match *mt, plugin_log *log )
         mt2->start_p = mt->end_p;
         mt2->start_pos = mt->end_pos;
         mt2->len = 0;
-        mt->st_off += mt->len;
+        mt->end_p = mt->prev_p;
+        mt->end_pos = mt->prev_pos;
+            
     }
     else
         plugin_log_add( log, "match: failed to create match object\n");
@@ -162,6 +166,39 @@ int match_follows( match *first, match *second )
     return res;
 }
 /**
+ * Is a match maximal - i.e. does it not extend backwards?
+ * @param m the match or string of matches
+ * @param text the text of the new version
+ * @return 1 if it is maximal else 0
+ */
+int is_maximal( match *m, UChar *text )
+{
+    if ( m->st_off == 0 )
+        return 1;
+    else if ( m->start_pos > 0 )
+    {
+        UChar *data = pair_data( m->pairs[m->start_p] );
+        return text[m->st_off-1] != data[m->start_pos-1];
+    }
+    else
+    {
+        int i = m->start_p-1;
+        do
+        {
+            pair *p = m->pairs[i];
+            if ( bitset_intersects( m->bs, pair_versions(p)) )
+            {
+                if ( pair_len(p) > 0 )
+                {
+                    UChar *data = pair_data(p);
+                    return text[m->st_off-1] != data[pair_len(p)-1];
+                }
+            }
+        }
+        while ( i >= 0 );
+    }
+}
+/**
  * Advance the match position and return the next char
  * @param m the matcher instance
  * @param mt the match object
@@ -169,34 +206,37 @@ int match_follows( match *first, match *second )
  */
 UChar match_advance( match *m )
 {
-    m->prev_p = m->end_p;
-    m->prev_pos = m->end_pos;
-    if ( pair_len(m->pairs[m->end_p])>m->end_pos+1 )
+    UChar c = 0;
+    if ( m->end_p <= m->end )
     {
-        int i;
-        for ( i=m->end_p+1;i<=m->end;i++ )
+        // we are already pointing to a valid character - return it
+        UChar *data = pair_data(m->pairs[m->end_p]);
+        c = data[m->end_pos];
+        m->prev_p = m->end_p;
+        m->prev_pos = m->end_pos;
+        if ( pair_len(m->pairs[m->end_p])-1==m->end_pos )
         {
-            bitset *bs = pair_versions(m->pairs[i]);
-            if ( bitset_intersects(m->bs,bs) )
+            int i;
+            for ( i=m->end_p+1;i<=m->end;i++ )
             {
-                bitset_and( m->bs, bs );
-                if ( pair_len(m->pairs[i])> 0 )
+                bitset *bs = pair_versions(m->pairs[i]);
+                if ( bitset_intersects(m->bs,bs) )
                 {
-                    m->end_p = i;
-                    m->end_pos = 0;
-                    UChar *data = pair_data(m->pairs[i]);
-                    return data[0];
+                    bitset_and( m->bs, bs );
+                    if ( pair_len(m->pairs[i])> 0 )
+                    {
+                        m->end_pos = 0;
+                        break;
+                    }
                 }
             }
+            // point to next pair or beyond the end
+            m->end_p = i;
         }
-        // end of text
-        return (UChar)0;
+        else
+            m->end_pos++;
     }
-    else
-    {
-        UChar *data = pair_data(m->pairs[m->end_p]);
-        return data[++m->end_pos];
-    }
+    return c;
 }
 /**
  * Complete a single match between the pairs list and the suffixtree
@@ -208,14 +248,17 @@ int match_single( match *m )
     UChar c;
     pos loc;
     loc.v = suffixtree_root( m->st );
-    loc.loc = node_start(loc.v);
+    loc.loc = node_start(loc.v)-1;
     do 
     {
         c = match_advance( m );
         if ( c != 0 && suffixtree_advance_pos(m->st,&loc,c) )
-            match_inc_len( m );
+            m->len++;
         else
+        {
+            m->st_off = (loc.loc-m->len)+1;
             break;
+        }
     }
     while ( 1 );
     return m->len > 0;
@@ -236,14 +279,6 @@ int match_inc_end_pos( match *m )
 suffixtree *match_suffixtree( match *m )
 {
     return m->st;
-}
-void match_inc_len( match *m )
-{
-    m->len++;
-}
-void match_set_st_offset( match *m, int off )
-{
-    m->st_off = off;
 }
 int match_len( match *m )
 {
