@@ -20,6 +20,7 @@
 #include "hashmap.h"
 #include "utils.h"
 #include "option_keys.h"
+#include "match.h"
 #include "matcher.h"
 #ifdef MEMWATCH
 #include "memwatch.h"
@@ -168,7 +169,12 @@ static int add_subsequent_version( MVD *mvd, UChar *text, int tlen,
         int end = mvd_count_pairs(mvd);
         matcher *m = matcher_create( st, text, mvd_get_pairs(mvd), 0, 
             end-1, 0, log );
-        res = matcher_align( m );
+        if ( matcher_align( m ) )
+        {
+            match *mt = matcher_get_mum( m );
+            match_print( mt, text );
+        }
+
         // 1. navigate the pairs list breadth-first
         // 2. match successive characters in the suffixtree
         // 3. store them in a priority queue of decreasing length

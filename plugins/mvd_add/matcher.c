@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include "bitset.h"
 #include "unicode/uchar.h"
 #include "link_node.h"
@@ -7,10 +8,10 @@
 #include "node.h"
 #include "pos.h"
 #include "suffixtree.h"
-#include "matcher.h"
 #include "state.h"
 #include "aatree.h"
 #include "match.h"
+#include "matcher.h"
 // number of mismatched characters between consequtive matches
 #define MATCH_K 2
 #define PQUEUE_LIMIT 50
@@ -78,6 +79,48 @@ void matcher_dispose( matcher *m )
     free( m );
 }
 /**
+ * Extend a match as far as you can
+ * @param mt the match to extend
+ * @param text the UTF-16 text of the new version
+ * @param log the log to record errors in
+ * @return the extended/unextended match
+ */
+static match *match_extend( match *mt, UChar *text, plugin_log *log )
+{
+    match *last = mt;
+    match *first = mt;
+    do
+    {
+        match *mt2 = match_clone( mt, log );
+        int distance = 1;
+        do  
+        {
+            if ( match_single(mt2,text) && match_follows(last,mt2) )
+            {// success
+                match_append(last,mt2);
+                mt = last = mt2;
+                break;
+            }
+            else 
+            {// failure: reset and move to next position
+                if ( distance < MATCH_K )
+                {
+                    match_restart( mt2 );
+                    distance++;
+                }
+                else    // give up
+                {
+                    match_dispose( mt2 );
+                    last = NULL;
+                    break;
+                }
+            }
+        }
+        while ( distance <= MATCH_K );
+    } while ( last == mt );
+    return first;
+}
+/**
  * Perform an alignment recursively
  * @param m the matcher to do the alignment within
  * @return 1 if it worked, else 0 on error
@@ -85,7 +128,6 @@ void matcher_dispose( matcher *m )
 int matcher_align( matcher *m )
 {
     int i;
-    match *queued = NULL;
     for ( i=m->start;i<=m->end;i++ )
     {
         pair *p = m->pairs[i];
@@ -96,24 +138,18 @@ int matcher_align( matcher *m )
             if ( mt != NULL )
             {
                 match_set_versions(mt,bitset_clone(pair_versions(m->pairs[i])));
-                if ( match_single(mt) )
+                if ( match_single(mt,m->text) )
                 {
-                    match *last = queued = mt;
-                    do
+                    match *queued = match_extend( mt, m->text, m->log );
+                    match *existing = aatree_add( m->pq, queued );
+                    if ( existing != NULL )
                     {
-                        match *mt2 = match_clone( mt, m->log );
-                        match_single( mt2 );
-                        if ( match_follows(last,mt2) )
-                        {
-                            match_append(last,mt2);
-                            last = mt2;
-                        }
-                        else
-                            break;
-                    } while ( 1 );
-                    if ( !is_maximal(queued,m->text) 
-                        || !aatree_add(m->pq,queued) )
-                        match_dispose( queued );
+                        match_print( queued, m->text );
+                        match_inc_freq( existing );
+                        if ( existing == queued )
+                            continue;
+                    }
+                    match_dispose( queued );
                 }
                 else
                     match_dispose( mt );
@@ -122,4 +158,26 @@ int matcher_align( matcher *m )
                 break;
         }
     }
+    return !aatree_empty(m->pq);
+}
+/**
+ * Get the longest maximal unique match (MUM)
+ * @param m the matcher in question
+ * @return a match, which may be a chain of matches
+ */
+match *matcher_get_mum( matcher *m )
+{
+    match *found = NULL;
+    while ( !aatree_empty(m->pq) )
+    {
+        match *mt = aatree_max( m->pq );
+        if ( match_freq(mt) == 1 )
+        {
+            found = mt;
+            break;
+        }
+        else if ( !aatree_delete(m->pq,mt) )
+            break;
+    }
+    return found;
 }

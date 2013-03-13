@@ -30,8 +30,9 @@
           <runcommandpicklistitem>build/Debug/GNU-MacOSX/mvd_add.o</runcommandpicklistitem>
           <runcommandpicklistitem>mvd_add</runcommandpicklistitem>
           <runcommandpicklistitem>mvd_add tests</runcommandpicklistitem>
+          <runcommandpicklistitem>mvd_add english</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>mvd_add tests</runcommand>
+        <runcommand>mvd_add english</runcommand>
         <rundir></rundir>
         <buildfirst>true</buildfirst>
         <terminal-type>0</terminal-type>

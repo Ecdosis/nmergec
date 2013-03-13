@@ -1,7 +1,9 @@
 #include <stdlib.h>
 #include <limits.h>
+#include <stdio.h>
 #include "bitset.h"
 #include <unicode/uchar.h>
+#include <unicode/ustring.h>
 #include "link_node.h"
 #include "pair.h"
 #include "plugin_log.h"
@@ -30,6 +32,8 @@ struct match_struct
     int len;
     // index of last pair
     int end;
+    // number of times this match has been found
+    int freq;
     // pairs array - read only
     pair **pairs;
     // suffix tree of new version to match pairs against - read only
@@ -72,8 +76,7 @@ match *match_clone( match *mt, plugin_log *log )
         mt2->start_pos = mt->end_pos;
         mt2->len = 0;
         mt->end_p = mt->prev_p;
-        mt->end_pos = mt->prev_pos;
-            
+        mt->end_pos = mt->prev_pos; 
     }
     else
         plugin_log_add( log, "match: failed to create match object\n");
@@ -120,6 +123,37 @@ static int next_pair( pair **pairs, int end, int pos, bitset *bs )
     if ( i <= end )
         res = i;
     return res;
+}
+/**
+ * Restart a match by restarting it one character further on
+ * @param m the match to restart
+ * @return 1 if it worked else 0 (ran out of text)
+ */
+int match_restart( match *m )
+{
+    int old_p = m->start_p;
+    if ( m->start_pos == pair_len( m->pairs[m->start_p]) )
+    {
+        do
+        {
+            m->start_p = next_pair( m->pairs, m->end, m->start_p+1, m->bs );
+        }
+        while (m->start_p != -1 && pair_len(m->pairs[m->start_p])==0 );
+        if ( m->start_p != -1 )
+            m->start_pos = 0;
+        else
+            return 0;
+    }
+    else
+        m->start_pos++;
+    if ( old_p != m->start_p )
+        bitset_and( m->bs, pair_versions(m->pairs[m->start_p]) );
+    m->end_pos = m->start_pos;
+    m->end_p = m->start_p;
+    m->prev_p = m->end_p;
+    m->prev_pos = m->end_pos;
+    m->len = 0;
+    return 1;
 }
 /**
  * Does one match follow another within a certain edit distance (KDIST)
@@ -180,6 +214,10 @@ int is_maximal( match *m, UChar *text )
         UChar *data = pair_data( m->pairs[m->start_p] );
         return text[m->st_off-1] != data[m->start_pos-1];
     }
+    else if ( m->start_p == 0 )
+    {
+        return 1;
+    }
     else
     {
         int i = m->start_p-1;
@@ -199,19 +237,16 @@ int is_maximal( match *m, UChar *text )
     }
 }
 /**
- * Advance the match position and return the next char
+ * Advance the match position
  * @param m the matcher instance
  * @param mt the match object
- * @return the next UChar or 0 if this we reached the end
+ * @return 1 if we could advance else 0 if we reached the end
  */
-UChar match_advance( match *m )
+int match_advance( match *m )
 {
-    UChar c = 0;
+    int res = 0;
     if ( m->end_p <= m->end )
     {
-        // we are already pointing to a valid character - return it
-        UChar *data = pair_data(m->pairs[m->end_p]);
-        c = data[m->end_pos];
         m->prev_p = m->end_p;
         m->prev_pos = m->end_pos;
         if ( pair_len(m->pairs[m->end_p])-1==m->end_pos )
@@ -235,33 +270,47 @@ UChar match_advance( match *m )
         }
         else
             m->end_pos++;
+        res = 1;
     }
-    return c;
+    return res;
 }
 /**
  * Complete a single match between the pairs list and the suffixtree
  * @param m the match all ready to go
- * @return 1 if the match was successful else 0
+ * @param text the text of the new version
+ * @return 1 if the match was at least 1 char long else 0
  */
-int match_single( match *m )
+int match_single( match *m, UChar *text )
 {
     UChar c;
     pos loc;
+    int maximal = 0;
     loc.v = suffixtree_root( m->st );
     loc.loc = node_start(loc.v)-1;
     do 
     {
-        c = match_advance( m );
-        if ( c != 0 && suffixtree_advance_pos(m->st,&loc,c) )
-            m->len++;
-        else
+        UChar *data = pair_data(m->pairs[m->end_p]);
+        c = data[m->end_pos];
+        if ( suffixtree_advance_pos(m->st,&loc,c) )
         {
-            m->st_off = (loc.loc-m->len)+1;
-            break;
+            if ( !maximal && node_is_leaf(loc.v) )
+            {
+                m->st_off = node_start(loc.v)-m->len;
+                if ( !is_maximal(m,text) )
+                    break;
+                else
+                    maximal = 1;
+            }
+            if ( match_advance(m) )
+                m->len++;
+            else
+                break;
         }
+        else
+            break;
     }
     while ( 1 );
-    return m->len > 0;
+    return maximal;
 }
 int match_start_index( match *m )
 {
@@ -326,4 +375,63 @@ int match_compare( void *a, void *b )
         return -1;
     else
         return 0;
+}
+/**
+ * Increment this match's frequency
+ * @param m the match in question
+ */
+void match_inc_freq( match *m )
+{
+    m->freq++;
+}
+/**
+ * Get the match's frequency
+ * @param m the match in question
+ * @return the number of times it was found
+ */
+int match_freq( match *m )
+{
+    return m->freq;
+}
+static char *print_utf8( UChar *ustr, int src_len )
+{
+    int dst_len = measure_to_encoding( ustr, src_len, "utf-8" );
+    char *buf = malloc( dst_len+1 );
+    if ( buf != NULL )
+    {
+        int n_bytes = convert_to_encoding( ustr, src_len, buf, 
+            dst_len+1, "utf-8" );
+        if ( n_bytes == dst_len )
+        {
+            buf[dst_len] = 0;
+            printf("%s",buf);
+        }
+        free( buf );
+    }
+}
+/**
+ * Print the match to the console
+ * @param m the match in question
+ * @param text the text of the new version to simplify printing
+ */
+void match_print( match *m, UChar *text )
+{
+    match *temp = m;
+    while ( temp != NULL )
+    {
+        print_utf8(&text[temp->st_off],temp->len );
+        if ( temp->next != NULL )
+        {
+            int end = temp->st_off+temp->len;
+            int diff = temp->next->st_off-end;
+            printf("[");
+            if ( diff != 0 )
+                print_utf8(&text[end],diff );
+            else
+                printf("-");
+            printf("]");
+        }
+        temp = temp->next;
+    }
+    printf("\n");
 }

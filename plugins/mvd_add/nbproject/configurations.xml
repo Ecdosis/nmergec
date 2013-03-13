@@ -13,6 +13,7 @@
       <itemPath>../../include/plugin.h</itemPath>
       <itemPath>../shared/include/plugin_log.h</itemPath>
       <itemPath>pos.h</itemPath>
+      <itemPath>pos_queue.h</itemPath>
       <itemPath>state.h</itemPath>
       <itemPath>suffixtree.h</itemPath>
       <itemPath>../../mvd/include/utils.h</itemPath>
@@ -32,6 +33,7 @@
       <itemPath>node.c</itemPath>
       <itemPath>path.c</itemPath>
       <itemPath>../shared/src/plugin_log.c</itemPath>
+      <itemPath>pos_queue.c</itemPath>
       <itemPath>suffixtree.c</itemPath>
       <itemPath>test.c</itemPath>
     </logicalFolder>

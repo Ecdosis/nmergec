@@ -40,6 +40,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/_ext/688439529/plugin_log.o \
 	${OBJECTDIR}/mvd_add.o \
 	${OBJECTDIR}/suffixtree.o \
+	${OBJECTDIR}/pos_queue.o \
 	${OBJECTDIR}/aatree.o \
 	${OBJECTDIR}/test.o \
 	${OBJECTDIR}/path.o \
@@ -95,6 +96,11 @@ ${OBJECTDIR}/suffixtree.o: suffixtree.c
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
 	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/suffixtree.o suffixtree.c
+
+${OBJECTDIR}/pos_queue.o: pos_queue.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} $@.d
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/pos_queue.o pos_queue.c
 
 ${OBJECTDIR}/aatree.o: aatree.c 
 	${MKDIR} -p ${OBJECTDIR}

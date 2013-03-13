@@ -9,8 +9,9 @@ void aatree_dispose( aatree *t );
 void *aatree_find( aatree *t, void *x );
 void *aatree_max( aatree *t );
 void *aatree_min( aatree *t );
-int aatree_add( aatree *t, void *item );
+void *aatree_add( aatree *t, void *item );
 int aatree_delete( aatree *t, void *item );
+int aatree_empty( aatree*t );
 void aatree_test( int *passed, int *failed );
 #endif 
 

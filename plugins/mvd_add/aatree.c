@@ -14,6 +14,7 @@ int num_inserts = 0;
 typedef struct aanode_struct aanode;
 struct aanode_struct
 {
+    // general objects as elements
     void *element;
     aanode *left;
     aanode *right;
@@ -23,6 +24,7 @@ struct aanode_struct
 struct aatree_struct
 {
 	aanode *root;
+    // supply compare function to customise tree
 	compare_func cf;
     aanode *null_node;
 	aanode *delete_ptr;
@@ -90,14 +92,14 @@ void aatree_dispose( aatree *t )
  * @param t the tree in question
  * @param n the node to start from (for recursion)
  * @param x the value to search for
- * @return the node it was found in or NULL if not found 
+ * @return the element found or NULL if not found 
  */
 static void *aatree_search( aatree *t, void *x )
 {
     aanode *current = t->root;
     t->null_node->element = x;
 
-    for( ; ; )
+    while ( 1 )
     {
         if ( t->cf(x,current->element) < 0 )
             current = current->left;
@@ -202,11 +204,12 @@ static aanode *split( aanode *n )
  * @param t the tree object
  * @param n the node to insert starting from
  * @param item the item to insert
+ * @param exists VAR param: set to element if it already exists else NULL
  * @return the new subtree root
  */
-static aanode *aatree_insert( aatree *t, aanode *n, void *item, int *exists )
+static aanode *aatree_insert( aatree *t, aanode *n, void *item, void **exists )
 {
-    *exists = 0;
+    *exists = NULL;
     if ( n == t->null_node )
     {
         n = calloc( 1, sizeof(aanode) );
@@ -228,7 +231,7 @@ static aanode *aatree_insert( aatree *t, aanode *n, void *item, int *exists )
     else if ( t->cf(item,n->element) > 0 )
         n->right = aatree_insert( t, n->right, item, exists );
     else
-        *exists = 1;
+        *exists = n->element;
     n = skew( n );
     n = split( n );
     return n;
@@ -288,41 +291,37 @@ static aanode *aatree_remove( aatree *t, aanode *n, void *item )
  * Add an item to the aatree
  * @param t the tree object
  * @param item the item to add
- * @return 1 if it was added else 0
+ * @return an existing node or the new node if added, NULL on failure
  */
-int aatree_add( aatree *t, void *item )
+void *aatree_add( aatree *t, void *item )
 {
-    int res = 1;
-    int exists = 0;
+    void *exists = NULL;
     if ( t->size == t->limit )
     {
         void *elem = aanode_get_element( t->min );
         if ( t->cf(item,elem)>0 )
         {
-            t->root = aatree_remove( t, t->root, t->min->element );
             t->root = aatree_insert(t,t->root,item,&exists);
-            t->min = aatree_find_min( t, t->root );
-            if ( exists )
+            if ( exists == NULL )
             {
-                t->size--;
-                res = 0;
-            }
+                // tree is now too big
+                t->root = aatree_remove( t, t->root, elem );
+                t->min = aatree_find_min( t, t->root );
+                exists = aatree_search( t, item );
+            }   
         }
-        else
-            res = 0;
     }
     else 
     {
         t->root = aatree_insert(t,t->root,item,&exists);
-        if ( !exists )
+        if ( exists == NULL )
         {
             t->min = aatree_find_min( t, t->root );
             t->size++;
+            exists = aatree_search( t, item );
         }
-        else
-            res = 0;
     }
-    return res;
+    return exists;
 }
 /**
  * Get the current maximum
@@ -415,12 +414,12 @@ void aatree_test( int *passed, int *failed )
     if ( aatree_verify(t,t->root) )
     {
         *passed += 1;
-        printf("tree was OK. size=%d\n",t->size);
+        printf("aatree: tree was OK. size=%d\n",t->size);
     }
     else
     {
         *failed += 1;
-        printf("tree was incorrect. size=%d\n",t->size);
+        printf("aatree: tree was incorrect. size=%d\n",t->size);
     }
     int saved_size = t->size;
     aatree_dispose( t );
@@ -431,4 +430,13 @@ void aatree_test( int *passed, int *failed )
     }
     else
         *passed += 1;
+}
+/**
+ * Is this tree empty?
+ * @param t the tree in question
+ * @return 1 if it si else 0
+ */
+int aatree_empty( aatree *t )
+{
+    return t->size==0;
 }
