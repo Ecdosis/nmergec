@@ -1,4 +1,6 @@
 #include <stdlib.h>
+#include <stdio.h>
+#include "plugin_log.h"
 #include "pos_queue.h"
 
 #define MAX_QUEUE_LEN 32
@@ -141,4 +143,53 @@ int pos_queue_pop( pos_queue *pq )
     }
     else
         return 0;
+}
+/**
+ * Print the queue to stdout for debugging in queue order
+ * @param pq the queue to print
+ */
+void pos_queue_print( pos_queue *pq )
+{
+    int i;
+    for ( i=pq->size-1;i>=0;i-- )
+        printf("p_index: %d p_pos: %d\n",pq->items[i].start_p,
+            pq->items[i].start_pos);
+}
+/**
+ * Test this object
+ * @param passed VAR param increase by the number of passed tests
+ * @param failed VAR param: increase by the number of failed tests
+ */
+void pos_queue_test( int *passed, int *failed )
+{
+    int i;
+    plugin_log *log = plugin_log_create();
+    pos_queue *pq = pos_queue_create( log );
+    pos_queue_add( pq, 10, 5 );
+    pos_queue_add( pq, 5, 15 );
+    pos_queue_add( pq, 1, 95 );
+    pos_queue_add( pq, 4, 45 );
+    pos_queue_add( pq, 1, 15 );
+    pos_queue_add( pq, 1, 23 );
+    for ( i=1;i<pq->size;i++ )
+    {
+        int res = item_compare( &pq->items[i], &pq->items[i-1] );
+        if ( res > 0 )
+        {
+            fprintf(stderr,"pos_queue: que is out of order!\n");
+            *failed += 1;
+            break;
+        }
+    }
+    if ( i == pq->size )
+        *passed += 1;
+    if ( !pos_queue_peek(pq,1,15) )
+    {
+        fprintf(stderr,"pos_queue: peek failed\n");
+        *failed += 1;
+    }
+    else
+        *passed += 1;
+    pos_queue_dispose( pq );
+    plugin_log_dispose( log );
 }

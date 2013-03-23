@@ -35,27 +35,27 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
-	${OBJECTDIR}/src/zip/zip.o \
-	${OBJECTDIR}/src/char_buf.o \
-	${OBJECTDIR}/src/plugin.o \
-	${OBJECTDIR}/src/zip/deflate.o \
-	${OBJECTDIR}/src/dyn_string.o \
-	${OBJECTDIR}/src/zip/crc32.o \
 	${OBJECTDIR}/src/b64.o \
-	${OBJECTDIR}/src/zip/compress.o \
-	${OBJECTDIR}/src/mvdtool.o \
-	${OBJECTDIR}/src/mvdfile.o \
-	${OBJECTDIR}/src/operation.o \
+	${OBJECTDIR}/src/char_buf.o \
+	${OBJECTDIR}/src/chunk_state.o \
+	${OBJECTDIR}/src/dyn_string.o \
 	${OBJECTDIR}/src/memwatch.o \
-	${OBJECTDIR}/src/zip/inflate.o \
+	${OBJECTDIR}/src/mvdfile.o \
+	${OBJECTDIR}/src/mvdtool.o \
+	${OBJECTDIR}/src/operation.o \
+	${OBJECTDIR}/src/plugin.o \
 	${OBJECTDIR}/src/plugin_list.o \
 	${OBJECTDIR}/src/test.o \
-	${OBJECTDIR}/src/zip/zutil.o \
-	${OBJECTDIR}/src/zip/inffast.o \
 	${OBJECTDIR}/src/zip/adler32.o \
-	${OBJECTDIR}/src/chunk_state.o \
+	${OBJECTDIR}/src/zip/compress.o \
+	${OBJECTDIR}/src/zip/crc32.o \
+	${OBJECTDIR}/src/zip/deflate.o \
+	${OBJECTDIR}/src/zip/inffast.o \
+	${OBJECTDIR}/src/zip/inflate.o \
 	${OBJECTDIR}/src/zip/inftrees.o \
-	${OBJECTDIR}/src/zip/trees.o
+	${OBJECTDIR}/src/zip/trees.o \
+	${OBJECTDIR}/src/zip/zip.o \
+	${OBJECTDIR}/src/zip/zutil.o
 
 
 # C Compiler Flags
@@ -80,72 +80,52 @@ LDLIBSOPTIONS=
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nmergec: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nmergec ${OBJECTFILES} ${LDLIBSOPTIONS} 
-
-${OBJECTDIR}/src/zip/zip.o: src/zip/zip.c 
-	${MKDIR} -p ${OBJECTDIR}/src/zip
-	${RM} $@.d
-	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/zip.o src/zip/zip.c
-
-${OBJECTDIR}/src/char_buf.o: src/char_buf.c 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/char_buf.o src/char_buf.c
-
-${OBJECTDIR}/src/plugin.o: src/plugin.c 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/plugin.o src/plugin.c
-
-${OBJECTDIR}/src/zip/deflate.o: src/zip/deflate.c 
-	${MKDIR} -p ${OBJECTDIR}/src/zip
-	${RM} $@.d
-	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/deflate.o src/zip/deflate.c
-
-${OBJECTDIR}/src/dyn_string.o: src/dyn_string.c 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/dyn_string.o src/dyn_string.c
-
-${OBJECTDIR}/src/zip/crc32.o: src/zip/crc32.c 
-	${MKDIR} -p ${OBJECTDIR}/src/zip
-	${RM} $@.d
-	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/crc32.o src/zip/crc32.c
+	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nmergec ${OBJECTFILES} ${LDLIBSOPTIONS}
 
 ${OBJECTDIR}/src/b64.o: src/b64.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/b64.o src/b64.c
 
-${OBJECTDIR}/src/zip/compress.o: src/zip/compress.c 
-	${MKDIR} -p ${OBJECTDIR}/src/zip
-	${RM} $@.d
-	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/compress.o src/zip/compress.c
-
-${OBJECTDIR}/src/mvdtool.o: src/mvdtool.c 
+${OBJECTDIR}/src/char_buf.o: src/char_buf.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvdtool.o src/mvdtool.c
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/char_buf.o src/char_buf.c
 
-${OBJECTDIR}/src/mvdfile.o: src/mvdfile.c 
+${OBJECTDIR}/src/chunk_state.o: src/chunk_state.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvdfile.o src/mvdfile.c
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/chunk_state.o src/chunk_state.c
 
-${OBJECTDIR}/src/operation.o: src/operation.c 
+${OBJECTDIR}/src/dyn_string.o: src/dyn_string.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/operation.o src/operation.c
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/dyn_string.o src/dyn_string.c
 
 ${OBJECTDIR}/src/memwatch.o: src/memwatch.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/memwatch.o src/memwatch.c
 
-${OBJECTDIR}/src/zip/inflate.o: src/zip/inflate.c 
-	${MKDIR} -p ${OBJECTDIR}/src/zip
+${OBJECTDIR}/src/mvdfile.o: src/mvdfile.c 
+	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/inflate.o src/zip/inflate.c
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvdfile.o src/mvdfile.c
+
+${OBJECTDIR}/src/mvdtool.o: src/mvdtool.c 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvdtool.o src/mvdtool.c
+
+${OBJECTDIR}/src/operation.o: src/operation.c 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/operation.o src/operation.c
+
+${OBJECTDIR}/src/plugin.o: src/plugin.c 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/plugin.o src/plugin.c
 
 ${OBJECTDIR}/src/plugin_list.o: src/plugin_list.c 
 	${MKDIR} -p ${OBJECTDIR}/src
@@ -157,25 +137,35 @@ ${OBJECTDIR}/src/test.o: src/test.c
 	${RM} $@.d
 	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/test.o src/test.c
 
-${OBJECTDIR}/src/zip/zutil.o: src/zip/zutil.c 
+${OBJECTDIR}/src/zip/adler32.o: src/zip/adler32.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
-	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/zutil.o src/zip/zutil.c
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/adler32.o src/zip/adler32.c
+
+${OBJECTDIR}/src/zip/compress.o: src/zip/compress.c 
+	${MKDIR} -p ${OBJECTDIR}/src/zip
+	${RM} $@.d
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/compress.o src/zip/compress.c
+
+${OBJECTDIR}/src/zip/crc32.o: src/zip/crc32.c 
+	${MKDIR} -p ${OBJECTDIR}/src/zip
+	${RM} $@.d
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/crc32.o src/zip/crc32.c
+
+${OBJECTDIR}/src/zip/deflate.o: src/zip/deflate.c 
+	${MKDIR} -p ${OBJECTDIR}/src/zip
+	${RM} $@.d
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/deflate.o src/zip/deflate.c
 
 ${OBJECTDIR}/src/zip/inffast.o: src/zip/inffast.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
 	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/inffast.o src/zip/inffast.c
 
-${OBJECTDIR}/src/zip/adler32.o: src/zip/adler32.c 
+${OBJECTDIR}/src/zip/inflate.o: src/zip/inflate.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
-	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/adler32.o src/zip/adler32.c
-
-${OBJECTDIR}/src/chunk_state.o: src/chunk_state.c 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/chunk_state.o src/chunk_state.c
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/inflate.o src/zip/inflate.c
 
 ${OBJECTDIR}/src/zip/inftrees.o: src/zip/inftrees.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip
@@ -186,6 +176,16 @@ ${OBJECTDIR}/src/zip/trees.o: src/zip/trees.c
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
 	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/trees.o src/zip/trees.c
+
+${OBJECTDIR}/src/zip/zip.o: src/zip/zip.c 
+	${MKDIR} -p ${OBJECTDIR}/src/zip
+	${RM} $@.d
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/zip.o src/zip/zip.c
+
+${OBJECTDIR}/src/zip/zutil.o: src/zip/zutil.c 
+	${MKDIR} -p ${OBJECTDIR}/src/zip
+	${RM} $@.d
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/zutil.o src/zip/zutil.c
 
 # Subprojects
 .build-subprojects:

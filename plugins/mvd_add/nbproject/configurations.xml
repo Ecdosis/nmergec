@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configurationDescriptor version="84">
+<configurationDescriptor version="88">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
       <itemPath>aatree.h</itemPath>
       <itemPath>benchmark.h</itemPath>
+      <itemPath>linkpair.h</itemPath>
       <itemPath>match.h</itemPath>
       <itemPath>matcher.h</itemPath>
       <itemPath>node.h</itemPath>
@@ -27,6 +28,7 @@
                    projectFiles="true">
       <itemPath>aatree.c</itemPath>
       <itemPath>benchmark.c</itemPath>
+      <itemPath>linkpair.c</itemPath>
       <itemPath>match.c</itemPath>
       <itemPath>matcher.c</itemPath>
       <itemPath>mvd_add.c</itemPath>
@@ -74,6 +76,58 @@
           </linkerLibItems>
         </linkerTool>
       </compileType>
+      <item path="../../include/plugin.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../../mvd/include/utils.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../shared/include/plugin_log.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../shared/src/plugin_log.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="aatree.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="aatree.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="benchmark.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="benchmark.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="linkpair.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="linkpair.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="match.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="match.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="matcher.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="matcher.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="mvd_add.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="node.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="path.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="path.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="pos.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="pos_queue.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="pos_queue.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="state.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="suffixtree.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="suffixtree.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="test.c" ex="false" tool="0" flavor2="0">
+      </item>
     </conf>
     <conf name="Release" type="2">
       <toolsSet>
@@ -94,6 +148,58 @@
           <developmentMode>5</developmentMode>
         </asmTool>
       </compileType>
+      <item path="../../include/plugin.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../../mvd/include/utils.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../shared/include/plugin_log.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../shared/src/plugin_log.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="aatree.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="aatree.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="benchmark.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="benchmark.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="linkpair.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="linkpair.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="match.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="match.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="matcher.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="matcher.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="mvd_add.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="node.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="path.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="path.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="pos.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="pos_queue.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="pos_queue.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="state.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="suffixtree.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="suffixtree.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="test.c" ex="false" tool="0" flavor2="0">
+      </item>
     </conf>
   </confs>
 </configurationDescriptor>

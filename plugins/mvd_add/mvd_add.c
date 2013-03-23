@@ -20,11 +20,16 @@
 #include "hashmap.h"
 #include "utils.h"
 #include "option_keys.h"
+#include "pos_item.h"
 #include "match.h"
+#include "aatree.h"
 #include "matcher.h"
+#include "dyn_array.h"
+#include "alignment.h"
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
+#define ALIGNMENTS_LEN 100 
 
 // object to store state during a call to process
 struct add_struct
@@ -150,7 +155,19 @@ static int add_first_version( MVD *mvd, struct add_struct *add, UChar *text,
     return res;
 }
 /**
- * Add a version tp an MVD that already has at least one
+ * Get the longest match of 3 but favour the 2nd
+ * @param a the first match or NULL
+ * @param b the second match of NULL
+ * @param c the third match or NULL
+ * @return the longest of the three or b
+ */
+match *best_of_three( match *a, match *b, match *c )
+{
+    match *maxAC = (match_total_len(a)>match_total_len(c))?a:c;
+    return (match_total_len(maxAC)>match_total_len(b))?maxAC:b;
+}
+/**
+ * Add a version to an MVD that already has at least one
  * @param mvd the mvd to add it to
  * @param text the text to add
  * @param tlen the length of text in UChars
@@ -161,25 +178,46 @@ static int add_subsequent_version( MVD *mvd, UChar *text, int tlen,
     plugin_log *log )
 {
     int res = 1;
-    suffixtree *st = suffixtree_create( text, tlen, log );
-    // then process the suffix tree...
-    if ( st != NULL )
+    alignment *head = NULL;
+    alignment *tail=NULL;
+    // create initial alignment
+    alignment *a = alignment_create( text, tlen, 0, mvd_count_pairs(mvd)-1,
+        log );
+    if ( a != NULL )
     {
-        plugin_log_add( log, "created tree successfully!\n");
-        int end = mvd_count_pairs(mvd);
-        matcher *m = matcher_create( st, text, mvd_get_pairs(mvd), 0, 
-            end-1, 0, log );
-        if ( matcher_align( m ) )
+        tail = head = a;
+        while ( head != NULL )
         {
-            match *mt = matcher_get_mum( m );
-            match_print( mt, text );
+            alignment *b = head;
+            alignment *left,*right;
+            // this does all the work
+            res = alignment_align( head, mvd_get_pairs(mvd), &left, &right, 
+                log );
+            if ( res )
+            {   
+                head = alignment_pop( head );
+                if ( head == NULL )
+                    tail = NULL;
+                // now update the list
+                if ( tail != NULL )
+                {
+                    if ( left != NULL )
+                        alignment_push( tail, left );
+                    if ( right != NULL )
+                        alignment_push( tail, right );
+                }
+                else if ( left != NULL )    // head,tail is NULL
+                {
+                    head = tail = left;
+                    if ( right != NULL )
+                        alignment_push( tail, right );
+                }
+                else if ( right != NULL )   // left is NULL
+                    head = tail = right;
+            }
+            else
+                break;
         }
-
-        // 1. navigate the pairs list breadth-first
-        // 2. match successive characters in the suffixtree
-        // 3. store them in a priority queue of decreasing length
-        // 4. increase the match's frequency if already present
-        suffixtree_dispose( st );
     }
     return res;
 }

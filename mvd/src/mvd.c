@@ -7,8 +7,8 @@
 #include "unicode/ustring.h"
 #include "pair.h"
 #include "version.h"
-#include "mvd.h"
 #include "dyn_array.h"
+#include "mvd.h"
 #include "version.h"
 #include "serialiser.h"
 #include "group.h"
@@ -107,9 +107,9 @@ void *mvd_dispose( MVD *mvd )
  * @param mvd the mvd in question
  * @return a resizeable array of pairs
  */
-pair **mvd_get_pairs( MVD *mvd )
+dyn_array *mvd_get_pairs( MVD *mvd )
 {
-    return (pair**)dyn_array_data(mvd->pairs);
+    return mvd->pairs;
 }
 /**
  * Compute a hashmap of group names to their IDs (needed for old mvd format)
@@ -182,38 +182,6 @@ static hashmap *mvd_get_groups( MVD *mvd )
  * @param mvd the MVD in question 
  * @param old equals 1 if the old format is being written
  * @return the byte-size of the serialised mvd or 0 on error
- * int dataSize() throws UnsupportedEncodingException
-	{
-		headerSize = groupTableSize = versionTableSize = 
-			pairsTableSize = dataTableSize = 0;
-		// header
-		headerSize = MVDFile.MVD_MAGIC.length; // magic
-		headerSize += 5 * 4; // table offsets etc
-		headerSize += measureUtf8String( description );
-		headerSize += measureUtf8String( encoding );
-		groupTableSize = 2; // number of groups
-		for ( int i=0;i<groups.size();i++ )
-		{
-			Group g = groups.get( i );
-			groupTableSize += g.dataSize();
-		}
-		versionTableSize = 2 + 2; // number of versions + setSize
-		for ( int i=0;i<versions.size();i++ )
-		{
-			Version v = versions.get( i );
-			versionTableSize += v.dataSize();
-		}
-		pairsTableSize = 4;	// number of pairs
-		versionSetSize = (versions.size()+8)/8;
-		for ( int i=0;i<pairs.size();i++ )
-		{
-			Pair p = pairs.get( i );
-			pairsTableSize += p.pairSize(versionSetSize);
-			dataTableSize += p.dataSize();
-		}
-		return headerSize + groupTableSize + versionTableSize 
-			+ pairsTableSize + dataTableSize;
-	}
  */
 int mvd_datasize( MVD *mvd, int old )
 {
@@ -326,13 +294,15 @@ static int mvd_serialise_header( MVD *mvd, unsigned char *data, int len,
     nBytes += 4;
     if ( old )
     {
-        nBytes += write_string( data, len, nBytes, mvd->description, mvd->encoding );
+        nBytes += write_string( data, len, nBytes, mvd->description, 
+            mvd->encoding );
         nBytes += write_ascii_string( data, len, nBytes, mvd->encoding );
     }
     else
     {
         nBytes += write_ascii_string( data, len, nBytes, mvd->encoding );
-        nBytes += write_string( data, len, nBytes, mvd->description, mvd->encoding );
+        nBytes += write_string( data, len, nBytes, mvd->description, 
+            mvd->encoding );
     }
     //printf("header: %d\n",nBytes);
     return nBytes;

@@ -282,6 +282,21 @@ void bitset_clear( bitset *bs )
     for ( i=0;i<bs->allocated;i++ )
         bs->data[i] = 0;
 }
+/**
+ * Clear those bits common to two bitsets
+ * @param bs the bitset whose bits will be cleared
+ * @param other the other read only bitset
+ */
+void bitset_and_not( bitset *bs, bitset *other )
+{
+    int i;
+    unsigned char b;
+    for ( i=0;i<bs->allocated&&i<other->allocated;i++ )
+    {
+        b = other->data[i];
+        bs->data &= ~b;
+    }
+}
 #ifdef MVD_TEST
 /**
  * Print a bitset to stdout

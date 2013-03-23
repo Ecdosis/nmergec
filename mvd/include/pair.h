@@ -43,6 +43,8 @@ int pair_serialise_data( pair *p, unsigned char *data, int len,
     int dataTableOffset, int dataOffset, char *encoding );
 int pair_is_hint( pair *p );
 bitset *pair_versions( pair *p );
+pair *pair_split( pair **p, int at );
+
 
 #ifdef	__cplusplus
 }

@@ -103,6 +103,18 @@ void **dyn_array_data( dyn_array *da )
 {
     return da->items;
 }
+/**
+ * Remove an item from the array
+ * @param da the dyn_array
+ * @param i the index of the item to remove
+ */
+void dyn_array_remove( dyn_array *da, int i )
+{
+    int j,limit = da->pos-1;
+    for ( j=i;j<limit;j++ )
+        da->items[j] = da->items[j+1];
+    da->pos--;
+}
 #ifdef MVD_TEST
 void test_dyn_array( int *passed, int *failed )
 {

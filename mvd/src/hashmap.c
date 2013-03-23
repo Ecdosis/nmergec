@@ -270,7 +270,7 @@ int hashmap_contains( hashmap *map, UChar *key )
         else
             b = b->next;
     }
-	return 0;
+    return 0;
 }
 /**
  * Get the size of this hashmap

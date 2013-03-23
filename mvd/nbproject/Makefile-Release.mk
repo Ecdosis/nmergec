@@ -35,19 +35,19 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
-	${OBJECTDIR}/src/utils.o \
-	${OBJECTDIR}/src/dyn_array.o \
-	${OBJECTDIR}/src/mvd.o \
-	${OBJECTDIR}/src/version.o \
 	${OBJECTDIR}/src/benchmark.o \
-	${OBJECTDIR}/src/hashmap.o \
-	${OBJECTDIR}/src/pair.o \
-	${OBJECTDIR}/src/encoding.o \
-	${OBJECTDIR}/src/serialiser.o \
-	${OBJECTDIR}/src/link_node.o \
-	${OBJECTDIR}/src/hsieh.o \
 	${OBJECTDIR}/src/bitset.o \
-	${OBJECTDIR}/src/group.o
+	${OBJECTDIR}/src/dyn_array.o \
+	${OBJECTDIR}/src/encoding.o \
+	${OBJECTDIR}/src/group.o \
+	${OBJECTDIR}/src/hashmap.o \
+	${OBJECTDIR}/src/hsieh.o \
+	${OBJECTDIR}/src/link_node.o \
+	${OBJECTDIR}/src/mvd.o \
+	${OBJECTDIR}/src/pair.o \
+	${OBJECTDIR}/src/serialiser.o \
+	${OBJECTDIR}/src/utils.o \
+	${OBJECTDIR}/src/version.o
 
 
 # C Compiler Flags
@@ -72,72 +72,72 @@ LDLIBSOPTIONS=
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd.${CND_DLIB_EXT}: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.c} -dynamiclib -install_name libmvd.${CND_DLIB_EXT} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd.${CND_DLIB_EXT} -fPIC ${OBJECTFILES} ${LDLIBSOPTIONS} 
-
-${OBJECTDIR}/src/utils.o: src/utils.c 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/utils.o src/utils.c
-
-${OBJECTDIR}/src/dyn_array.o: src/dyn_array.c 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/dyn_array.o src/dyn_array.c
-
-${OBJECTDIR}/src/mvd.o: src/mvd.c 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvd.o src/mvd.c
-
-${OBJECTDIR}/src/version.o: src/version.c 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/version.o src/version.c
+	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -dynamiclib -install_name libmvd.${CND_DLIB_EXT} -fPIC
 
 ${OBJECTDIR}/src/benchmark.o: src/benchmark.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/benchmark.o src/benchmark.c
 
-${OBJECTDIR}/src/hashmap.o: src/hashmap.c 
+${OBJECTDIR}/src/bitset.o: src/bitset.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/hashmap.o src/hashmap.c
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/bitset.o src/bitset.c
 
-${OBJECTDIR}/src/pair.o: src/pair.c 
+${OBJECTDIR}/src/dyn_array.o: src/dyn_array.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/pair.o src/pair.c
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/dyn_array.o src/dyn_array.c
 
 ${OBJECTDIR}/src/encoding.o: src/encoding.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/encoding.o src/encoding.c
 
-${OBJECTDIR}/src/serialiser.o: src/serialiser.c 
+${OBJECTDIR}/src/group.o: src/group.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/serialiser.o src/serialiser.c
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/group.o src/group.c
 
-${OBJECTDIR}/src/link_node.o: src/link_node.c 
+${OBJECTDIR}/src/hashmap.o: src/hashmap.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/link_node.o src/link_node.c
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/hashmap.o src/hashmap.c
 
 ${OBJECTDIR}/src/hsieh.o: src/hsieh.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/hsieh.o src/hsieh.c
 
-${OBJECTDIR}/src/bitset.o: src/bitset.c 
+${OBJECTDIR}/src/link_node.o: src/link_node.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/bitset.o src/bitset.c
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/link_node.o src/link_node.c
 
-${OBJECTDIR}/src/group.o: src/group.c 
+${OBJECTDIR}/src/mvd.o: src/mvd.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/group.o src/group.c
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvd.o src/mvd.c
+
+${OBJECTDIR}/src/pair.o: src/pair.c 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/pair.o src/pair.c
+
+${OBJECTDIR}/src/serialiser.o: src/serialiser.c 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/serialiser.o src/serialiser.c
+
+${OBJECTDIR}/src/utils.o: src/utils.c 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/utils.o src/utils.c
+
+${OBJECTDIR}/src/version.o: src/version.c 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/version.o src/version.c
 
 # Subprojects
 .build-subprojects:

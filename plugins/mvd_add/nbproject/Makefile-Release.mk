@@ -35,17 +35,18 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
-	${OBJECTDIR}/benchmark.o \
-	${OBJECTDIR}/match.o \
 	${OBJECTDIR}/_ext/688439529/plugin_log.o \
-	${OBJECTDIR}/mvd_add.o \
-	${OBJECTDIR}/suffixtree.o \
-	${OBJECTDIR}/pos_queue.o \
 	${OBJECTDIR}/aatree.o \
-	${OBJECTDIR}/test.o \
-	${OBJECTDIR}/path.o \
+	${OBJECTDIR}/benchmark.o \
+	${OBJECTDIR}/linkpair.o \
+	${OBJECTDIR}/match.o \
+	${OBJECTDIR}/matcher.o \
+	${OBJECTDIR}/mvd_add.o \
 	${OBJECTDIR}/node.o \
-	${OBJECTDIR}/matcher.o
+	${OBJECTDIR}/path.o \
+	${OBJECTDIR}/pos_queue.o \
+	${OBJECTDIR}/suffixtree.o \
+	${OBJECTDIR}/test.o
 
 
 # C Compiler Flags
@@ -70,62 +71,67 @@ LDLIBSOPTIONS=
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_add.${CND_DLIB_EXT}: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.c} -dynamiclib -install_name libmvd_add.${CND_DLIB_EXT} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_add.${CND_DLIB_EXT} -fPIC ${OBJECTFILES} ${LDLIBSOPTIONS} 
-
-${OBJECTDIR}/benchmark.o: benchmark.c 
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/benchmark.o benchmark.c
-
-${OBJECTDIR}/match.o: match.c 
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/match.o match.c
+	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_add.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -dynamiclib -install_name libmvd_add.${CND_DLIB_EXT} -fPIC
 
 ${OBJECTDIR}/_ext/688439529/plugin_log.o: ../shared/src/plugin_log.c 
 	${MKDIR} -p ${OBJECTDIR}/_ext/688439529
 	${RM} $@.d
 	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/688439529/plugin_log.o ../shared/src/plugin_log.c
 
-${OBJECTDIR}/mvd_add.o: mvd_add.c 
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/mvd_add.o mvd_add.c
-
-${OBJECTDIR}/suffixtree.o: suffixtree.c 
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/suffixtree.o suffixtree.c
-
-${OBJECTDIR}/pos_queue.o: pos_queue.c 
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/pos_queue.o pos_queue.c
-
 ${OBJECTDIR}/aatree.o: aatree.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
 	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/aatree.o aatree.c
 
-${OBJECTDIR}/test.o: test.c 
+${OBJECTDIR}/benchmark.o: benchmark.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/test.o test.c
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/benchmark.o benchmark.c
 
-${OBJECTDIR}/path.o: path.c 
+${OBJECTDIR}/linkpair.o: linkpair.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/path.o path.c
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/linkpair.o linkpair.c
+
+${OBJECTDIR}/match.o: match.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} $@.d
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/match.o match.c
+
+${OBJECTDIR}/matcher.o: matcher.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} $@.d
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/matcher.o matcher.c
+
+${OBJECTDIR}/mvd_add.o: mvd_add.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} $@.d
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/mvd_add.o mvd_add.c
 
 ${OBJECTDIR}/node.o: node.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
 	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/node.o node.c
 
-${OBJECTDIR}/matcher.o: matcher.c 
+${OBJECTDIR}/path.o: path.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/matcher.o matcher.c
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/path.o path.c
+
+${OBJECTDIR}/pos_queue.o: pos_queue.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} $@.d
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/pos_queue.o pos_queue.c
+
+${OBJECTDIR}/suffixtree.o: suffixtree.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} $@.d
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/suffixtree.o suffixtree.c
+
+${OBJECTDIR}/test.o: test.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} $@.d
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/test.o test.c
 
 # Subprojects
 .build-subprojects:

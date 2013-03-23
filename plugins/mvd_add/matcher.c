@@ -10,15 +10,15 @@
 #include "suffixtree.h"
 #include "state.h"
 #include "aatree.h"
+#include "pos_item.h"
 #include "match.h"
 #include "matcher.h"
-// number of mismatched characters between consequtive matches
-#define MATCH_K 2
-#define PQUEUE_LIMIT 50
+
 /**
  * A matcher is something that looks for matches by comparing the 
  * list of pairs with the suffix tree, which itself represents
- * the new version
+ * the new version. After matching is ended matcher an return the 
+ * best MUM.
  */
 struct matcher_struct
 {
@@ -29,12 +29,14 @@ struct matcher_struct
     int transpose;
     UChar *text;
     aatree *pq;
+    pos_item *avoids;
     plugin_log *log;
 };
 
 /**
  * Create a matcher
  * @param st the suffix tree already computed for the new version
+ * @param pq the priority queue to store the best MUMs
  * @param text the text of the new version
  * @param pairs the pairs array from the MVD
  * @param start the index of the first pair to be aligned
@@ -43,8 +45,8 @@ struct matcher_struct
  * @param log record messages here
  * @return a matcher object ready to go
  */
-matcher *matcher_create( suffixtree *st, UChar *text, pair **pairs, int start, 
-    int end, int transpose, plugin_log *log )
+matcher *matcher_create( suffixtree *st, aatree *pq, UChar *text, 
+    pair **pairs, int start, int end, int transpose, plugin_log *log )
 {
     matcher *m = calloc( 1, sizeof(matcher) );
     if ( m != NULL )
@@ -55,14 +57,8 @@ matcher *matcher_create( suffixtree *st, UChar *text, pair **pairs, int start,
         m->pairs = pairs;
         m->text = text;
         m->st = st;
-        m->pq = aatree_create( match_compare, PQUEUE_LIMIT );
+        m->pq = pq;
         m->transpose = transpose;
-        if ( m->pq == NULL )
-        {
-            plugin_log_add(log,"matcher: failed to create priority queue\n");
-            matcher_dispose( m );
-            m = NULL;
-        }
     }
     else
         plugin_log_add(log, "matcher: failed to allocate object\n");
@@ -74,51 +70,9 @@ matcher *matcher_create( suffixtree *st, UChar *text, pair **pairs, int start,
  */
 void matcher_dispose( matcher *m )
 {
-    if ( m->pq != NULL )
-        aatree_dispose( m->pq );
+    if ( m->avoids != NULL )
+        pos_item_dispose( m->avoids );
     free( m );
-}
-/**
- * Extend a match as far as you can
- * @param mt the match to extend
- * @param text the UTF-16 text of the new version
- * @param log the log to record errors in
- * @return the extended/unextended match
- */
-static match *match_extend( match *mt, UChar *text, plugin_log *log )
-{
-    match *last = mt;
-    match *first = mt;
-    do
-    {
-        match *mt2 = match_clone( mt, log );
-        int distance = 1;
-        do  
-        {
-            if ( match_single(mt2,text) && match_follows(last,mt2) )
-            {// success
-                match_append(last,mt2);
-                mt = last = mt2;
-                break;
-            }
-            else 
-            {// failure: reset and move to next position
-                if ( distance < MATCH_K )
-                {
-                    match_restart( mt2 );
-                    distance++;
-                }
-                else    // give up
-                {
-                    match_dispose( mt2 );
-                    last = NULL;
-                    break;
-                }
-            }
-        }
-        while ( distance <= MATCH_K );
-    } while ( last == mt );
-    return first;
 }
 /**
  * Perform an alignment recursively
@@ -134,50 +88,37 @@ int matcher_align( matcher *m )
         int j,length = pair_len( p );
         for ( j=0;j<length;j++ )
         {
-            match *mt = match_create( i, j, m->pairs, m->st, m->end, m->log );
-            if ( mt != NULL )
+            if ( m->avoids!=NULL && pos_item_peek(m->avoids,i,j) )
+                m->avoids = pos_item_pop( m->avoids );
+            else
             {
-                match_set_versions(mt,bitset_clone(pair_versions(m->pairs[i])));
-                if ( match_single(mt,m->text) )
+                match *mt = match_create( i, j, m->pairs, m->st, m->end, 
+                    m->log );
+                if ( mt != NULL )
                 {
-                    match *queued = match_extend( mt, m->text, m->log );
-                    match *existing = aatree_add( m->pq, queued );
-                    if ( existing != NULL )
+                    match_set_versions(mt,
+                        bitset_clone(pair_versions(m->pairs[i])));
+                    if ( match_single(mt,m->text) )
                     {
-                        match_print( queued, m->text );
-                        match_inc_freq( existing );
-                        if ( existing == queued )
-                            continue;
+                        match *queued = match_extend( mt, &m->avoids, m->text, 
+                            m->log );
+                        match *existing = aatree_add( m->pq, queued );
+                        if ( existing != NULL )
+                        {
+                            //match_print( queued, m->text );
+                            match_inc_freq( existing );
+                            if ( existing == queued )
+                                continue;
+                        }
+                        match_dispose( queued );
                     }
-                    match_dispose( queued );
+                    else
+                        match_dispose( mt );
                 }
                 else
-                    match_dispose( mt );
+                    break;
             }
-            else
-                break;
         }
     }
     return !aatree_empty(m->pq);
-}
-/**
- * Get the longest maximal unique match (MUM)
- * @param m the matcher in question
- * @return a match, which may be a chain of matches
- */
-match *matcher_get_mum( matcher *m )
-{
-    match *found = NULL;
-    while ( !aatree_empty(m->pq) )
-    {
-        match *mt = aatree_max( m->pq );
-        if ( match_freq(mt) == 1 )
-        {
-            found = mt;
-            break;
-        }
-        else if ( !aatree_delete(m->pq,mt) )
-            break;
-    }
-    return found;
 }

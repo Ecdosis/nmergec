@@ -10,8 +10,10 @@
 #include "node.h"
 #include "pos.h"
 #include "suffixtree.h"
+#include "pos_item.h"
 #include "match.h"
 #define KDIST 2
+
 struct match_struct
 {
     // index of first matched/unmatched pair
@@ -67,19 +69,23 @@ match *match_create( int i, int j, pair **pairs, suffixtree *st,
  */
 match *match_clone( match *mt, plugin_log *log )
 {
-    match *mt2 = calloc( 1, sizeof(match) );
-    if ( mt2 != NULL )
+    match *mt2 = NULL;
+    if ( mt->end_p <= mt->end )
     {
-        *mt2 = *mt;
-        // pick up where our parent left off
-        mt2->start_p = mt->end_p;
-        mt2->start_pos = mt->end_pos;
-        mt2->len = 0;
-        mt->end_p = mt->prev_p;
-        mt->end_pos = mt->prev_pos; 
+        mt2 = calloc( 1, sizeof(match) );
+        if ( mt2 != NULL )
+        {
+            *mt2 = *mt;
+            // pick up where our parent left off
+            mt2->start_p = mt->end_p;
+            mt2->start_pos = mt->end_pos;
+            mt2->len = 0;
+            mt->end_p = mt->prev_p;
+            mt->end_pos = mt->prev_pos; 
+        }
+        else
+            plugin_log_add( log, "match: failed to create match object\n");
     }
-    else
-        plugin_log_add( log, "match: failed to create match object\n");
     return mt2;
 }
 /**
@@ -270,9 +276,68 @@ int match_advance( match *m )
         }
         else
             m->end_pos++;
-        res = 1;
+        res = m->end_p<=m->end;
     }
     return res;
+}
+/**
+ * Extend a match as far as you can
+ * @param mt the match to extend
+ * @param avoids record the p/pos locations to avoid
+ * @param text the UTF-16 text of the new version
+ * @param log the log to record errors in
+ * @return the extended/unextended match
+ */
+match *match_extend( match *mt, pos_item **avoids, UChar *text, 
+    plugin_log *log )
+{
+    match *last = mt;
+    match *first = mt;
+    do
+    {
+        match *mt2 = match_clone( mt, log );
+        if ( mt2 != NULL )
+        {
+            *avoids = pos_item_add( *avoids, mt2->start_p, mt2->start_pos );
+            int distance = 1;
+            do  
+            {
+                if ( match_single(mt2,text) && match_follows(last,mt2) )
+                {// success
+                    match_append(last,mt2);
+                    mt = last = mt2;
+                    break;
+                }
+                else 
+                {// failure: reset and move to next position
+                    if ( distance < KDIST )
+                    {
+                        if ( match_restart(mt2) )
+                        {
+                            *avoids = pos_item_add( *avoids, mt2->start_p,
+                                mt2->start_pos );
+                            distance++;
+                        }
+                        else
+                        {
+                            mt = NULL;
+                            break;
+                        }
+                    }
+                    else    // give up
+                    {
+                        match_dispose( mt2 );
+                        last = NULL;
+                        break;
+                    }
+                }
+            }
+            while ( distance <= KDIST );
+        }
+        else
+            mt = NULL;
+    } while ( last == mt );
+    return first;
 }
 /**
  * Complete a single match between the pairs list and the suffixtree
@@ -316,6 +381,18 @@ int match_start_index( match *m )
 {
     return m->start_p;
 }
+int match_start_pos( match *m )
+{
+    return m->start_pos;
+}
+int match_end_index( match *m )
+{
+    return m->end_p;
+}
+int match_end_pos( match *m )
+{
+    return m->end_pos;
+}
 int match_prev_pos( match *m )
 {
     return m->prev_pos;
@@ -333,15 +410,25 @@ int match_len( match *m )
 {
     return m->len;
 }
+/**
+ * Get the total length of a possibly extended match
+ * @param m the matchi n question or NULL
+ * @return its overall length including extensions
+ */
 int match_total_len( match *m )
 {
-    int len = m->len;
-    while ( m->next != NULL )
+    if ( m == NULL )
+        return 0;
+    else
     {
-        m = m->next;
-        len += m->len;
+        int len = m->len;
+        while ( m->next != NULL )
+        {
+            m = m->next;
+            len += m->len;
+        }
+        return len;
     }
-    return len;
 }
 void match_set_versions( match *m, bitset *bs )
 {
