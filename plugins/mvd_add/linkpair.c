@@ -1,10 +1,11 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "unicode/uchar.h"
 #include "bitset.h"
 #include "link_node.h"
 #include "pair.h"
-#include "linkpair.h"
 #include "plugin_log.h"
+#include "linkpair.h"
 #include "dyn_array.h"
 #define IMPLICIT_SIZE 12
 struct linkpair_struct
@@ -23,7 +24,7 @@ linkpair *linkpair_create( pair *p, plugin_log *log )
     if ( lp != NULL )
         lp->p = p;
     else
-        plugin_log_add( "linkpair: failed to create object\n");
+        plugin_log_add( log, "linkpair: failed to create object\n");
 }
 /**
  * Just dispose of us
@@ -56,7 +57,7 @@ void linkpair_set_right( linkpair *lp, linkpair *right )
  * @param lp the linkpair in question
  * @return the next pair on the left
  */
-void linkpair_left( linkpair *lp )
+linkpair *linkpair_left( linkpair *lp )
 {
     return lp->left;
 }
@@ -65,7 +66,7 @@ void linkpair_left( linkpair *lp )
  * @param lp the linkpair in question
  * @return the next pair on the right
  */
-void linkpair_right( linkpair *lp )
+linkpair *linkpair_right( linkpair *lp )
 {
     return lp->right;
 }
@@ -83,9 +84,18 @@ void linkpair_set_st_off( linkpair *lp, int st_off )
  * @param lp the linkpair to set it for
  * @return the index
  */
-void linkpair_st_off( linkpair *lp )
+int linkpair_st_off( linkpair *lp )
 {
     return lp->st_off;
+}
+/**
+ * Get the pair associated with this linkpair
+ * @param lp the linkpair
+ * @return its pair
+ */
+pair *linkpair_pair( linkpair *lp )
+{
+    return lp->p;
 }
 /**
  * Is a linkpair the trailing arc of a node (or a hint)?
@@ -106,8 +116,9 @@ int linkpair_trailing_node( linkpair *lp )
 /**
  * Fix a newly split-off trailing or inserted linkpair 
  * @param lp the linkpair to fix
+ * @param log save errors here
  */
-static void linkpair_fix( linkpair *lp )
+static void linkpair_fix( linkpair *lp, plugin_log *log )
 {
     // 1. find all pairs *implicitly* attached to lp->left+lp
     // that were orphaned when this pair was split
@@ -116,97 +127,113 @@ static void linkpair_fix( linkpair *lp )
     if ( implicits != NULL )
     {
         bitset *bs = bitset_create();
-        while ( temp != NULL )
+        if ( bs != NULL )
         {
-            if ( linkpair_trailing_node(temp) )
-                break;
-            else
+            while ( temp != NULL )
             {
-                bitset_or( bs, pair_versions(temp->p) );
-                dyn_array_add( implicits, temp->p );
-            }
-            temp = temp->right;
-        }
-        // 2. prune implicits
-        temp = lp->left;
-        while ( temp != NULL && !bitset_empty(bs) )
-        {
-            if ( pair_is_hint(temp->p) )
-            {
-                // remove intersecting pairs from the implicits
-                int i;
-                for ( i=0;i<dyn_array_size(implicits);i++ )
+                if ( linkpair_trailing_node(temp) )
+                    break;
+                else
                 {
-                    pair *q = (pair*)dyn_array_get(implicits,i);
-                    bitset *qv = pair_versions(q);
-                    bitset *hv = pair_versions(temp->p);
-                    if ( bitset_intersects(qv,hv) )
+                    bitset_or( bs, pair_versions(temp->p) );
+                    dyn_array_add( implicits, temp->p );
+                }
+                temp = temp->right;
+            }
+            // 2. prune implicits
+            temp = lp->left;
+            while ( temp != NULL && !bitset_empty(bs) )
+            {
+                if ( pair_is_hint(temp->p) )
+                {
+                    // remove intersecting pairs from the implicits
+                    int i;
+                    for ( i=0;i<dyn_array_size(implicits);i++ )
                     {
-                        dyn_array_remove(implicits,i);
-                        bitset_and_not( bs, qv );
+                        pair *q = (pair*)dyn_array_get(implicits,i);
+                        bitset *qv = pair_versions(q);
+                        bitset *hv = pair_versions(temp->p);
+                        if ( bitset_intersects(qv,hv) )
+                        {
+                            dyn_array_remove(implicits,i);
+                            bitset_and_not( bs, qv );
+                        }
+                    }
+                }
+                else
+                {
+                    bitset_and_not( bs, pair_versions(temp->p) );
+                }
+                if ( linkpair_trailing_node(temp) )
+                    break;
+                else
+                    temp = temp->left;
+            }
+            // 3. ensure that all implicits attach to the node preceding lp
+            temp = lp->left;
+            // 3a. get the versions of the preceding node
+            pair *hint = NULL;
+            linkpair *node = NULL;
+            while ( temp->left != NULL )
+            {
+                bitset *pv = pair_versions(temp->p);
+                bitset *lpv = pair_versions(temp->left->p);
+                if ( pair_is_hint(temp->left->p) )
+                {
+                    bitset_and_not( bs, lpv );
+                    node = temp;
+                    hint = temp->left->p;     
+                    break;
+                }
+                else if ( bitset_intersects(pv,lpv) )
+                {
+                    node = temp;
+                    break;
+                }
+                temp = temp->left;
+            }
+            // 4. Add the remaining versions to the hint
+            if ( !bitset_empty(bs) )
+            {
+                if ( hint != NULL )
+                    bitset_or( pair_versions(hint), bs );
+                else
+                {
+                    bitset_set( bs, 0 );
+                    pair *r = pair_create_basic( bs, NULL, 0 );
+                    if ( r != NULL )
+                    {
+                        linkpair *h = linkpair_create( r, log );
+                        if ( h != NULL )
+                        {
+                            h->right = node;
+                            h->left = node->left;
+                            node->left->right = h;
+                            node->left = h;
+                        }
                     }
                 }
             }
-            else
-            {
-                bitset_and_not( bs, pair_versions(temp->p) );
-            }
-            if ( linkpair_trailing_node(temp) )
-                break;
-            temp = temp->left;
-        }
-        // 3. ensure that all implicits attach to the node preceding lp
-        temp = lp->left;
-        // 3a. get the versions of the preceding node
-        bitset *nbs = bitset_create();
-        linkpair hint = NULL;
-        linkpair *node = NULL;
-        while ( temp->left != NULL )
-        {
-            bitset *pv = pair_versions(temp->p);
-            bitset *lpv = pair_versions(temp->left->p);
-            if ( pair_is_hint(temp->left->p) )
-            {
-                bitset_or( nbs, pair_versions(temp->left->left->p) );
-                bitset_or( nbs, pv );
-                bitset_or( nbs, lpv );
-                hint = temp->left->p;
-                break;
-            }
-            else if ( bitset_intersects(pv,lpv) )
-            {
-                bitset_or( nbs, pv );
-                bitset_or( nbs, lpv );
-                node = temp;
-                break;
-            }
-            temp = temp->left;
-        }
-        // 4a. subtract the node versions from the implicit versions 
-        bitset_and_not( bs, nbs );
-        // 4b. Add the remaining versions to the hint
-        if ( !bitset_empty(bs) )
-        {
-            if ( hint != NULL )
-                bitset_or( bs,pair_versions(hint) );
-            else
-            {
-                bitset_set( bs, 0 );
-                pair *r = pair_create_basic( bs, NULL, 0 );
-                if ( r != NULL )
-                {
-                    linkpair h = linkpair_create( r );
-                    if ( h != NULL )
-                    {
-                        h->left = node->left;
-                        node->left = h;
-                    }
-                }
-            }
+            bitset_dispose( bs );
         }
         dyn_array_dispose( implicits );
     }
 }
+/**
+ * Get the next pair in an array
+ * @param pairs a list of linkpairs
+ * @param lp the first linkpair to look at
+ * @param bs the bitset of versions to follow
+ * @return NULL on failure else the the next relevant linkpair
+ */
+linkpair *linkpair_next( linkpair *lp, bitset *bs )
+{
+    while ( lp != NULL 
+        && !bitset_intersects(bs,pair_versions(linkpair_pair(lp))) )
+        lp = linkpair_right(lp);
+    return lp;
+}
+
 /**
  * Split a linkpair and adjust parent/child if not a basic pair
  * @param lp the linkpair to split
@@ -220,13 +247,13 @@ void linkpair_split( linkpair *lp, int at, plugin_log *log )
         pair *q = pair_split( &lp->p, at );
         if ( q != NULL )
         {
-            linkpair *lp2 = linkpair_create( q );
+            linkpair *lp2 = linkpair_create( q, log );
             if ( lp2 != NULL )
             {
                 lp2->right = lp->right;
                 lp->right = lp2;
             }
-            linkpair_fix( lp2 );
+            linkpair_fix( lp2, log );
         }
     }
     else if ( pair_is_child(lp->p) )

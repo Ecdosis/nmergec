@@ -10,6 +10,7 @@
 #include "unicode/ustring.h"
 #include "pair.h"
 #include "version.h"
+#include "dyn_array.h"
 #include "mvd.h"
 #include "plugin.h"
 #include "encoding.h"
@@ -20,11 +21,10 @@
 #include "hashmap.h"
 #include "utils.h"
 #include "option_keys.h"
-#include "pos_item.h"
+#include "linkpair.h"
 #include "match.h"
 #include "aatree.h"
 #include "matcher.h"
-#include "dyn_array.h"
 #include "alignment.h"
 #ifdef MEMWATCH
 #include "memwatch.h"
@@ -167,6 +167,38 @@ match *best_of_three( match *a, match *b, match *c )
     return (match_total_len(maxAC)>match_total_len(b))?maxAC:b;
 }
 /**
+ * Wrap an array of pairs into a doubly linked list
+ * @param pairs a pairs list as a dyn_array
+ * @param log the log to add it to
+ * @return head of the linkpairs list
+ */
+static linkpair *link_pairs( dyn_array *pairs, plugin_log *log )
+{
+    int len = dyn_array_size( pairs );
+    int i;
+    linkpair *head = NULL;
+    linkpair *current;
+    for ( i=0;i<len;i++ )
+    {
+        pair *p = (pair*)dyn_array_get( pairs, i );
+        linkpair *lp = linkpair_create( p, log );
+        if ( lp != NULL )
+        {
+            if ( head == NULL )
+                current = head = lp;
+            else
+            {
+                linkpair_set_right( current, lp );
+                linkpair_set_left( lp, current );
+                current = lp;
+            }
+        }
+        else
+            break;
+    }
+    return head;
+}
+/**
  * Add a version to an MVD that already has at least one
  * @param mvd the mvd to add it to
  * @param text the text to add
@@ -179,44 +211,40 @@ static int add_subsequent_version( MVD *mvd, UChar *text, int tlen,
 {
     int res = 1;
     alignment *head = NULL;
-    alignment *tail=NULL;
     // create initial alignment
-    alignment *a = alignment_create( text, tlen, 0, mvd_count_pairs(mvd)-1,
-        log );
+    alignment *a = alignment_create( text, tlen, mvd_count_versions(mvd), log );
     if ( a != NULL )
     {
-        tail = head = a;
+        head = a;
         while ( head != NULL )
         {
-            alignment *b = head;
             alignment *left,*right;
+            dyn_array *pairs = mvd_get_pairs(mvd);
+            linkpair *pairs_list = link_pairs(pairs,log);
             // this does all the work
-            res = alignment_align( head, mvd_get_pairs(mvd), &left, &right, 
-                log );
+            res = alignment_align( head, pairs_list, &left, &right, log );
             if ( res )
             {   
                 head = alignment_pop( head );
-                if ( head == NULL )
-                    tail = NULL;
                 // now update the list
-                if ( tail != NULL )
+                if ( head != NULL )
                 {
                     if ( left != NULL )
-                        alignment_push( tail, left );
+                        alignment_push( head, left );
                     if ( right != NULL )
-                        alignment_push( tail, right );
+                        alignment_push( head, right );
                 }
                 else if ( left != NULL )    // head,tail is NULL
                 {
-                    head = tail = left;
+                    head = left;
                     if ( right != NULL )
-                        alignment_push( tail, right );
+                        alignment_push( head, right );
                 }
                 else if ( right != NULL )   // left is NULL
-                    head = tail = right;
+                    head = right;
             }
             else
-                break;
+                head = alignment_pop(head);
         }
     }
     return res;

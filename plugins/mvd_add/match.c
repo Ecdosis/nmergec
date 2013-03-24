@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <stdio.h>
+#include <string.h>
 #include "bitset.h"
 #include <unicode/uchar.h>
 #include <unicode/ustring.h>
@@ -10,16 +11,17 @@
 #include "node.h"
 #include "pos.h"
 #include "suffixtree.h"
-#include "pos_item.h"
+#include "hashmap.h"
+#include "linkpair.h"
 #include "match.h"
 #define KDIST 2
 
 struct match_struct
 {
     // index of first matched/unmatched pair
-    int start_p;
+    linkpair *start_p;
     // index of last matched/unmatched pair
-    int end_p;
+    linkpair *end_p;
     // index into data of first pair where we started this match
     int start_pos;
     // index into data of last pair of current match/mismatch
@@ -27,17 +29,15 @@ struct match_struct
     // offset of match in suffixtree's underlying string
     int st_off;
     // last matched value of end_p
-    int prev_p;
+    linkpair *prev_p;
     // last matched value of end_pos
     int prev_pos;
     // length of match
     int len;
-    // index of last pair
-    int end;
     // number of times this match has been found
     int freq;
     // pairs array - read only
-    pair **pairs;
+    linkpair *pairs;
     // suffix tree of new version to match pairs against - read only
     suffixtree *st;
     // cumulative ANDed versions of current matched path
@@ -45,17 +45,16 @@ struct match_struct
     // next match in this sequence satisfying certain rigid criteria
     match *next;
 };
-match *match_create( int i, int j, pair **pairs, suffixtree *st, 
-    int end, plugin_log *log )
+match *match_create( linkpair *start, int j, linkpair *pairs, suffixtree *st, 
+    plugin_log *log )
 {
     match *mt = calloc( 1, sizeof(match) );
     if ( mt != NULL )
     {
-        mt->prev_p = mt->end_p = mt->start_p = i;
+        mt->prev_p = mt->end_p = mt->start_p = start;
         mt->prev_pos = mt->end_pos = mt->start_pos = j;
         mt->pairs = pairs;
         mt->st = st;
-        mt->end = end;
     }
     else
         plugin_log_add( log, "match: failed to create match object\n");
@@ -70,7 +69,7 @@ match *match_create( int i, int j, pair **pairs, suffixtree *st,
 match *match_clone( match *mt, plugin_log *log )
 {
     match *mt2 = NULL;
-    if ( mt->end_p <= mt->end )
+    if ( mt->end_p != NULL )
     {
         mt2 = calloc( 1, sizeof(match) );
         if ( mt2 != NULL )
@@ -113,39 +112,23 @@ void match_append( match *m1, match *m2 )
     temp->next = m2;
 }
 /**
- * Get the next pair in an array
- * @param pairs an array of pairs
- * @param end index of last pair
- * @param pos position of first pair to look at
- * @param bs the bitset of versions to follow
- * @return -1 on failure else the index of the next pair
- */
-static int next_pair( pair **pairs, int end, int pos, bitset *bs )
-{
-    int res = -1;
-    int i = pos;
-    while ( i<=end && !bitset_intersects(bs,pair_versions(pairs[i])) )
-        i++;
-    if ( i <= end )
-        res = i;
-    return res;
-}
-/**
  * Restart a match by restarting it one character further on
  * @param m the match to restart
  * @return 1 if it worked else 0 (ran out of text)
  */
 int match_restart( match *m )
 {
-    int old_p = m->start_p;
-    if ( m->start_pos == pair_len( m->pairs[m->start_p]) )
+    linkpair *old_p = m->start_p;
+    pair *sp = linkpair_pair(m->start_p);
+    if ( m->start_pos == pair_len(sp) )
     {
         do
         {
-            m->start_p = next_pair( m->pairs, m->end, m->start_p+1, m->bs );
+            m->start_p = linkpair_next( linkpair_right(m->start_p), m->bs );
+            sp = linkpair_pair(m->start_p);
         }
-        while (m->start_p != -1 && pair_len(m->pairs[m->start_p])==0 );
-        if ( m->start_p != -1 )
+        while (m->start_p != NULL && pair_len(sp)==0 );
+        if ( m->start_p != NULL )
             m->start_pos = 0;
         else
             return 0;
@@ -153,7 +136,7 @@ int match_restart( match *m )
     else
         m->start_pos++;
     if ( old_p != m->start_p )
-        bitset_and( m->bs, pair_versions(m->pairs[m->start_p]) );
+        bitset_and( m->bs, pair_versions(sp) );
     m->end_pos = m->start_pos;
     m->end_p = m->start_p;
     m->prev_p = m->end_p;
@@ -177,24 +160,24 @@ int match_follows( match *first, match *second )
     if ( second->start_p == first->end_p )
         pairs_dist = second->start_pos-first->end_pos;
     // 2. compute distance between pairs
-    else if ( second->start_p > first->end_p )
+    else if ( second->start_p != first->end_p )
     {
-        pairs_dist = pair_len(first->pairs[first->end_p])-(first->end_pos+1);
-        int i = first->end_p;
+        pairs_dist = pair_len(linkpair_pair(first->end_p))-(first->end_pos+1);
+        linkpair *lp = linkpair_right(first->end_p);
         while ( pairs_dist <= KDIST )
         {
-            i = next_pair( first->pairs,first->end,i+1, first->bs );
-            if ( i != -1 )
+            linkpair *next = linkpair_next( lp, first->bs );
+            if ( next != NULL )
             {
-                int p_len = pair_len(first->pairs[i]);
-                if ( i < second->start_p )
+                int p_len = pair_len(linkpair_pair(first->start_p));
+                if ( lp != second->start_p )
                     pairs_dist += p_len;
-                else if ( i == second->start_p )
-                    pairs_dist += second->end_pos;
+                else if ( lp == second->start_p )
+                    pairs_dist += second->start_pos;
             }
             else
                 break;
-            i++;
+            lp = linkpair_right( lp );
         }
     }
     else
@@ -217,7 +200,7 @@ int is_maximal( match *m, UChar *text )
         return 1;
     else if ( m->start_pos > 0 )
     {
-        UChar *data = pair_data( m->pairs[m->start_p] );
+        UChar *data = pair_data( linkpair_pair(m->start_p) );
         return text[m->st_off-1] != data[m->start_pos-1];
     }
     else if ( m->start_p == 0 )
@@ -226,10 +209,10 @@ int is_maximal( match *m, UChar *text )
     }
     else
     {
-        int i = m->start_p-1;
+        linkpair *lp = linkpair_left(m->start_p);
         do
         {
-            pair *p = m->pairs[i];
+            pair *p = linkpair_pair(lp);
             if ( bitset_intersects( m->bs, pair_versions(p)) )
             {
                 if ( pair_len(p) > 0 )
@@ -238,8 +221,9 @@ int is_maximal( match *m, UChar *text )
                     return text[m->st_off-1] != data[pair_len(p)-1];
                 }
             }
+            lp = linkpair_left(lp);
         }
-        while ( i >= 0 );
+        while ( lp != NULL );
     }
 }
 /**
@@ -251,32 +235,34 @@ int is_maximal( match *m, UChar *text )
 int match_advance( match *m )
 {
     int res = 0;
-    if ( m->end_p <= m->end )
+    if ( m->end_p != NULL )
     {
         m->prev_p = m->end_p;
         m->prev_pos = m->end_pos;
-        if ( pair_len(m->pairs[m->end_p])-1==m->end_pos )
+        if ( pair_len(linkpair_pair(m->end_p))-1==m->end_pos )
         {
-            int i;
-            for ( i=m->end_p+1;i<=m->end;i++ )
+            linkpair *lp = linkpair_right( lp );
+            while ( lp != NULL )
             {
-                bitset *bs = pair_versions(m->pairs[i]);
+                pair *p = linkpair_pair(lp);
+                bitset *bs = pair_versions( p );
                 if ( bitset_intersects(m->bs,bs) )
                 {
                     bitset_and( m->bs, bs );
-                    if ( pair_len(m->pairs[i])> 0 )
+                    if ( pair_len(p)> 0 )
                     {
                         m->end_pos = 0;
                         break;
                     }
                 }
+                lp = linkpair_right( lp );
             }
             // point to next pair or beyond the end
-            m->end_p = i;
+            m->end_p = lp;
         }
         else
             m->end_pos++;
-        res = m->end_p<=m->end;
+        res = m->end_p != NULL;
     }
     return res;
 }
@@ -288,7 +274,7 @@ int match_advance( match *m )
  * @param log the log to record errors in
  * @return the extended/unextended match
  */
-match *match_extend( match *mt, pos_item **avoids, UChar *text, 
+match *match_extend( match *mt, hashmap *avoids, UChar *text, 
     plugin_log *log )
 {
     match *last = mt;
@@ -298,41 +284,50 @@ match *match_extend( match *mt, pos_item **avoids, UChar *text,
         match *mt2 = match_clone( mt, log );
         if ( mt2 != NULL )
         {
-            *avoids = pos_item_add( *avoids, mt2->start_p, mt2->start_pos );
-            int distance = 1;
-            do  
+            char pos[16];
+            UChar key[16];
+            snprintf(pos,16,"%d",mt2->start_pos);
+            char *value = strdup(pos);
+            calc_ukey( key, (long)mt2->start_p, 16 );
+            if ( value != NULL )
             {
-                if ( match_single(mt2,text) && match_follows(last,mt2) )
-                {// success
-                    match_append(last,mt2);
-                    mt = last = mt2;
-                    break;
-                }
-                else 
-                {// failure: reset and move to next position
-                    if ( distance < KDIST )
-                    {
-                        if ( match_restart(mt2) )
+                hashmap_put( avoids, key, value );
+                int distance = 1;
+                do  
+                {
+                    if ( match_single(mt2,text) && match_follows(last,mt2) )
+                    {// success
+                        match_append(last,mt2);
+                        mt = last = mt2;
+                        break;
+                    }
+                    else 
+                    {// failure: reset and move to next position
+                        if ( distance < KDIST )
                         {
-                            *avoids = pos_item_add( *avoids, mt2->start_p,
-                                mt2->start_pos );
-                            distance++;
+                            if ( match_restart(mt2) )
+                            {
+                                hashmap_put( avoids, key, value );
+                                distance++;
+                            }
+                            else
+                            {
+                                mt = NULL;
+                                break;
+                            }
                         }
-                        else
+                        else    // give up
                         {
-                            mt = NULL;
+                            match_dispose( mt2 );
+                            last = NULL;
                             break;
                         }
                     }
-                    else    // give up
-                    {
-                        match_dispose( mt2 );
-                        last = NULL;
-                        break;
-                    }
                 }
+                while ( distance <= KDIST );
             }
-            while ( distance <= KDIST );
+            else
+                plugin_log_add( log, "match: couldn't save position\n");
         }
         else
             mt = NULL;
@@ -354,7 +349,7 @@ int match_single( match *m, UChar *text )
     loc.loc = node_start(loc.v)-1;
     do 
     {
-        UChar *data = pair_data(m->pairs[m->end_p]);
+        UChar *data = pair_data(linkpair_pair(m->end_p));
         c = data[m->end_pos];
         if ( suffixtree_advance_pos(m->st,&loc,c) )
         {
@@ -377,7 +372,7 @@ int match_single( match *m, UChar *text )
     while ( 1 );
     return maximal;
 }
-int match_start_index( match *m )
+linkpair *match_start_link( match *m )
 {
     return m->start_p;
 }
@@ -385,7 +380,7 @@ int match_start_pos( match *m )
 {
     return m->start_pos;
 }
-int match_end_index( match *m )
+linkpair *match_end_link( match *m )
 {
     return m->end_p;
 }
@@ -479,6 +474,24 @@ void match_inc_freq( match *m )
 int match_freq( match *m )
 {
     return m->freq;
+}
+/**
+ * Get the versions common along the match path
+ * @param m the match in question
+ * @return the set of versions
+ */
+bitset *match_versions( match *m )
+{
+    return m->bs;
+}
+/**
+ * Get the offset in the new version 
+ * @param m the match in question
+ * @return offset into m->text where the match starts
+ */
+int match_st_off( match *m )
+{
+    return m->st_off;
 }
 static char *print_utf8( UChar *ustr, int src_len )
 {

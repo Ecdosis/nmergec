@@ -14,7 +14,7 @@ extern "C" {
 
 typedef struct matcher_struct matcher;
 matcher *matcher_create( suffixtree *st, aatree *pq, UChar *text, 
-    pair **pairs, int start, int end, int transpose, plugin_log *log );
+    linkpair *pairs, plugin_log *log );
 void matcher_dispose( matcher *m );
 int matcher_align( matcher *m );
 match *matcher_get_mum( matcher *m );

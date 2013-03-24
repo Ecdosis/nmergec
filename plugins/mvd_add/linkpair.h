@@ -17,10 +17,12 @@ linkpair *linkpair_create( pair *p, plugin_log *log );
 void linkpair_dispose( linkpair *lp );
 void linkpair_set_left( linkpair *lp, linkpair *left );
 void linkpair_set_right( linkpair *lp, linkpair *right );
-void linkpair_left( linkpair *lp );
-void linkpair_right( linkpair *lp );
+linkpair *linkpair_left( linkpair *lp );
+linkpair *linkpair_right( linkpair *lp );
+linkpair *linkpair_next( linkpair *lp, bitset *bs );
 void linkpair_set_st_off( linkpair *lp, int st_off );
-void linkpair_st_off( linkpair *lp );
+int linkpair_st_off( linkpair *lp );
+pair *linkpair_pair( linkpair *lp );
 
 #ifdef	__cplusplus
 }

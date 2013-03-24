@@ -19,7 +19,7 @@ int dyn_array_size( dyn_array *da );
 void *dyn_array_get( dyn_array *da, int index );
 int dyn_array_add( dyn_array *da, void *obj );
 void **dyn_array_data( dyn_array *da );
-void dyn_array_remove( dyn_array *dam int i );
+void dyn_array_remove( dyn_array *da, int i );
 
 #ifdef MVD_TEST
 void test_dyn_array( int *passed, int *failed );

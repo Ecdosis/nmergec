@@ -25,7 +25,21 @@ UChar *u_strdup(UChar *in)
 {
     uint32_t len = u_strlen(in) + 1;
     UChar *result = malloc(sizeof(UChar) * len);
-    u_memcpy(result, in, len);
+    if ( result != NULL )
+        u_memcpy(result, in, len);
+    return result;
+}
+/**
+ * Duplicate a range of an existing ustring
+ * @param in the input ustring
+ * @param len the desired length
+ * @return the new string allocated or NULL
+ */
+UChar *u_strndup(UChar *in, int len)
+{
+    UChar *result = malloc(sizeof(UChar) * (len+1));
+    if ( result != NULL )
+        u_memcpy(result, in, len);
     return result;
 }
 /**

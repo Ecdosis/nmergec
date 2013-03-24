@@ -11,10 +11,12 @@
 #include "bitset.h"
 #include "link_node.h"
 #include "pair.h"
+#include "linkpair.h"
 #include "alignment.h"
-#include "pos_item.h"
+#include "hashmap.h"
 #include "match.h"
 #include "matcher.h"
+#include "utils.h"
 
 #define PQUEUE_LIMIT 50
 // should be set to the number of (hyperthreaded) processors
@@ -26,10 +28,8 @@ struct alignment_struct
     UChar *text;
     // length of new text
     int tlen;
-    // start index into pairs
-    int start_p;
-    // end-index into pairs
-    int end_p;
+    // id of new version
+    int version;
     // our suffixtree - computed only once
     suffixtree *st;
     // next alignment n queue
@@ -39,20 +39,18 @@ struct alignment_struct
  * Create a combination of a bit of text and its directly opposite pairs.
  * @param text the text range to align to
  * @param tlen the length of text in UChars
- * @param start_p index into pairs array for first pair
- * @param end_p index into end of pairs range
+ * @param version the ID of the new version
  * @param log the log to record errors in
  */
-alignment *alignment_create( UChar *text, int tlen, int start_p, int end_p, 
+alignment *alignment_create( UChar *text, int tlen, int version, 
     plugin_log *log )
 {
     alignment *a = calloc( 1, sizeof(alignment) );
     if ( a != NULL )
     {
         a->text = text;
+        a->version = version;
         a->st = suffixtree_create( text, tlen, log );
-        a->start_p = start_p;
-        a->end_p = end_p;
     }
     else
         plugin_log_add( log, "alignment: failed to allocate object\n");
@@ -80,15 +78,21 @@ UChar *alignment_text( alignment *a, int *tlen )
     return a->text;
 }
 /**
- * Append an alignment on the end of another
+ * Append an alignment on the end of another. Keep sorted on decreasing length.
  * @param tail the tail of the current alignment
  * @param next the new one to add at the end
  */
-void alignment_push( alignment *tail, alignment *next )
+void alignment_push( alignment *head, alignment *next )
 {
-    alignment *temp = tail;
-    while ( temp->next != NULL )
+    alignment *prev = NULL;
+    alignment *temp = head;
+    while ( temp->next != NULL && temp->tlen > next->tlen )
+    {
+        prev = temp;
         temp = temp->next;
+    }
+    if ( prev != NULL )
+        prev->next = temp;
     temp->next = next;
 }
 /**
@@ -105,7 +109,7 @@ alignment *alignment_pop( alignment *head )
 /**
  * Run an individual alignment
  * @param data generic pointer to matcher object
- * @return 
+ * @return NULL
  */
 static void *align_run( void *data )
 {
@@ -135,83 +139,74 @@ static match *get_mum( aatree *pq )
 }
 /**
  * Merge the chosen MUM into the pairs array
+ * @param a the alignment to merge into the MVD
  * @param mum the mum - transpose or direct
- * @param airs the pairs dyn_array
+ * @param pairs the pairs linked list
  * @param left the leftover alignment on the left
  * @param right the leftover alignment on the right
  * @param log the log to record errors in
  * @return 1 if it worked, else 0
  */
-static int merge( match *mum, dyn_array *pairs, alignment **left, 
-    alignment **right, plugin_log *log )
+static int alignment_merge( alignment *a, match *mum, linkpair *pairs, 
+    alignment **left, alignment **right, plugin_log *log )
 {
-    pair *sp = dyn_array_get( pairs, match_start_index(mum) );
-    pair *ep = dyn_array_get( pairs, match_end_index(mum) );
-    if ( match_start_pos(mum) > 0 )
+    linkpair *start_p = match_start_link( mum );
+    linkpair *end_p = match_end_link( mum );
+    int start_pos = match_start_pos( mum );
+    int end_pos = match_end_pos( mum );
+    if ( start_pos != 0 )
     {
-        pair *ssp = pair_split( sp, match_start_pos(mum) );
+        linkpair_split( start_p, start_pos, log );
+        start_p = linkpair_right( start_p );
+    }
+    if ( end_pos != 0 )
+        linkpair_split( end_p, end_pos, log );
+    // this is direct align onlyss
+    do
+    {
+        pair *p = linkpair_pair(start_p);
+        bitset *bs = pair_versions(p);
+        bitset_set( bs, a->version );
+        start_p = linkpair_next( start_p, match_versions(mum) );
+    } while ( start_p != end_p );
+    if ( match_st_off(mum)>0 )
+    {
+        int llen = match_st_off(mum);
+        *left = alignment_create( u_strndup(a->text,llen),llen,a->version,log);
+    }
+    else
+        *left = NULL;
+    if ( match_st_off(mum)+match_len(mum)<a->tlen )
+    {
+        int rlen = match_len(mum);
+        *right = alignment_create( u_strndup(&a->text[match_st_off(mum)],rlen),
+            rlen,a->version,log);
+    }
+    else
+        *right = NULL;
 }
 /**
- * Align with all the OTHER alignments in our list simultaneously
- * @param head the list of other alignments
- * @param pairs VAR param pairs to be updated
+ * Align with the whole text excluding those segments already aligned
+ * @param head the list of alignments
+ * @param pairs the list of pairs to be searched
  * @param left VAR param set to the leftover alignment on the left
  * @param right VAR param set to the leftover alignment on the right
  * @param log to record errors in
  * @return 1 if it merged correctly, else 0
  */
-int alignment_align( alignment *head, dyn_array *pairs, 
+int alignment_align( alignment *a, linkpair *pairs, 
     alignment **left, alignment **right, plugin_log *log )
 {
-    int i,j,res = 0;
-    int first = 1;
-    pthread_t threads[MAX_THREADS];
+    int res = 0;
     aatree *pq = aatree_create( match_compare, PQUEUE_LIMIT );
     if ( pq != NULL )
     {
-        do
-        {
-            for ( i=0;i<MAX_THREADS,head!=NULL;i++ )
-            {
-                matcher *m = matcher_create(head->st, pq, head->text, 
-                    (pair**)dyn_array_data(pairs), 
-                    head->start_p, head->end_p, !first, log );
-                first = 0;
-                if ( m != NULL )
-                {
-                    res = pthread_create( &threads[i++], NULL, align_run, m );
-                    if ( res )
-                    {
-                        plugin_log_add( log, 
-                            "alignment: failed to create thread: %s\n",
-                            strerror(errno));
-                        break;
-                    }
-                }
-                else
-                    break;
-                head = head->next;
-            }
-            if ( res == 0 )
-            {
-                // wait for all threads to complete before proceeding
-                for ( j=0;j<i;j++ )
-                {
-                    res = pthread_join( threads[j], NULL );
-                    if ( res != 0 )
-                    {
-                        plugin_log_add(log,
-                            "alignment: failed to join thread: %s\n",
-                            strerror(errno));
-                        break;
-                    }
-                }
-            }
-        } while ( head != NULL && res == 0 );
-        if ( res == 0 )
+        matcher *m = matcher_create( a->st, pq, a->text, pairs, log );
+        if ( res = matcher_align(m) )
         {
             match *mum = get_mum( pq );
-            res = merge( mum, pairs, left, right, log );
+            if ( mum != NULL )
+                res = alignment_merge( a, mum, pairs, left, right, log );
         }
         aatree_dispose( pq );
     }

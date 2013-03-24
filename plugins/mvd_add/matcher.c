@@ -10,9 +10,11 @@
 #include "suffixtree.h"
 #include "state.h"
 #include "aatree.h"
-#include "pos_item.h"
+#include "hashmap.h"
+#include "linkpair.h"
 #include "match.h"
 #include "matcher.h"
+#include "utils.h"
 
 /**
  * A matcher is something that looks for matches by comparing the 
@@ -23,42 +25,32 @@
 struct matcher_struct
 {
     suffixtree *st;
-    pair **pairs;
-    int start;
-    int end;
-    int transpose;
+    linkpair *pairs;
     UChar *text;
     aatree *pq;
-    pos_item *avoids;
+    hashmap *avoids;
     plugin_log *log;
 };
-
 /**
  * Create a matcher
  * @param st the suffix tree already computed for the new version
  * @param pq the priority queue to store the best MUMs
  * @param text the text of the new version
- * @param pairs the pairs array from the MVD
- * @param start the index of the first pair to be aligned
- * @param end the index of the last pair to be aligned
- * @param transpose if 1 the alignment is a transposition
+ * @param pairs the list of pairs from the MVD
  * @param log record messages here
  * @return a matcher object ready to go
  */
 matcher *matcher_create( suffixtree *st, aatree *pq, UChar *text, 
-    pair **pairs, int start, int end, int transpose, plugin_log *log )
+    linkpair *pairs, plugin_log *log )
 {
     matcher *m = calloc( 1, sizeof(matcher) );
     if ( m != NULL )
     {
         m->log = log;
-        m->start = start;
-        m->end = end;
         m->pairs = pairs;
         m->text = text;
         m->st = st;
         m->pq = pq;
-        m->transpose = transpose;
     }
     else
         plugin_log_add(log, "matcher: failed to allocate object\n");
@@ -71,7 +63,7 @@ matcher *matcher_create( suffixtree *st, aatree *pq, UChar *text,
 void matcher_dispose( matcher *m )
 {
     if ( m->avoids != NULL )
-        pos_item_dispose( m->avoids );
+        hashmap_dispose( m->avoids, free );
     free( m );
 }
 /**
@@ -81,31 +73,30 @@ void matcher_dispose( matcher *m )
  */
 int matcher_align( matcher *m )
 {
-    int i;
-    for ( i=m->start;i<=m->end;i++ )
+    linkpair *lp = m->pairs;
+    while ( lp != NULL )
     {
-        pair *p = m->pairs[i];
+        pair *p = linkpair_pair( lp );
         int j,length = pair_len( p );
         for ( j=0;j<length;j++ )
         {
-            if ( m->avoids!=NULL && pos_item_peek(m->avoids,i,j) )
-                m->avoids = pos_item_pop( m->avoids );
+            UChar key[16];
+            calc_ukey( key, (long)lp, 16 );
+            if ( m->avoids!=NULL && hashmap_contains(m->avoids,key) )
+                hashmap_remove( m->avoids,key,free );
             else
             {
-                match *mt = match_create( i, j, m->pairs, m->st, m->end, 
-                    m->log );
+                match *mt = match_create( lp, j, m->pairs, m->st, m->log );
                 if ( mt != NULL )
                 {
-                    match_set_versions(mt,
-                        bitset_clone(pair_versions(m->pairs[i])));
+                    match_set_versions( mt, bitset_clone(pair_versions(p)));
                     if ( match_single(mt,m->text) )
                     {
-                        match *queued = match_extend( mt, &m->avoids, m->text, 
+                        match *queued = match_extend( mt, m->avoids, m->text, 
                             m->log );
                         match *existing = aatree_add( m->pq, queued );
                         if ( existing != NULL )
                         {
-                            //match_print( queued, m->text );
                             match_inc_freq( existing );
                             if ( existing == queued )
                                 continue;
@@ -119,6 +110,7 @@ int matcher_align( matcher *m )
                     break;
             }
         }
+        lp = linkpair_right( lp );
     }
     return !aatree_empty(m->pq);
 }

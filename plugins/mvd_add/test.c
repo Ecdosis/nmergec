@@ -14,6 +14,7 @@
 #include "bitset.h"
 #include "link_node.h"
 #include "pair.h"
+#include "dyn_array.h"
 #include "mvd.h"
 #include "plugin.h"
 #include "hashmap.h"

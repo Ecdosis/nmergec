@@ -294,7 +294,7 @@ void bitset_and_not( bitset *bs, bitset *other )
     for ( i=0;i<bs->allocated&&i<other->allocated;i++ )
     {
         b = other->data[i];
-        bs->data &= ~b;
+        bs->data[i] &= ~b;
     }
 }
 #ifdef MVD_TEST

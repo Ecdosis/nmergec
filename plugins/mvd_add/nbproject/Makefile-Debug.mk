@@ -37,6 +37,7 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 OBJECTFILES= \
 	${OBJECTDIR}/_ext/688439529/plugin_log.o \
 	${OBJECTDIR}/aatree.o \
+	${OBJECTDIR}/alignment.o \
 	${OBJECTDIR}/benchmark.o \
 	${OBJECTDIR}/linkpair.o \
 	${OBJECTDIR}/match.o \
@@ -82,6 +83,11 @@ ${OBJECTDIR}/aatree.o: aatree.c
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
 	$(COMPILE.c) -g -DMVD_ADD_TEST -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/aatree.o aatree.c
+
+${OBJECTDIR}/alignment.o: alignment.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} $@.d
+	$(COMPILE.c) -g -DMVD_ADD_TEST -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/alignment.o alignment.c
 
 ${OBJECTDIR}/benchmark.o: benchmark.c 
 	${MKDIR} -p ${OBJECTDIR}

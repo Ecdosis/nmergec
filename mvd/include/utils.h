@@ -13,6 +13,7 @@ extern "C" {
 #endif
 char *itoa( int value, char *buf, int len );
 UChar *u_strdup(UChar *in);
+UChar *u_strndup(UChar *in, int len);
 int u_atoi( UChar *str );
 UChar *random_str();
 char *u_print( UChar *ustr, char *buf, int n );

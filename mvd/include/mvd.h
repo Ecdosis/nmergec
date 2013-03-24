@@ -20,7 +20,7 @@ void mvd_set_bitset_size( MVD *mvd, int setSize );
 int mvd_add_version( MVD *mvd, version *v );
 int mvd_get_set_size( MVD *mvd );
 char *mvd_get_encoding( MVD *mvd );
-pair **mvd_get_pairs( MVD *mvd );
+dyn_array *mvd_get_pairs( MVD *mvd );
 int mvd_count_versions( MVD *mvd );
 int mvd_count_pairs( MVD *mvd );
 int mvd_set_description( MVD *mvd, UChar *description );
