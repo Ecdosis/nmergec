@@ -25,6 +25,7 @@ linkpair *linkpair_create( pair *p, plugin_log *log )
         lp->p = p;
     else
         plugin_log_add( log, "linkpair: failed to create object\n");
+    return lp;
 }
 /**
  * Just dispose of us
@@ -233,7 +234,50 @@ linkpair *linkpair_next( linkpair *lp, bitset *bs )
         lp = linkpair_right(lp);
     return lp;
 }
-
+/**
+ * is this linkpair free? i.e. is it not the trailing pair of a node?
+ * @param lp the linkpair to test
+ * @return 1 if it is free else 0
+ */
+int linkpair_free( linkpair *lp )
+{
+    if ( lp->left == NULL )
+        return 1;
+    else
+    {
+        pair *p = linkpair_pair(lp->left);
+        if ( pair_is_hint(p) )
+            return 0;
+        else
+        {
+            pair *q = linkpair_pair(lp);
+            return bitset_intersects(pair_versions(p),pair_versions(q));
+        }
+    }
+}
+/**
+ * Add a hint to the node immediately before the given pair
+ * @param lp the linkpair trailing pair of the node
+ * @param version the version of the hint
+ * @param log the lg to record errors in
+ */
+void linkpair_add_hint( linkpair *lp, int version, plugin_log *log )
+{
+    pair *p = lp->left->p;
+    if ( pair_is_hint(p) )
+        bitset_set(pair_versions(p),version);
+    else if ( !bitset_next_set_bit(pair_versions(p),version==version) )
+    {
+        bitset *bs = bitset_create();
+        bitset_set( bs, version );
+        pair *hint = pair_create_hint( bs );
+        linkpair *hint_lp = linkpair_create( hint, log );
+        hint_lp->left = lp->left;
+        hint_lp->right = lp;
+        lp->left->right = hint_lp;
+        lp->left = hint_lp;
+    }
+}
 /**
  * Split a linkpair and adjust parent/child if not a basic pair
  * @param lp the linkpair to split
@@ -251,7 +295,10 @@ void linkpair_split( linkpair *lp, int at, plugin_log *log )
             if ( lp2 != NULL )
             {
                 lp2->right = lp->right;
+                if ( lp2->right != NULL )
+                    lp2->right->left = lp2;
                 lp->right = lp2;
+                lp2->left = lp;
             }
             linkpair_fix( lp2, log );
         }

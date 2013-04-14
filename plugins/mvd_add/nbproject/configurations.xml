@@ -9,13 +9,13 @@
       <itemPath>benchmark.h</itemPath>
       <itemPath>linkpair.h</itemPath>
       <itemPath>match.h</itemPath>
+      <itemPath>match_state.h</itemPath>
       <itemPath>matcher.h</itemPath>
       <itemPath>node.h</itemPath>
       <itemPath>path.h</itemPath>
       <itemPath>../../include/plugin.h</itemPath>
       <itemPath>../shared/include/plugin_log.h</itemPath>
       <itemPath>pos.h</itemPath>
-      <itemPath>pos_queue.h</itemPath>
       <itemPath>state.h</itemPath>
       <itemPath>suffixtree.h</itemPath>
       <itemPath>../../mvd/include/utils.h</itemPath>
@@ -32,12 +32,12 @@
       <itemPath>benchmark.c</itemPath>
       <itemPath>linkpair.c</itemPath>
       <itemPath>match.c</itemPath>
+      <itemPath>match_state.c</itemPath>
       <itemPath>matcher.c</itemPath>
       <itemPath>mvd_add.c</itemPath>
       <itemPath>node.c</itemPath>
       <itemPath>path.c</itemPath>
       <itemPath>../shared/src/plugin_log.c</itemPath>
-      <itemPath>pos_queue.c</itemPath>
       <itemPath>suffixtree.c</itemPath>
       <itemPath>test.c</itemPath>
     </logicalFolder>
@@ -55,7 +55,7 @@
   </logicalFolder>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
-    <conf name="Debug" type="2">
+    <conf name="Debug" type="1">
       <toolsSet>
         <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
         <compilerSet>default</compilerSet>
@@ -106,6 +106,10 @@
       </item>
       <item path="match.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="match_state.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="match_state.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="matcher.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="matcher.h" ex="false" tool="3" flavor2="0">
@@ -121,10 +125,6 @@
       <item path="path.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="pos.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="pos_queue.c" ex="false" tool="0" flavor2="0">
-      </item>
-      <item path="pos_queue.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="state.h" ex="false" tool="3" flavor2="0">
       </item>
@@ -182,6 +182,10 @@
       </item>
       <item path="match.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="match_state.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="match_state.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="matcher.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="matcher.h" ex="false" tool="3" flavor2="0">
@@ -197,10 +201,6 @@
       <item path="path.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="pos.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="pos_queue.c" ex="false" tool="0" flavor2="0">
-      </item>
-      <item path="pos_queue.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="state.h" ex="false" tool="3" flavor2="0">
       </item>

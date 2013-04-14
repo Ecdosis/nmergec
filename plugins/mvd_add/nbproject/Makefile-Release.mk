@@ -41,11 +41,11 @@ OBJECTFILES= \
 	${OBJECTDIR}/benchmark.o \
 	${OBJECTDIR}/linkpair.o \
 	${OBJECTDIR}/match.o \
+	${OBJECTDIR}/match_state.o \
 	${OBJECTDIR}/matcher.o \
 	${OBJECTDIR}/mvd_add.o \
 	${OBJECTDIR}/node.o \
 	${OBJECTDIR}/path.o \
-	${OBJECTDIR}/pos_queue.o \
 	${OBJECTDIR}/suffixtree.o \
 	${OBJECTDIR}/test.o
 
@@ -104,6 +104,11 @@ ${OBJECTDIR}/match.o: match.c
 	${RM} $@.d
 	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/match.o match.c
 
+${OBJECTDIR}/match_state.o: match_state.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} $@.d
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/match_state.o match_state.c
+
 ${OBJECTDIR}/matcher.o: matcher.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
@@ -123,11 +128,6 @@ ${OBJECTDIR}/path.o: path.c
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
 	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/path.o path.c
-
-${OBJECTDIR}/pos_queue.o: pos_queue.c 
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} $@.d
-	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/pos_queue.o pos_queue.c
 
 ${OBJECTDIR}/suffixtree.o: suffixtree.c 
 	${MKDIR} -p ${OBJECTDIR}

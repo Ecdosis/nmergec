@@ -145,6 +145,7 @@ static int read_dir( char *folder )
                         strcat( options, " encoding=utf-8" );
                         strcat( options, " description=test" );
                         res = process( &mvd, options, output, txt, flen );
+                        printf("%s",(char*)output);
                         free( txt );
                     }
                     free( path );
@@ -164,5 +165,7 @@ int main( int argc, char **argv )
     {
         int res = read_dir( argv[1] );
     }
+    else
+        printf("mvd_add: usage ./mvd_add <dir>\n");
 }
 #endif

@@ -64,6 +64,16 @@ pair *pair_create_basic( bitset *versions, UChar *data, int len )
     return pair_create( versions, data, len, BASIC_PAIR );
 }
 /**
+ * Create a hint
+ * @param versions the versions of the hint
+ * @return the hint
+ */
+pair *pair_create_hint( bitset *versions )
+{
+    bitset_set( versions, 0 );
+    return pair_create( versions, NULL, 0, BASIC_PAIR );
+}
+/**
  * Get the pair's data. If it is a child, get the parent's data
  * @param p the pair in question
  * @return a UTF-16 encoded string
@@ -367,13 +377,13 @@ bitset *pair_versions( pair *p )
 /**
  * Split a pair into two before the given offset. Free the original pair.
  * @param p VAR param the pair to split, becomes leading pair
- * @param at offset into p's data at which to split it
+ * @param at offset into p's data after which to split it
  * @return the new trailing pair or NULL on failure
  */
 pair *pair_split( pair **p, int at )
 {
-    pair *first = pair_create_basic( (*p)->versions, (*p)->data, at );
-    pair *second = pair_create_basic( (*p)->versions, &(*p)->data[at], 
+    pair *first = pair_create_basic( (*p)->versions, (*p)->data, at+1 );
+    pair *second = pair_create_basic( (*p)->versions, &(*p)->data[at+1], 
         (*p)->len-at );
     if ( first != NULL && second != NULL )
         *p = first;

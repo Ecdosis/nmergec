@@ -14,6 +14,7 @@ extern "C" {
 
 typedef struct linkpair_struct linkpair;
 linkpair *linkpair_create( pair *p, plugin_log *log );
+void linkpair_add_hint( linkpair *lp, int version, plugin_log *log );
 void linkpair_dispose( linkpair *lp );
 void linkpair_set_left( linkpair *lp, linkpair *left );
 void linkpair_set_right( linkpair *lp, linkpair *right );

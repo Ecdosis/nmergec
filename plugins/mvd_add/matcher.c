@@ -10,10 +10,11 @@
 #include "suffixtree.h"
 #include "state.h"
 #include "aatree.h"
-#include "hashmap.h"
 #include "linkpair.h"
 #include "match.h"
+#include "alignment.h"
 #include "matcher.h"
+#include "hashmap.h"
 #include "utils.h"
 
 /**
@@ -27,33 +28,32 @@ struct matcher_struct
     suffixtree *st;
     linkpair *pairs;
     UChar *text;
+    int tlen;
     aatree *pq;
-    hashmap *avoids;
+    int version;
     plugin_log *log;
 };
 /**
  * Create a matcher
- * @param st the suffix tree already computed for the new version
+ * @param a the alignment object
  * @param pq the priority queue to store the best MUMs
- * @param text the text of the new version
  * @param pairs the list of pairs from the MVD
- * @param log record messages here
  * @return a matcher object ready to go
  */
-matcher *matcher_create( suffixtree *st, aatree *pq, UChar *text, 
-    linkpair *pairs, plugin_log *log )
+matcher *matcher_create( alignment *a, aatree *pq, linkpair *pairs )
 {
     matcher *m = calloc( 1, sizeof(matcher) );
     if ( m != NULL )
     {
-        m->log = log;
+        m->log = alignment_log( a );
         m->pairs = pairs;
-        m->text = text;
-        m->st = st;
+        m->text = alignment_text( a, &m->tlen );
+        m->version = alignment_version(a);
+        m->st = alignment_suffixtree( a );
         m->pq = pq;
     }
     else
-        plugin_log_add(log, "matcher: failed to allocate object\n");
+        plugin_log_add(m->log, "matcher: failed to allocate object\n");
     return m;
 }
 /**
@@ -62,8 +62,6 @@ matcher *matcher_create( suffixtree *st, aatree *pq, UChar *text,
  */
 void matcher_dispose( matcher *m )
 {
-    if ( m->avoids != NULL )
-        hashmap_dispose( m->avoids, free );
     free( m );
 }
 /**
@@ -77,34 +75,36 @@ int matcher_align( matcher *m )
     while ( lp != NULL )
     {
         pair *p = linkpair_pair( lp );
-        int j,length = pair_len( p );
-        for ( j=0;j<length;j++ )
+        bitset *bs = pair_versions(p);
+        if ( bitset_next_set_bit(bs,m->version)!=m->version )
         {
-            UChar key[16];
-            calc_ukey( key, (long)lp, 16 );
-            if ( m->avoids!=NULL && hashmap_contains(m->avoids,key) )
-                hashmap_remove( m->avoids,key,free );
-            else
+            int j,length = pair_len( p );
+            for ( j=0;j<length;j++ )
             {
                 match *mt = match_create( lp, j, m->pairs, m->st, m->log );
                 if ( mt != NULL )
                 {
                     match_set_versions( mt, bitset_clone(pair_versions(p)));
-                    if ( match_single(mt,m->text) )
+                    while ( mt != NULL )
                     {
-                        match *queued = match_extend( mt, m->avoids, m->text, 
-                            m->log );
-                        match *existing = aatree_add( m->pq, queued );
-                        if ( existing != NULL )
+                        match *queued = NULL;
+                        match *existing = NULL;
+                        if ( match_single(mt,m->text,m->log) )
                         {
-                            match_inc_freq( existing );
+                            queued = match_extend( mt, m->text, m->log );
+                            existing = aatree_add( m->pq, queued );
+                            if ( existing != NULL )
+                                match_inc_freq( existing );
+                            // if we added it to the queue, freeze its state
                             if ( existing == queued )
-                                continue;
+                                mt = match_copy( mt, m->log );
+                        }    
+                        if ( mt != NULL && !match_pop(mt) )
+                        {
+                            match_dispose( mt );
+                            mt = NULL;
                         }
-                        match_dispose( queued );
                     }
-                    else
-                        match_dispose( mt );
                 }
                 else
                     break;

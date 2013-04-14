@@ -17,6 +17,7 @@ bitset *bitset_create();
 bitset *bitset_create_exact( int bits );
 bitset *bitset_clone( bitset *bs );
 void *bitset_dispose( bitset *bs );
+int bitset_equals( bitset *a, bitset *b );
 bitset *bitset_set( bitset *bs, int i );
 int bitset_get( bitset *bs, int i );
 bitset *bitset_or( bitset *bs, bitset *other );

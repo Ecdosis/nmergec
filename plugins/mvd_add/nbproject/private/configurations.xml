@@ -2,7 +2,7 @@
 <configurationDescriptor version="88">
   <projectmakefile>Makefile</projectmakefile>
   <confs>
-    <conf name="Debug" type="2">
+    <conf name="Debug" type="1">
       <toolsSet>
         <developmentServer>localhost</developmentServer>
         <platform>4</platform>
@@ -24,15 +24,17 @@
       </nativedebugger>
       <runprofile version="9">
         <runcommandpicklist>
-          <runcommandpicklistitem>"${OUTPUT_PATH}"</runcommandpicklistitem>
           <runcommandpicklistitem>build/Debug/GNU-MacOSX/src/test.o</runcommandpicklistitem>
           <runcommandpicklistitem>build/Debug/GNU-MacOSX/src/aatree.o</runcommandpicklistitem>
           <runcommandpicklistitem>build/Debug/GNU-MacOSX/mvd_add.o</runcommandpicklistitem>
-          <runcommandpicklistitem>mvd_add</runcommandpicklistitem>
           <runcommandpicklistitem>mvd_add tests</runcommandpicklistitem>
           <runcommandpicklistitem>mvd_add english</runcommandpicklistitem>
+          <runcommandpicklistitem>mvd_add </runcommandpicklistitem>
+          <runcommandpicklistitem>mvd_add</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" english</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>mvd_add english</runcommand>
+        <runcommand>"${OUTPUT_PATH}" english</runcommand>
         <rundir></rundir>
         <buildfirst>true</buildfirst>
         <terminal-type>0</terminal-type>

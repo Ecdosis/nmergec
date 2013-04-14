@@ -212,7 +212,8 @@ static int add_subsequent_version( MVD *mvd, UChar *text, int tlen,
     int res = 1;
     alignment *head = NULL;
     // create initial alignment
-    alignment *a = alignment_create( text, tlen, mvd_count_versions(mvd), log );
+    alignment *a = alignment_create( text, tlen, mvd_count_versions(mvd)+1, 
+        log );
     if ( a != NULL )
     {
         head = a;
@@ -262,63 +263,71 @@ int process( MVD **mvd, char *options, unsigned char *output,
     unsigned char *data, size_t data_len )
 {
     int res = 1;
-    plugin_log *log = plugin_log_create( output );
-    if ( log != NULL )
+    if ( *mvd == NULL )
+        *mvd = mvd_create();
+    if ( *mvd != NULL )
     {
-        struct add_struct *add = calloc( 1, sizeof(struct add_struct) );
-        if ( add != NULL )
+        plugin_log *log = plugin_log_create( output );
+        if ( log != NULL )
         {
-            hashmap *map = parse_options( options );
-            if ( map != NULL )
+            struct add_struct *add = calloc( 1, sizeof(struct add_struct) );
+            if ( add != NULL )
             {
-                res = set_options( add, map, log );
-                if ( res && data != NULL && data_len > 0 )
+                hashmap *map = parse_options( options );
+                if ( map != NULL )
                 {
-                    int tlen;
-                    char *mvd_encoding = mvd_get_encoding(*mvd);
-                    if ( strcmp(mvd_encoding,add->encoding)!=0 )
+                    res = set_options( add, map, log );
+                    if ( res && data != NULL && data_len > 0 )
                     {
-                        plugin_log_add(log,
-                            "file's encoding %s does not match mvd's (%s):"
-                            " assimilating...\n",add->encoding,mvd_encoding);
-                    }
-                    UChar *text = ascii_to_unicode( data, data_len, 
-                        mvd_encoding, &tlen, log );
-                    if ( tlen > 0 )
-                    {
-                        if ( mvd_count_versions(*mvd)==0 )
-                            res = add_first_version( *mvd, add, text, tlen,log );
+                        int tlen;
+                        char *mvd_encoding = mvd_get_encoding(*mvd);
+                        if ( strcmp(mvd_encoding,add->encoding)!=0 )
+                        {
+                            plugin_log_add(log,
+                                "file's encoding %s does not match mvd's (%s):"
+                                " assimilating...\n",add->encoding,mvd_encoding);
+                        }
+                        UChar *text = ascii_to_unicode( data, data_len, 
+                            mvd_encoding, &tlen, log );
+                        if ( tlen > 0 )
+                        {
+                            if ( mvd_count_versions(*mvd)==0 )
+                                res = add_first_version( *mvd, add, text, tlen,log );
+                            else
+                                res = add_subsequent_version( *mvd, text, tlen,log );
+                        }
                         else
-                            res = add_subsequent_version( *mvd, text, tlen,log );
+                        {
+                            plugin_log_add(log,"text is empty\n");
+                            res = 0;
+                        }
+                    }
+                    else if ( data_len == 0 )
+                    {
+                        plugin_log_add(log,"lacking new version text\n");
+                        res = 0;
                     }
                     else
                     {
-                        plugin_log_add(log,"text is empty\n");
+                        plugin_log_add(log,"length was 0\n");
                         res = 0;
                     }
                 }
-                else if ( data_len == 0 )
-                {
-                    plugin_log_add(log,"lacking new version text\n");
-                    res = 0;
-                }
-                else
-                {
-                    plugin_log_add(log,"length was 0\n");
-                    res = 0;
-                }
+                free( add );
             }
+            else
+            {
+                plugin_log_add(log,"mvd_add: failed to create mvd_add object\n");
+                res = 0;
+            }
+            strncpy( (char*)output, plugin_log_buffer(log), SCRATCH_LEN );
+            plugin_log_dispose( log );
         }
         else
         {
-            plugin_log_add(log,"mvd_add: failed to create mvd_add object\n");
+            plugin_log_add(log,"mvd_add: failed to create log object\n");
             res = 0;
         }
-    }
-    else
-    {
-        plugin_log_add(log,"mvd_add: failed to create log object\n");
-        res = 0;
     }
     return res;
 }

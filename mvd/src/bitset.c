@@ -25,7 +25,7 @@ bitset *bitset_create_exact( int bits )
     size_t byteSize = bits/8;
     size_t extraBytes = byteSize-DATA_MINSIZE;
     size_t size = sizeof(bitset)+extraBytes;
-    bitset *bs = calloc( size, 1 );
+    bitset *bs = calloc( 1, size );
     if ( bs == NULL )
         fprintf(stderr,"bitset: failed to allocate object\n");
     else
@@ -55,6 +55,25 @@ bitset *bitset_clone( bitset *bs )
 int bitset_allocated( bitset *bs )
 {
     return bs->allocated;
+}
+/**
+ * Are two bitsets equal?
+ * @param a the first bitset
+ * @param b the second bitset
+ * @return 1 if they were else 0
+ */
+int bitset_equals( bitset *a, bitset *b )
+{
+    if ( a->allocated != b->allocated )
+        return 0;
+    else
+    {
+        int i;
+        for ( i=0;i<a->allocated;i++ )
+            if ( a->data[i] != b->data[i] )
+                return 0;
+        return 1;
+    }
 }
 /**
  * Dispose of a bitset

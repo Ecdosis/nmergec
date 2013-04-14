@@ -15,12 +15,12 @@
 #include "unicode/uchar.h"
 #include "pair.h"
 #include "version.h"
+#include "dyn_array.h"
 #include "mvd.h"
 #include "mvdfile.h"
 #include "b64.h"
 #include "char_buf.h"
 #include "dyn_string.h"
-#include "dyn_array.h"
 #include "hashmap.h"
 #include <stdint.h>
 #include "hsieh.h"

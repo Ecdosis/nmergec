@@ -72,7 +72,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=-ldl -licuuc -lmvd
+LDLIBSOPTIONS=-L/usr/local/lib/nmerge-plugins -ldl -licuuc -lmvd
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}

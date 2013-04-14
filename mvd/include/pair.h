@@ -22,6 +22,7 @@ typedef struct pair_struct pair;
 pair *pair_create_basic( bitset *versions, UChar *data, int len );
 pair *pair_create_parent( bitset *versions, UChar *data, int len );
 pair *pair_create_child( bitset *versions );
+pair *pair_create_hint( bitset *versions );
 void pair_dispose( pair *p );
 pair *pair_set_parent( pair *p, pair *parent );
 pair *pair_add_child( pair *p, pair *child );

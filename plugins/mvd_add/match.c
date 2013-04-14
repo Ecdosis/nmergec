@@ -14,6 +14,7 @@
 #include "hashmap.h"
 #include "linkpair.h"
 #include "match.h"
+#include "match_state.h"
 #define KDIST 2
 
 struct match_struct
@@ -44,7 +45,20 @@ struct match_struct
     bitset *bs;
     // next match in this sequence satisfying certain rigid criteria
     match *next;
+    // queue of match branches not yet followed
+    match_state *queue;
+    // location in suffix tree to which match has been verified
+    pos loc;
 };
+/**
+ * Create a match
+ * @param start the linkpair to start matching from
+ * @param j the start position within start to start from
+ * @param pairs the overall linked list of pairs
+ * @param st the suffix tree of the section of text we are matching against
+ * @param log the log to write errors to
+ * @return  a match object
+ */
 match *match_create( linkpair *start, int j, linkpair *pairs, suffixtree *st, 
     plugin_log *log )
 {
@@ -61,6 +75,39 @@ match *match_create( linkpair *start, int j, linkpair *pairs, suffixtree *st,
     return mt;
 }
 /**
+ * Make an exact deep copy of a match
+ * @param mt the match to copy
+ * @param log the log to report errors to
+ * @return a copy of mt or NULL on failure
+ */
+match *match_copy( match *mt, plugin_log *log )
+{
+    match *mt2 = calloc( 1, sizeof(match) );
+    if ( mt2 != NULL )
+    {
+        mt2->start_p = mt->start_p;
+        mt2->end_p = mt->end_p;
+        mt2->start_pos = mt->start_pos;
+        mt2->end_pos = mt->end_pos;
+        mt2->st_off = mt->st_off;
+        mt2->prev_p = mt->prev_p;
+        mt2->prev_pos = mt->prev_pos;
+        mt2->len = mt->len;
+        mt2->freq = mt->freq;
+        mt2->pairs = mt->pairs;
+        mt2->st = mt->st;
+        mt2->bs = bitset_clone(mt->bs);
+        if ( mt->next != NULL )
+            mt2->next = match_copy( mt->next, log );
+        if ( mt->queue != NULL )
+            mt2->queue = match_state_copy(mt->queue,log);
+        mt2->loc = mt->loc;
+    }
+    else
+        plugin_log_add( log, "match: failed to duplicate match object\n");
+    return mt2;
+}
+/**
  * Clone a match object making ready to continue from where it left off
  * @param mt the match to copy
  * @param log the log to report errors to
@@ -71,10 +118,9 @@ match *match_clone( match *mt, plugin_log *log )
     match *mt2 = NULL;
     if ( mt->end_p != NULL )
     {
-        mt2 = calloc( 1, sizeof(match) );
+        mt2 = match_copy( mt, log );
         if ( mt2 != NULL )
         {
-            *mt2 = *mt;
             // pick up where our parent left off
             mt2->start_p = mt->end_p;
             mt2->start_pos = mt->end_pos;
@@ -82,8 +128,6 @@ match *match_clone( match *mt, plugin_log *log )
             mt->end_p = mt->prev_p;
             mt->end_pos = mt->prev_pos; 
         }
-        else
-            plugin_log_add( log, "match: failed to create match object\n");
     }
     return mt2;
 }
@@ -97,7 +141,43 @@ void match_dispose( match *m )
         bitset_dispose( m->bs );
     if ( m->next != NULL )
         match_dispose( m->next );
+    if ( m->queue != NULL )
+    {
+        match_state *ms = m->queue;
+        while ( ms != NULL )
+        {
+            match_state *next = match_state_next( ms );
+            match_state_dispose( ms );
+            ms = next;
+        }
+    }
     free( m );
+}
+/**
+ * Pop a previous match state back into the match
+ * @param m the match state
+ * @return 1 if the pop was possible else 0
+ */
+int match_pop( match *m )
+{
+    if ( m->queue == NULL )
+        return 0;
+    else
+    {
+        match_state *ms = m->queue;
+        m->queue = match_state_next( ms );
+        m->start_p = match_state_start_p(ms);
+        m->end_p = match_state_end_p(ms);
+        m->loc = *match_state_loc( ms );
+        m->start_p = match_state_start_p( ms );
+        m->end_p = match_state_end_p( ms );
+        m->start_pos = match_state_start_pos( ms );
+        m->end_pos = match_state_end_pos( ms );
+        m->st_off = match_state_st_off( ms );
+        m->len = match_state_len( ms );
+        m->bs = match_state_bs( ms );
+        return 1;
+    }
 }
 /**
  * Add a match onto the end of this one
@@ -158,7 +238,7 @@ int match_follows( match *first, match *second )
     // compute proximity in pairs list 
     // 1. simplest case: same pair
     if ( second->start_p == first->end_p )
-        pairs_dist = second->start_pos-first->end_pos;
+        pairs_dist = (second->start_pos-first->end_pos)-1;
     // 2. compute distance between pairs
     else if ( second->start_p != first->end_p )
     {
@@ -228,37 +308,52 @@ int is_maximal( match *m, UChar *text )
 }
 /**
  * Advance the match position
- * @param m the matcher instance
- * @param mt the match object
+ * @param m the match object
+ * @param loc the location in the suffix tree matched to so far
+ * @param log the log to record errors in 
  * @return 1 if we could advance else 0 if we reached the end
  */
-int match_advance( match *m )
+int match_advance( match *m, pos *loc, plugin_log *log )
 {
     int res = 0;
     if ( m->end_p != NULL )
     {
+        linkpair *lp = m->end_p;
         m->prev_p = m->end_p;
         m->prev_pos = m->end_pos;
-        if ( pair_len(linkpair_pair(m->end_p))-1==m->end_pos )
+        if ( pair_len(linkpair_pair(lp))-1==m->end_pos )
         {
-            linkpair *lp = linkpair_right( lp );
-            while ( lp != NULL )
+            lp = linkpair_right( lp );
+            if ( lp == NULL )
+                m->end_p = NULL;
+            else while ( lp != NULL )
             {
                 pair *p = linkpair_pair(lp);
                 bitset *bs = pair_versions( p );
-                if ( bitset_intersects(m->bs,bs) )
+                if ( pair_len(p)==0 || !bitset_intersects(m->bs,bs) )
+                    lp = linkpair_right(lp);
+                else
                 {
-                    bitset_and( m->bs, bs );
-                    if ( pair_len(p)> 0 )
+                    if ( !bitset_equals(m->bs,bs) )
                     {
-                        m->end_pos = 0;
-                        break;
+                        bitset *bs2 = bitset_clone( m->bs );
+                        bitset_and_not( bs2, bs );
+                        match_state *ms = match_state_create(
+                            m->start_p, m->end_p, 
+                            m->start_pos, m->end_pos, m->st_off, 
+                            m->len, bs2, loc, log );
+                        if ( m->queue == NULL )
+                            m->queue = ms;
+                        else
+                            match_state_push( m->queue, ms );
+                        // restrict this match to ANDed versions
+                        bitset_and( m->bs, bs );
                     }
+                    m->end_pos = 0;
+                    m->end_p = lp;
+                    break;
                 }
-                lp = linkpair_right( lp );
             }
-            // point to next pair or beyond the end
-            m->end_p = lp;
         }
         else
             m->end_pos++;
@@ -269,13 +364,11 @@ int match_advance( match *m )
 /**
  * Extend a match as far as you can
  * @param mt the match to extend
- * @param avoids record the p/pos locations to avoid
  * @param text the UTF-16 text of the new version
  * @param log the log to record errors in
  * @return the extended/unextended match
  */
-match *match_extend( match *mt, hashmap *avoids, UChar *text, 
-    plugin_log *log )
+match *match_extend( match *mt, UChar *text, plugin_log *log )
 {
     match *last = mt;
     match *first = mt;
@@ -284,50 +377,38 @@ match *match_extend( match *mt, hashmap *avoids, UChar *text,
         match *mt2 = match_clone( mt, log );
         if ( mt2 != NULL )
         {
-            char pos[16];
-            UChar key[16];
-            snprintf(pos,16,"%d",mt2->start_pos);
-            char *value = strdup(pos);
-            calc_ukey( key, (long)mt2->start_p, 16 );
-            if ( value != NULL )
+            int distance = 1;
+            do  
             {
-                hashmap_put( avoids, key, value );
-                int distance = 1;
-                do  
-                {
-                    if ( match_single(mt2,text) && match_follows(last,mt2) )
-                    {// success
-                        match_append(last,mt2);
-                        mt = last = mt2;
-                        break;
-                    }
-                    else 
-                    {// failure: reset and move to next position
-                        if ( distance < KDIST )
+                if ( match_single(mt2,text,log) && match_follows(last,mt2) )
+                {// success
+                    match_append(last,mt2);
+                    mt = last = mt2;
+                    break;
+                }
+                else 
+                {// failure: reset and move to next position
+                    if ( distance < KDIST )
+                    {
+                        if ( match_restart(mt2) )
                         {
-                            if ( match_restart(mt2) )
-                            {
-                                hashmap_put( avoids, key, value );
-                                distance++;
-                            }
-                            else
-                            {
-                                mt = NULL;
-                                break;
-                            }
+                            distance++;
                         }
-                        else    // give up
+                        else
                         {
-                            match_dispose( mt2 );
-                            last = NULL;
+                            mt = NULL;
                             break;
                         }
                     }
+                    else    // give up
+                    {
+                        match_dispose( mt2 );
+                        last = NULL;
+                        break;
+                    }
                 }
-                while ( distance <= KDIST );
             }
-            else
-                plugin_log_add( log, "match: couldn't save position\n");
+            while ( distance <= KDIST );
         }
         else
             mt = NULL;
@@ -338,30 +419,31 @@ match *match_extend( match *mt, hashmap *avoids, UChar *text,
  * Complete a single match between the pairs list and the suffixtree
  * @param m the match all ready to go
  * @param text the text of the new version
+ * @param log the log to save errors in
  * @return 1 if the match was at least 1 char long else 0
  */
-int match_single( match *m, UChar *text )
+int match_single( match *m, UChar *text, plugin_log *log )
 {
     UChar c;
-    pos loc;
     int maximal = 0;
-    loc.v = suffixtree_root( m->st );
-    loc.loc = node_start(loc.v)-1;
+    pos *loc = &m->loc;
+    loc->v = suffixtree_root( m->st );
+    loc->loc = node_start(loc->v)-1;
     do 
     {
         UChar *data = pair_data(linkpair_pair(m->end_p));
         c = data[m->end_pos];
-        if ( suffixtree_advance_pos(m->st,&loc,c) )
+        if ( suffixtree_advance_pos(m->st,loc,c) )
         {
-            if ( !maximal && node_is_leaf(loc.v) )
+            if ( !maximal && node_is_leaf(loc->v) )
             {
-                m->st_off = node_start(loc.v)-m->len;
+                m->st_off = node_start(loc->v)-m->len;
                 if ( !is_maximal(m,text) )
                     break;
                 else
                     maximal = 1;
             }
-            if ( match_advance(m) )
+            if ( match_advance(m,loc,log) )
                 m->len++;
             else
                 break;
@@ -492,6 +574,67 @@ bitset *match_versions( match *m )
 int match_st_off( match *m )
 {
     return m->st_off;
+}
+/**
+ * Get the next match in case it has been extended
+ * @return the next match or NULL
+ */
+match *match_next( match *m )
+{
+    return m->next;
+}
+/**
+ * Work out if this match is transposed
+ * 1. find left and right closet direct alignments or the end 
+ * 2. find the st_offset of each such alignment
+ * 3. if our st_off is between these two, then it is direct, 
+ * else it is transposed
+ * @param m the match to test
+ * @param new_version the ID of the new version
+ * @param tlen length of new version text
+ * @return 1 if it is transposed else 0
+ */
+int match_transposed( match *m, int new_version, int tlen )
+{
+    int st_left = 0;
+    int st_right = tlen;
+    // 1. find left direct align
+    linkpair *left = m->start_p;
+    while ( left != NULL )
+    {
+        left = linkpair_left(left);
+        if ( left != NULL )
+        {
+            pair *p = linkpair_pair( left );
+            bitset *bs = pair_versions(p);
+            if ( bitset_next_set_bit(bs,new_version)==new_version 
+                && bitset_cardinality(bs)>1 )
+            {
+                st_left = pair_len(p)+linkpair_st_off(left);
+                break;
+            }
+        }
+    }
+    linkpair *right = m->end_p;
+    while ( right != NULL )
+    {
+        right = linkpair_right(right);
+        if ( right != NULL )
+        {
+            pair *p = linkpair_pair( right );
+            bitset *bs = pair_versions(p);
+            if ( bitset_next_set_bit(bs,new_version)==new_version 
+                && bitset_cardinality(bs)>1 )
+            {
+                st_right = linkpair_st_off(right);
+                break;
+            }
+        }
+    }
+    if ( m->st_off > st_left && m->st_off+m->len < st_right )
+        return 0;
+    else
+        return 1;
 }
 static char *print_utf8( UChar *ustr, int src_len )
 {

@@ -4,7 +4,6 @@
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
-
 /**
  * Arne Andersson style balanced binary tree with a size limitation
  */
@@ -67,23 +66,27 @@ aatree *aatree_create( compare_func cf, int limit )
  * Dispose of a node and all its children
  * @param n the node to dispose
  * @param null_node the null_node: don't destroy!
+ * @param disp the freeing function for objects or NULL
  */
-void aanode_dispose( aanode *n, aanode *null_node )
+void aanode_dispose( aanode *n, aanode *null_node, aatree_dispose_func disp )
 {
+    if ( disp != NULL && n->element != NULL )
+        (disp)(n->element);
     if ( n->left != null_node )
-        aanode_dispose( n->left, null_node );
+        aanode_dispose( n->left, null_node, disp );
     if ( n->right != null_node )
-        aanode_dispose( n->right, null_node );
+        aanode_dispose( n->right, null_node, disp );
     node_frees++;
     free( n );
 }
 /**
  * Dispose of the entire tree
  * @param t the tree in question
+ * @param disp the freeing function for objects or NULL
  */
-void aatree_dispose( aatree *t )
+void aatree_dispose( aatree *t, aatree_dispose_func disp )
 {
-    aanode_dispose( t->root, t->null_node );
+    aanode_dispose( t->root, t->null_node, disp );
     free( t->null_node );
     free( t );
 }
@@ -422,7 +425,7 @@ void aatree_test( int *passed, int *failed )
         printf("aatree: tree was incorrect. size=%d\n",t->size);
     }
     int saved_size = t->size;
-    aatree_dispose( t );
+    aatree_dispose( t, NULL );
     if ( node_frees != saved_size )
     {
         printf("aatree: failed to free %d nodes\n",(saved_size-node_frees));

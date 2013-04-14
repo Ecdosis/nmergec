@@ -18,8 +18,12 @@ void alignment_dispose( alignment *a );
 UChar *alignment_text( alignment *a, int *tlen );
 void alignment_push( alignment *head, alignment *tail );
 alignment *alignment_pop( alignment *head );
-int alignment_align( alignment *head, linkpair *pairs, 
-    alignment **left, alignment **right, plugin_log *log );
+int alignment_version( alignment *a );
+plugin_log *alignment_log( alignment *a );
+suffixtree *alignment_suffixtree( alignment *a );
+int alignment_len( alignment *a );
+int alignment_align( alignment *a, linkpair *pairs, 
+    alignment **left, alignment **right );
 #ifdef	__cplusplus
 }
 #endif

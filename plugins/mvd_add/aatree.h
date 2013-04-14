@@ -3,9 +3,9 @@
 
 typedef struct aatree_struct aatree;
 typedef int (*compare_func)( void *, void* );
-
+typedef void (*aatree_dispose_func)(void*);
 aatree *aatree_create( compare_func cf, int limit );
-void aatree_dispose( aatree *t );
+void aatree_dispose( aatree *t, aatree_dispose_func disp );
 void *aatree_find( aatree *t, void *x );
 void *aatree_max( aatree *t );
 void *aatree_min( aatree *t );

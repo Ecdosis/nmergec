@@ -15,6 +15,7 @@
 #include "unicode/uchar.h"
 #include "pair.h"
 #include "version.h"
+#include "dyn_array.h"
 #include "mvd.h"
 #include "plugin.h"
 #include "plugin_list.h"
