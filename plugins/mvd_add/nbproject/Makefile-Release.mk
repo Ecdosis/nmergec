@@ -39,6 +39,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/aatree.o \
 	${OBJECTDIR}/alignment.o \
 	${OBJECTDIR}/benchmark.o \
+	${OBJECTDIR}/hashtable.o \
 	${OBJECTDIR}/linkpair.o \
 	${OBJECTDIR}/match.o \
 	${OBJECTDIR}/match_state.o \
@@ -93,6 +94,11 @@ ${OBJECTDIR}/benchmark.o: benchmark.c
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
 	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/benchmark.o benchmark.c
+
+${OBJECTDIR}/hashtable.o: hashtable.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} $@.d
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/hashtable.o hashtable.c
 
 ${OBJECTDIR}/linkpair.o: linkpair.c 
 	${MKDIR} -p ${OBJECTDIR}

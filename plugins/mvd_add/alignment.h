@@ -23,7 +23,7 @@ plugin_log *alignment_log( alignment *a );
 suffixtree *alignment_suffixtree( alignment *a );
 int alignment_len( alignment *a );
 int alignment_align( alignment *a, linkpair *pairs, 
-    alignment **left, alignment **right );
+    alignment **left, alignment **right, plugin_log *log );
 #ifdef	__cplusplus
 }
 #endif

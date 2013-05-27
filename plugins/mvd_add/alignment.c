@@ -36,7 +36,7 @@ struct alignment_struct
     alignment *next;
 };
 /**
- * Create an alignment of a bit of text and the MVD.
+ * Create an alignment between a bit of text and the MVD.
  * @param text the text range to align to
  * @param tlen the length of text in UChars
  * @param version the ID of the new version
@@ -327,10 +327,11 @@ static linkpair *add_to_pairs( alignment *a, linkpair *pairs )
  * @param pairs the list of pairs to be searched
  * @param left VAR param set to the leftover alignment on the left
  * @param right VAR param set to the leftover alignment on the right
+ * @param log the log to record errors in
  * @return 1 if it merged correctly, else 0
  */
 int alignment_align( alignment *a, linkpair *pairs, 
-    alignment **left, alignment **right )
+    alignment **left, alignment **right, plugin_log *log )
 {
     int res = 0;
     pairs = add_to_pairs( a, pairs );

@@ -16,6 +16,7 @@ struct plugin_log_struct
 };
 /**
  * Create a plugin log object
+ * @param buffer a buffer of length SCRATCH_LEN - we don't own this
  * @return the log
  */
 plugin_log *plugin_log_create( char *buffer )

@@ -20,8 +20,8 @@
  * Created on February 4, 2013, 10:01 AM
  */
 
-#ifndef TREE_H
-#define	TREE_H
+#ifndef NODE_H
+#define	NODE_H
 
 #ifdef	__cplusplus
 extern "C" {
@@ -29,27 +29,36 @@ extern "C" {
 
 
 typedef struct node_struct node;
-#define INFINITY INT_MAX
+typedef struct node_iterator_struct node_iterator;
 node *node_create( int start, int len, plugin_log *log );
 node *node_create_leaf( int i, plugin_log *log );
 void node_dispose( node *v );
-void node_set_len( node *v, int len );
-int node_len( node *v );
-node *node_children( node *v );
-node *node_next( node *v );
-int node_start( node *v );
-void node_add_child( node *parent, node *child );
+int node_add_leaf( node *parent, int i, UChar *str, plugin_log *log );
+int node_num_children( node *v );
+node_iterator *node_children( node *parent, plugin_log *log );
+int node_iterator_has_next( node_iterator *iter );
+node *node_iterator_next( node_iterator *iter );
+void node_iterator_dispose( node_iterator *iter );
+void node_add_child( node *parent, node *child, UChar *str, plugin_log *log );
 int node_is_leaf( node *v );
-int node_add_leaf( node *parent, int i, plugin_log *log );
-node *node_split( node *v, int loc, plugin_log *log );
+node *node_split( node *v, int loc, UChar *str, plugin_log *log );
 void node_set_link( node *v, node *link );
-node *node_link( node *v );
+void node_set_len( node *v, int len );
 node *node_parent( node *v );
+void node_clear_next( node *v );
+int node_has_next( node *v );
+int node_len( node *v );
+int node_start( node *v );
+node *node_link( node *v );
+int node_kind( node *v );
 int node_end( node *v, int max );
+void node_print_children( UChar *str, node *v, plugin_log *log );
+node *node_find_child( node *v, UChar *str, UChar c );
+UChar node_first_char( node *v, UChar *str );
 
 #ifdef	__cplusplus
 }
 #endif
 
-#endif	/* TREE_H */
+#endif	/* NODE_H */
 

@@ -24,8 +24,8 @@
 #include "linkpair.h"
 #include "match.h"
 #include "aatree.h"
-#include "matcher.h"
 #include "alignment.h"
+#include "matcher.h"
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
@@ -147,9 +147,9 @@ static int add_first_version( MVD *mvd, struct add_struct *add, UChar *text,
                 res = mvd_add_version( mvd, v );
             if ( res == 0 )
                 plugin_log_add(log,
-            "mvd_add: failed to add version\n");
+                "mvd_add: failed to add version\n");
             else
-                plugin_log_add(log,"success!\n");
+                plugin_log_add(log,"mvd_add: success!\n");
         }
     }
     return res;
@@ -251,6 +251,48 @@ static int add_subsequent_version( MVD *mvd, UChar *text, int tlen,
     return res;
 }
 /**
+ * Add the supplied text to the MVD
+ * @param add the add struct initialised and ready to go
+ * @param mvd the MVD to add it to
+ * @return 1 if it worked else 0
+ */
+static int add_mvd_text( struct add_struct *add, MVD *mvd, 
+    unsigned char *data, size_t data_len )
+{
+    int res = 1;
+    int tlen;
+    char *mvd_encoding = mvd_get_encoding(mvd);
+    if ( add->encoding != NULL )
+    {
+        if ( mvd_count_versions(*mvd)==0 )
+            mvd_set_encoding(*mvd,add->encoding);
+        else if ( strcmp(mvd_encoding,add->encoding)!=0 )
+        {
+            plugin_log_add(log,
+                "file's encoding %s does not match mvd's (%s):"
+                " assimilating...\n",add->encoding,mvd_encoding);
+            mvd_encoding = add->encoding;
+        }
+    }
+    // else use the mvd's current encoding
+    // convert from the external encoding to UTF-16 
+    UChar *text = ascii_to_unicode( data, data_len, 
+        mvd_encoding, &tlen, log );
+    if ( tlen > 0 )
+    {
+        if ( mvd_count_versions(*mvd)==0 )
+            res = add_first_version( *mvd, add, text, tlen, log );
+        else
+            res = add_subsequent_version( *mvd, text, tlen, log );
+    }
+    else
+    {
+        plugin_log_add(log,"mvd_add: text is empty\n");
+        res = 0;
+    }
+    return res;
+}
+/**
  * Do the work of this plugin
  * @param mvd the mvd to manipulate or read
  * @param options a string containing the plugin's options
@@ -262,7 +304,7 @@ static int add_subsequent_version( MVD *mvd, UChar *text, int tlen,
 int process( MVD **mvd, char *options, unsigned char *output, 
     unsigned char *data, size_t data_len )
 {
-    int res = 1;
+    int res = 0;
     if ( *mvd == NULL )
         *mvd = mvd_create();
     if ( *mvd != NULL )
@@ -278,48 +320,17 @@ int process( MVD **mvd, char *options, unsigned char *output,
                 {
                     res = set_options( add, map, log );
                     if ( res && data != NULL && data_len > 0 )
-                    {
-                        int tlen;
-                        char *mvd_encoding = mvd_get_encoding(*mvd);
-                        if ( strcmp(mvd_encoding,add->encoding)!=0 )
-                        {
-                            plugin_log_add(log,
-                                "file's encoding %s does not match mvd's (%s):"
-                                " assimilating...\n",add->encoding,mvd_encoding);
-                        }
-                        UChar *text = ascii_to_unicode( data, data_len, 
-                            mvd_encoding, &tlen, log );
-                        if ( tlen > 0 )
-                        {
-                            if ( mvd_count_versions(*mvd)==0 )
-                                res = add_first_version( *mvd, add, text, tlen,log );
-                            else
-                                res = add_subsequent_version( *mvd, text, tlen,log );
-                        }
-                        else
-                        {
-                            plugin_log_add(log,"text is empty\n");
-                            res = 0;
-                        }
-                    }
-                    else if ( data_len == 0 )
-                    {
-                        plugin_log_add(log,"lacking new version text\n");
-                        res = 0;
-                    }
+                        res = add_mvd_text( add, *mvd, data, data_len );
                     else
-                    {
-                        plugin_log_add(log,"length was 0\n");
-                        res = 0;
-                    }
+                        plugin_log_add(log,"mvd_add: length was 0\n");
                 }
+                else
+                    plugin_log_add(log,"mvd_add: invalid options %s",options);
                 free( add );
             }
             else
-            {
-                plugin_log_add(log,"mvd_add: failed to create mvd_add object\n");
-                res = 0;
-            }
+                plugin_log_add(log,
+                    "mvd_add: failed to create mvd_add object\n");
             strncpy( (char*)output, plugin_log_buffer(log), SCRATCH_LEN );
             plugin_log_dispose( log );
         }
@@ -372,7 +383,7 @@ char *description()
  * @param f VAR param update number of failed tests
  * @return 1 if all tests passed else 0
  */
-int test( int *p,int *f )
+int test( int *p, int *f )
 {
     return 1;
 }

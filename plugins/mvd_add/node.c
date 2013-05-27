@@ -17,10 +17,34 @@
 #include <limits.h>
 #include <stdio.h>
 #include "plugin_log.h"
+#include "unicode/uchar.h"
 #include "node.h"
+#include "hashtable.h"
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
+#define MAX_LIST_CHILDREN 6
+
+#if INT_MAX != 2147483647
+#error "please adjust masks and macros for int size != 4"
+#endif
+// adjust these if int size != 4
+#define INFINITY INT_MAX
+#define LEN_MASK 0x7FFFFFFF
+#define KIND_MASK 0x80000000
+#define PARENT_HASH(p) (p->len&KIND_MASK)==0x80000000
+#define PARENT_LIST(p) (p->len&KIND_MASK)==0
+struct node_iterator_struct
+{
+    int num_nodes;
+    int position;
+    node **nodes;
+};
+union child_list
+{
+    node *children;
+    hashtable *ht;
+};
 /**
  * Represent the node structure of a tree but don't build it here
  */
@@ -28,12 +52,12 @@ struct node_struct
 {
     // index into string: edge leading INTO node
     int start;
-    // length of match or INFINITY
-    int len;
-    // pointer to next sibling
+    // length of match or INFINITY, kind in MSB
+    unsigned len;
+    // next node in sibling list
     node *next;
-    // pointer to first child
-    node *children;
+    // child list/table pointer
+    union child_list c;
     // suffix link 
     node *link;
     // parent of node : needed to implement splits
@@ -78,12 +102,19 @@ node *node_create_leaf( int i, plugin_log *log )
  */
 void node_dispose( node *v )
 {
-    node *child = v->children;
-    while ( child != NULL )
+    if ( PARENT_LIST(v) )
     {
-        node *next = child->next;
-        node_dispose( child );
-        child = next;
+        node *child = v->c.children;
+        while ( child != NULL )
+        {
+            node *next = child->next;
+            node_dispose( child );
+            child = next;
+        }
+    }
+    else if ( PARENT_HASH(v) )
+    {
+        hashtable_dispose( v->c.ht );
     }
     free( v );
 }
@@ -91,34 +122,174 @@ void node_dispose( node *v )
  * Add an initially single-char leaf to the tree
  * @param parent the node to hang it off
  * @param i start-index in str of the leaf
+ * @param str the text we represent
  * @param log the log to record error messages in
  */
-int node_add_leaf( node *parent, int i, plugin_log *log )
+int node_add_leaf( node *parent, int i, UChar *str, plugin_log *log )
 {
     int res = 0;
     node *leaf = node_create_leaf( i, log );
     if ( leaf != NULL )
     {
-        node_add_child( parent, leaf );
+        node_add_child( parent, leaf, str, log );
         res = 1;
     }
     return res;
 }
 /**
+ * Find out the number of children we have
+ * @param v the node in question
+ * @return an integer
+ */
+int node_num_children( node *v )
+{
+    int size = 0;
+    if ( PARENT_LIST(v) )
+    {
+        node *temp = v->c.children;
+        while ( temp != NULL )
+        {
+            size++;
+            temp = temp->next;
+        }
+    }
+    else
+        size = hashtable_size( v->c.ht );
+    return size;
+}
+/**
+ * Iterate through a set of nodes
+ * @param parent the parent whose children should be iterated through
+ * @return an iterator or NULL if it failed
+ */
+node_iterator *node_children( node *parent, plugin_log *log )
+{
+    node_iterator *iter = calloc( 1, sizeof(node_iterator) );
+    if ( iter != NULL )
+    {
+        if ( PARENT_LIST(parent) )
+        {
+            int size = node_num_children( parent );
+            iter->nodes = calloc( size, sizeof(node*) );
+            iter->num_nodes = size;
+            if ( iter->nodes != NULL )
+            {
+                int i=0;
+                node *v = parent->c.children;
+                while ( v != NULL )
+                {
+                    iter->nodes[i++] = v;
+                    v = v->next;
+                }
+            }
+            else
+            {
+                node_iterator_dispose( iter );
+                iter = NULL;
+                plugin_log_add(log,
+                    "node: failed to allocate iterator nodes\n");
+            }
+        }
+        else
+        {
+            int size = hashtable_size( parent->c.ht);
+            iter->num_nodes = size;
+            iter->nodes = calloc( size, sizeof(node*) );
+            if ( iter->nodes != NULL )
+                hashtable_to_array( parent->c.ht,iter->nodes );
+            else
+            {
+                node_iterator_dispose(iter);
+                iter = NULL;
+            }
+        }
+    }
+    else
+        plugin_log_add( log,"node: failed to allocate iterator\n");
+    return iter;
+}
+/**
+ * Throw away the memory occupied by the iterator (nothing else)
+ * @param iter the iterator to dispose
+ */
+void node_iterator_dispose( node_iterator *iter )
+{
+    if ( iter->nodes != NULL )
+        free( iter->nodes );
+    free( iter );
+}
+/**
+ * Get the next node pointed to by the iterator
+ * @param iter the iterator 
+ * @return the next node object
+ */
+node *node_iterator_next( node_iterator *iter )
+{
+    if ( iter->position < iter->num_nodes )
+        return iter->nodes[iter->position++];
+    else
+        return NULL;
+}
+/**
+ * Are there any more nodes in this iterator?
+ * @param iter the iterator
+ * @return 1 if it does else 0
+ */
+int node_iterator_has_next( node_iterator *iter )
+{
+    return iter->position < iter->num_nodes;
+}
+/**
+ * Add another child to the sibling list
+ * @param parent the parent
+ * @param child the new sibling of parent's children
+ * @param str the text we represent
+ * @param log the log to report errors to
+ */
+static void node_append_sibling( node *parent, node *child, UChar *str, 
+    plugin_log *log )
+{
+    node *temp = parent->c.children;
+    int size = 1;
+    while ( temp->next != NULL )
+    {
+        size++;
+        if ( size >= MAX_LIST_CHILDREN )
+        {
+            hashtable *ht = hashtable_create( parent, str, log );
+            if ( ht != NULL )
+            {
+                parent->c.ht = ht;
+                parent->len |= KIND_MASK;
+                hashtable_add( parent->c.ht, child, str );
+                return;
+            }
+        }
+        temp = temp->next;
+    }
+    temp->next = child;
+}
+/**
  * Add a child node (can't fail)
  * @param parent the node to add the child to
  * @param child the child to add
+ * @param str the text we represent
+ * @param log the log to report errors to
  */
-void node_add_child( node *parent, node *child )
+void node_add_child( node *parent, node *child, UChar *str, plugin_log *log )
 {
-    if ( parent->children == NULL )
-        parent->children = child;
+    if ( PARENT_LIST(parent) )
+    {
+        if ( parent->c.children == NULL )
+            parent->c.children = child;
+        else
+            node_append_sibling( parent, child, str, log );
+    }
     else
     {
-        node *temp = parent->children;
-        while ( temp->next != NULL )
-            temp = temp->next;
-        temp->next = child;
+        int res = hashtable_add( parent->c.ht, child, str );
+        if ( !res )
+            plugin_log_add(log,"node: failed to add child to hashtable");
     }
     child->parent = parent;
 }
@@ -129,43 +300,72 @@ void node_add_child( node *parent, node *child )
  */
 int node_is_leaf( node *v )
 {
-    return v->children == NULL;
+    if ( PARENT_LIST(v) )
+        return v->c.children == NULL;
+    else
+        return 0;
+}
+/**
+ * Replace one child with another
+ * @param v the node to be replaced
+ * @param u its replacement
+ * @param str the text we represent
+ * @param log the log to send errors to
+ */
+static void replace_child( node *v, node *u, UChar *str, plugin_log *log )
+{
+    if ( PARENT_LIST(v->parent) )
+    {
+        // isolate v and repair the list of children
+        node *child = v->parent->c.children;
+        node *prev = child;
+        while ( child != NULL && child != v )
+        {
+            prev = child;
+            child = child->next;
+        }
+        if ( child == prev )
+            v->parent->c.children = u;
+        else
+            prev->next = u;
+        u->next = child->next;
+        v->next = NULL;
+        //node_print_children(v->parent);
+    }
+    else if ( PARENT_HASH(v->parent) )
+    {
+        int res = hashtable_replace( v->parent->c.ht, str, v, u );
+        if (!res)
+            plugin_log_add( log, "node: failed to replace node\n" );
+    }
+    else
+        plugin_log_add( log, "node: unknown node kind \n" );
 }
 /**
  * Split this node's edge by creating a new node in the middle. Remember 
  * to preserve the "once a leaf always a leaf" property or f will be wrong.
  * @param v the node in question
  * @param loc the place on the edge after which to split it
- * @param log the log to record errors in
+ * @param str the text we represent
+ * @param log the log to send errors to
  * @return the new internal node
  */
-node *node_split( node *v, int loc, plugin_log *log )
+node *node_split( node *v, int loc, UChar *str, plugin_log *log )
 {
-    // create front edge leading to internal node u
+    // create front edge u leading to internal node v
     int u_len = loc-v->start+1;
     node *u = node_create( v->start, u_len, log );
     // now shorten the following node v
     if ( !node_is_leaf(v) )
         v->len -= u_len;
-    v->start = loc+1;
     // replace v with u in the children of v->parent
-    node *child = v->parent->children;
-    node *prev = child;
-    while ( child != NULL && child != v )
-    {
-        prev = child;
-        child = child->next;
-    }
-    if ( child == prev )
-        v->parent->children = u;
-    else
-        prev->next = u;
-    u->next = child->next;
-    v->next = NULL;
+    replace_child( v, u, str, log );
+    v->start = loc+1;
     // reset parents
     u->parent = v->parent;
     v->parent = u;
-    u->children = v;
+    // NB v is the ONLY child of u
+    u->c.children = v;
     return u;
 }
 /**
@@ -185,6 +385,15 @@ node *node_parent( node *v )
 {
     return v->parent;
 }
+void node_clear_next( node *v )
+{
+    if ( PARENT_LIST(v->parent) )
+        v->next = NULL;
+}
+int node_has_next(node *v )
+{
+    return v->next !=NULL;
+}
 /**
  * Get the suffix link
  * @param v the node to get the link of
@@ -197,24 +406,75 @@ node *node_link( node *v )
 //accessors
 int node_len( node *v )
 {
-    return v->len;
+    return LEN_MASK&v->len;
 }
 int node_start( node *v )
 {
     return v->start;
 }
-node *node_next( node *v )
+int node_kind( node *v )
 {
-    return v->next;
+    return v->len&KIND_MASK;
 }
-node *node_children( node *v )
+/**
+ * Find a child of an internal node starting with a character
+ * @param v the internal node
+ * @param c the char to look for
+ * @return the child node or NULL
+ */
+node *node_find_child( node *v, UChar *str, UChar c )
 {
-    return v->children;
+    if ( PARENT_LIST(v) )
+    {
+        v = v->c.children;
+        while ( v != NULL && str[v->start] != c )
+           v = v->next;
+        return v;
+    }
+    else if ( PARENT_HASH(v) )
+    {
+        node *u = hashtable_get( v->c.ht, c );
+        return u;
+    }
+    else
+        return NULL;
 }
+/**
+ * What is the first char of this node?
+ * @param str the string it belongs to
+ * @param v the node inquestion
+ * @return the first char of the node
+ */
+UChar node_first_char( node *v, UChar *str )
+{
+    return str[node_start(v)];
+}
+/**
+ * Get the end index of the string this node points to
+ * @param v the node in question
+ * @param max the biggest value we can return
+ * @return the last index or max
+ */
 int node_end( node *v, int max )
 {
     if ( node_len(v) == INFINITY )
         return max;
     else
-        return v->start+v->len-1;
+        return v->start+node_len(v)-1;
+}
+/**
+ * Debug routine
+ * @param str the text
+ * @param v the node whose children should be printed to the console
+ */
+void node_print_children( UChar *str, node *v, plugin_log *log )
+{
+    node_iterator *iter = node_children( v, log );
+    while ( node_iterator_has_next(iter) )
+    {
+        node *u = node_iterator_next(iter);
+        printf("%x ",str[u->start]);
+    }
+    node_iterator_dispose( iter );
+    printf("\n");
 }

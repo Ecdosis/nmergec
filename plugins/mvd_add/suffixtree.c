@@ -58,20 +58,6 @@ struct suffixtree_struct
     // the last value of j in the previous extension
     int old_j;
 };
-/**
- * Find a child of an internal node starting with a character
- * @param st the suffixtree in question
- * @param v the internal node
- * @param c the char to look for
- * @return the child node
- */
-static node *find_child( suffixtree *st, node *v, UChar c )
-{
-    v = node_children(v);
-    while ( v != NULL && st->str[node_start(v)] != c )
-       v = node_next(v);
-    return v;
-}
 #ifdef DEBUG
 #include "debug"
 #endif
@@ -98,7 +84,7 @@ static pos *walk_down( suffixtree *st, node *v, path *p )
     pos *q=NULL;
     int start = path_start( p );
     int len = path_len( p );
-    v = find_child( st, v, st->str[start] );
+    v = node_find_child( v, st->str, st->str[start] );
     while ( len > 0 )
     {
         if ( len <= node_len(v) )
@@ -112,7 +98,7 @@ static pos *walk_down( suffixtree *st, node *v, path *p )
         {
             start += node_len(v);
             len -= node_len(v);
-            v = find_child( st, v, st->str[start] );
+            v = node_find_child( v, st->str, st->str[start] );
         }
     }
     path_dispose( p );
@@ -191,7 +177,7 @@ int suffixtree_advance_pos( suffixtree *st, pos *p, UChar c )
     }
     else
     {
-        node *n = find_child(st,p->v,c);
+        node *n = node_find_child(p->v,st->str,c);
         if ( n != NULL )
         {
             p->loc = node_start(n);
@@ -214,7 +200,7 @@ static int continues( suffixtree *st, pos *p, UChar c )
     if ( node_end(p->v,st->e) > p->loc )
         return st->str[p->loc+1] == c;
     else
-        return find_child(st,p->v,c) != NULL;
+        return node_find_child(p->v,st->str,c) != NULL;
 }
 /**
  * If current is set set its link to point to the next node, then clear it
@@ -256,7 +242,7 @@ static void update_old_beta( suffixtree *st, pos *p, int i )
     }
     else
     {
-        node *u = find_child( st, p->v, st->str[i] );
+        node *u = node_find_child( p->v, st->str, st->str[i] );
         st->old_beta.v = u;
         st->old_beta.loc = node_start( u );
     }
@@ -283,12 +269,12 @@ static int extension( suffixtree *st, int j, int i, plugin_log *log )
         node *leaf = node_create_leaf( i, log );
         if ( p->v==st->root || pos_at_edge_end(st,p) )
         {
-            node_add_child( p->v, leaf );
+            node_add_child( p->v, leaf, st->str, log );
             update_current_link( st, p->v );
         }
         else
         {
-            node *u = node_split( p->v, p->loc, log );
+            node *u = node_split( p->v, p->loc, st->str, log );
             update_current_link( st, u );
             if ( i-j==1 )
             {
@@ -299,7 +285,7 @@ static int extension( suffixtree *st, int j, int i, plugin_log *log )
             }
             else 
                 st->current = u;
-            node_add_child( u, leaf );
+            node_add_child( u, leaf, st->str, log );
         }
         update_old_beta( st, p, i );
     }
@@ -336,18 +322,23 @@ static void phase( suffixtree *st, int i, plugin_log *log )
 /**
  * Set the length of each leaf to e recursively
  * @param v the node in question
+ * @param log the log to record errors in
  */
-static void set_e( suffixtree *st, node *v )
+static void set_e( suffixtree *st, node *v, plugin_log *log )
 {
     if ( node_is_leaf(v) )
     {
         node_set_len( v, st->e-node_start(v)+1 );
     }
-    node *u = node_children( v );
-    while ( u != NULL )
+    node_iterator *iter = node_children( v, log );
+    if ( iter != NULL )
     {
-        set_e( st, u );
-        u = node_next( u );
+        while ( node_iterator_has_next(iter) )
+        {
+            node *u = node_iterator_next( iter );
+            set_e( st, u, log );
+        }
+        node_iterator_dispose( iter );
     }
 }
 /**
@@ -375,10 +366,10 @@ suffixtree *suffixtree_create( UChar *txt, size_t tlen, plugin_log *log )
             if ( st->f != NULL )
             {
                 int i;
-                node_add_child( st->root, st->f );
+                node_add_child( st->root, st->f, st->str, log );
                 for ( i=1; i<=tlen; i++ )
                     phase(st,i,log);
-                set_e( st, st->root );
+                set_e( st, st->root, log );
             }
         }
     }
