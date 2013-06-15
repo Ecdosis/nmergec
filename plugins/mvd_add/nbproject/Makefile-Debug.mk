@@ -69,81 +69,81 @@ LDLIBSOPTIONS=-licuuc -lmvd
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
-	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/mvd_add
+	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_add.${CND_DLIB_EXT}
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/mvd_add: ${OBJECTFILES}
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_add.${CND_DLIB_EXT}: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/mvd_add ${OBJECTFILES} ${LDLIBSOPTIONS}
+	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_add.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -dynamiclib -install_name libmvd_add.${CND_DLIB_EXT} -fPIC
 
 ${OBJECTDIR}/_ext/688439529/plugin_log.o: ../shared/src/plugin_log.c 
 	${MKDIR} -p ${OBJECTDIR}/_ext/688439529
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_ADD_TEST -I../../include -I../../mvd/include -I../shared/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/688439529/plugin_log.o ../shared/src/plugin_log.c
+	$(COMPILE.c) -g -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/688439529/plugin_log.o ../shared/src/plugin_log.c
 
 ${OBJECTDIR}/aatree.o: aatree.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_ADD_TEST -I../../include -I../../mvd/include -I../shared/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/aatree.o aatree.c
+	$(COMPILE.c) -g -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/aatree.o aatree.c
 
 ${OBJECTDIR}/alignment.o: alignment.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_ADD_TEST -I../../include -I../../mvd/include -I../shared/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/alignment.o alignment.c
+	$(COMPILE.c) -g -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/alignment.o alignment.c
 
 ${OBJECTDIR}/benchmark.o: benchmark.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_ADD_TEST -I../../include -I../../mvd/include -I../shared/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/benchmark.o benchmark.c
+	$(COMPILE.c) -g -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/benchmark.o benchmark.c
 
 ${OBJECTDIR}/hashtable.o: hashtable.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_ADD_TEST -I../../include -I../../mvd/include -I../shared/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/hashtable.o hashtable.c
+	$(COMPILE.c) -g -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/hashtable.o hashtable.c
 
 ${OBJECTDIR}/linkpair.o: linkpair.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_ADD_TEST -I../../include -I../../mvd/include -I../shared/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/linkpair.o linkpair.c
+	$(COMPILE.c) -g -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/linkpair.o linkpair.c
 
 ${OBJECTDIR}/match.o: match.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_ADD_TEST -I../../include -I../../mvd/include -I../shared/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/match.o match.c
+	$(COMPILE.c) -g -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/match.o match.c
 
 ${OBJECTDIR}/match_state.o: match_state.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_ADD_TEST -I../../include -I../../mvd/include -I../shared/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/match_state.o match_state.c
+	$(COMPILE.c) -g -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/match_state.o match_state.c
 
 ${OBJECTDIR}/matcher.o: matcher.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_ADD_TEST -I../../include -I../../mvd/include -I../shared/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/matcher.o matcher.c
+	$(COMPILE.c) -g -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/matcher.o matcher.c
 
 ${OBJECTDIR}/mvd_add.o: mvd_add.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_ADD_TEST -I../../include -I../../mvd/include -I../shared/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/mvd_add.o mvd_add.c
+	$(COMPILE.c) -g -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/mvd_add.o mvd_add.c
 
 ${OBJECTDIR}/node.o: node.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_ADD_TEST -I../../include -I../../mvd/include -I../shared/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/node.o node.c
+	$(COMPILE.c) -g -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/node.o node.c
 
 ${OBJECTDIR}/path.o: path.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_ADD_TEST -I../../include -I../../mvd/include -I../shared/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/path.o path.c
+	$(COMPILE.c) -g -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/path.o path.c
 
 ${OBJECTDIR}/suffixtree.o: suffixtree.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_ADD_TEST -I../../include -I../../mvd/include -I../shared/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/suffixtree.o suffixtree.c
+	$(COMPILE.c) -g -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/suffixtree.o suffixtree.c
 
 ${OBJECTDIR}/test.o: test.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -g -DMVD_ADD_TEST -I../../include -I../../mvd/include -I../shared/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/test.o test.c
+	$(COMPILE.c) -g -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/test.o test.c
 
 # Subprojects
 .build-subprojects:
@@ -151,7 +151,7 @@ ${OBJECTDIR}/test.o: test.c
 # Clean Targets
 .clean-conf: ${CLEAN_SUBPROJECTS}
 	${RM} -r ${CND_BUILDDIR}/${CND_CONF}
-	${RM} ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/mvd_add
+	${RM} ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_add.${CND_DLIB_EXT}
 
 # Subprojects
 .clean-subprojects:

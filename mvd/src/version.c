@@ -18,7 +18,7 @@ struct version_struct
  * Create a version
  * @param id the path to that version e.g. Base/F1
  * @param description the long name or description of the version
- * @return the competed version obejct or NULL on failure
+ * @return the competed version object or NULL on failure
  */
 version *version_create( UChar *id, UChar *description )
 {

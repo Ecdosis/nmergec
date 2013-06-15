@@ -41,13 +41,16 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/encoding.o \
 	${OBJECTDIR}/src/group.o \
 	${OBJECTDIR}/src/hashmap.o \
+	${OBJECTDIR}/src/hint.o \
 	${OBJECTDIR}/src/hsieh.o \
 	${OBJECTDIR}/src/link_node.o \
 	${OBJECTDIR}/src/mvd.o \
 	${OBJECTDIR}/src/pair.o \
 	${OBJECTDIR}/src/serialiser.o \
 	${OBJECTDIR}/src/utils.o \
-	${OBJECTDIR}/src/version.o
+	${OBJECTDIR}/src/verify.o \
+	${OBJECTDIR}/src/version.o \
+	${OBJECTDIR}/src/vgnode.o
 
 
 # C Compiler Flags
@@ -104,6 +107,11 @@ ${OBJECTDIR}/src/hashmap.o: src/hashmap.c
 	${RM} $@.d
 	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/hashmap.o src/hashmap.c
 
+${OBJECTDIR}/src/hint.o: src/hint.c 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/hint.o src/hint.c
+
 ${OBJECTDIR}/src/hsieh.o: src/hsieh.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
@@ -134,10 +142,20 @@ ${OBJECTDIR}/src/utils.o: src/utils.c
 	${RM} $@.d
 	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/utils.o src/utils.c
 
+${OBJECTDIR}/src/verify.o: src/verify.c 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/verify.o src/verify.c
+
 ${OBJECTDIR}/src/version.o: src/version.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/version.o src/version.c
+
+${OBJECTDIR}/src/vgnode.o: src/vgnode.c 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/vgnode.o src/vgnode.c
 
 # Subprojects
 .build-subprojects:

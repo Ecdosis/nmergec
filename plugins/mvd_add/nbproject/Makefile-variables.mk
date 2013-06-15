@@ -9,11 +9,11 @@ CND_DISTDIR=dist
 # Debug configuration
 CND_PLATFORM_Debug=GNU-MacOSX
 CND_ARTIFACT_DIR_Debug=dist/Debug/GNU-MacOSX
-CND_ARTIFACT_NAME_Debug=mvd_add
-CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-MacOSX/mvd_add
+CND_ARTIFACT_NAME_Debug=libmvd_add.dylib
+CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-MacOSX/libmvd_add.dylib
 CND_PACKAGE_DIR_Debug=dist/Debug/GNU-MacOSX/package
-CND_PACKAGE_NAME_Debug=mvdadd.tar
-CND_PACKAGE_PATH_Debug=dist/Debug/GNU-MacOSX/package/mvdadd.tar
+CND_PACKAGE_NAME_Debug=libmvdadd.dylib.tar
+CND_PACKAGE_PATH_Debug=dist/Debug/GNU-MacOSX/package/libmvdadd.dylib.tar
 # Release configuration
 CND_PLATFORM_Release=GNU-MacOSX
 CND_ARTIFACT_DIR_Release=dist/Release/GNU-MacOSX

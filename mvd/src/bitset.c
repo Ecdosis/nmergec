@@ -52,6 +52,11 @@ bitset *bitset_clone( bitset *bs )
         memcpy( new_bs->data, bs->data, bs->allocated );
     return new_bs;
 }
+/** 
+ * How many bytes are allocated? (useful for writing it out)
+ * @param bs the bitset in question
+ * @return the number of bytes allocated for this bitset
+ */
 int bitset_allocated( bitset *bs )
 {
     return bs->allocated;
@@ -316,6 +321,51 @@ void bitset_and_not( bitset *bs, bitset *other )
         bs->data[i] &= ~b;
     }
 }
+/**
+ * How many bytes would be needed to create a string of us? Allow for NULL.
+ * @param bs the bitset in question
+ * @return the number of bytes + 
+ */
+int bitset_measure( bitset *bs )
+{
+    return bs->allocated+1;
+}
+
+/**
+ * Print a bitset to stdout
+ * @param bs the bitset to print
+ * @param dst the string to write to
+ * @param len the length of dst in bytes
+ */
+void bitset_tostring( bitset *bs, char *dst, int len )
+{
+    int i,j;
+    int loc = 0;
+    for ( i=0;i<bs->allocated;i++ )
+    {
+        unsigned char mask = 1;
+        for ( j=0;j<8;j++,loc++ )
+        {
+            if ( bs->data[i] & mask<<j )
+                snprintf(&dst[loc],len-loc,"%d",1);
+            else
+                snprintf(&dst[loc],len-loc,"%d",0);
+        }
+    }
+    printf("\n");
+}
+/**
+ * Clear a specified bit
+ * @param bs the bitset in question
+ * @param i the index of the bit to clear
+ */
+void bitset_clear_bit( bitset *bs, int i )
+{
+    int index = i/8;
+    int mod = i%8;
+    unsigned char bit = 1;
+    bs->data[index] |= bit<<mod;
+}
 #ifdef MVD_TEST
 /**
  * Print a bitset to stdout
@@ -443,5 +493,19 @@ void test_bitset( int *passed, int *failed )
         bit_test( bs, 24, -1, passed, failed );
         bitset_dispose( bs );
     }
+}
+int main(int argc, char **argv)
+{
+    bitset *bs1 = bitset_create();
+    bitset_set( bs1, 1 );
+    bitset_set( bs1, 2 );
+    bitset_set( bs1, 3 );
+    bitset *bs2 = bitset_create();
+    bitset_set( bs2, 1 );
+    bitset_set( bs2, 3 );
+    bitset_and_not( bs2, bs1 );
+    printf("about to print bitset\n");
+    bitset_print( bs2 );
+    printf("printed bitset\n");
 }
 #endif

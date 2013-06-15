@@ -395,3 +395,7 @@ node *suffixtree_root( suffixtree *st )
 {
     return st->root;
 }
+UChar *suffixtree_text( suffixtree *st )
+{
+    return st->str;
+}

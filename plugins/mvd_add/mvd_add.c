@@ -26,6 +26,7 @@
 #include "aatree.h"
 #include "alignment.h"
 #include "matcher.h"
+#include "verify.h"
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
@@ -149,7 +150,7 @@ static int add_first_version( MVD *mvd, struct add_struct *add, UChar *text,
                 plugin_log_add(log,
                 "mvd_add: failed to add version\n");
             else
-                plugin_log_add(log,"mvd_add: success!\n");
+                plugin_log_add(log,"mvd_add: added version successfully!");
         }
     }
     return res;
@@ -257,15 +258,15 @@ static int add_subsequent_version( MVD *mvd, UChar *text, int tlen,
  * @return 1 if it worked else 0
  */
 static int add_mvd_text( struct add_struct *add, MVD *mvd, 
-    unsigned char *data, size_t data_len )
+    unsigned char *data, size_t data_len, plugin_log *log )
 {
     int res = 1;
     int tlen;
     char *mvd_encoding = mvd_get_encoding(mvd);
     if ( add->encoding != NULL )
     {
-        if ( mvd_count_versions(*mvd)==0 )
-            mvd_set_encoding(*mvd,add->encoding);
+        if ( mvd_count_versions(mvd)==0 )
+            mvd_set_encoding(mvd,add->encoding);
         else if ( strcmp(mvd_encoding,add->encoding)!=0 )
         {
             plugin_log_add(log,
@@ -280,10 +281,15 @@ static int add_mvd_text( struct add_struct *add, MVD *mvd,
         mvd_encoding, &tlen, log );
     if ( tlen > 0 )
     {
-        if ( mvd_count_versions(*mvd)==0 )
-            res = add_first_version( *mvd, add, text, tlen, log );
+        if ( mvd_count_versions(mvd)==0 )
+            res = add_first_version( mvd, add, text, tlen, log );
         else
-            res = add_subsequent_version( *mvd, text, tlen, log );
+        {
+            res = add_subsequent_version( mvd, text, tlen, log );
+            verify *v = verify_create( mvd );
+            if ( !verify_check(v) )
+                printf("mvd_add: failed mvd check\n");
+        }
     }
     else
     {
@@ -309,6 +315,7 @@ int process( MVD **mvd, char *options, unsigned char *output,
         *mvd = mvd_create();
     if ( *mvd != NULL )
     {
+        verify *v = verify_create( *mvd );
         plugin_log *log = plugin_log_create( output );
         if ( log != NULL )
         {
@@ -320,9 +327,10 @@ int process( MVD **mvd, char *options, unsigned char *output,
                 {
                     res = set_options( add, map, log );
                     if ( res && data != NULL && data_len > 0 )
-                        res = add_mvd_text( add, *mvd, data, data_len );
+                        res = add_mvd_text( add, *mvd, data, data_len, log );
                     else
                         plugin_log_add(log,"mvd_add: length was 0\n");
+                    hashmap_dispose( map, free );
                 }
                 else
                     plugin_log_add(log,"mvd_add: invalid options %s",options);

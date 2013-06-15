@@ -25,8 +25,10 @@
 #define DEFAULT_SET_SIZE 32
 #ifdef __LITTLE_ENDIAN__
 #define SLASH (UChar*)"\x2F\x00"
+#define BASE_GROUP (UChar*)"\x42\x00\x61\x00\x73\x00\x65\x00"
 #else
 #define SLASH (UChar*)"\x00\x2F"
+#define BASE_GROUP (UChar*)"\x00\x42\x00\x61\x00\x73\x00\x65"
 #endif
 struct MVD_struct
 {
@@ -206,21 +208,38 @@ int mvd_datasize( MVD *mvd, int old )
         if ( groups != NULL )
         {
             int i,gsize = hashmap_size(groups);
-            UChar **array = calloc( gsize, sizeof(UChar*) );
-            if ( array != NULL )
+            if ( gsize > 0 )
             {
-                hashmap_to_array( groups, array );
-                for ( i=0;i<gsize;i++ )
+                UChar **array = calloc( gsize, sizeof(UChar*) );
+                if ( array != NULL )
                 {
-                    group *g = hashmap_get( groups, array[i] );
-                    mvd->groupTableSize += group_datasize( g, mvd->encoding );
+                    hashmap_to_array( groups, array );
+                    for ( i=0;i<gsize;i++ )
+                    {
+                        group *g = hashmap_get( groups, array[i] );
+                        mvd->groupTableSize += group_datasize( g, mvd->encoding );
+                    }
+                    free( array );
                 }
-                free( array );
+                else
+                {
+                    fprintf(stderr,"mvd: failed to create hashmap array\n");
+                    return 0;
+                }
             }
             else
             {
-                fprintf(stderr,"mvd: failed to create hashmap array\n");
-                return 0;
+                // write out at least the default group
+                group *g = group_create( 1, 0, BASE_GROUP );
+                if ( g != NULL )
+                {
+                    mvd->groupTableSize += group_datasize( g, mvd->encoding );
+                    group_dispose( g );
+                }
+                else
+                {
+                    fprintf(stderr,"mvd: failed to allocate group\n");
+                }
             }
             hashmap_dispose( groups, group_dispose );
         }
@@ -382,7 +401,6 @@ int mvd_serialise_versions_old( MVD *mvd, char *data, int len, int p,
             }
             if ( version != NULL )
             {
-                char buf[128];
                 int gid = 0;
                 if ( gname != NULL )
                 {
@@ -390,14 +408,7 @@ int mvd_serialise_versions_old( MVD *mvd, char *data, int len, int p,
                     gid = group_id( g );
                 }
                 else
-                {
-                    if ( version != NULL )
-                        fprintf(stderr,"couldn't find group. version=%s\n",
-                            u_print(version_id(v),buf,128));
-                    if ( vid != NULL )
-                        fprintf(stderr,"description=%s\n",
-                            u_print(version_description(v),buf,128));
-                }
+                    gid = 1;
                 write_short( data, len, p, (short)gid );
                 p += 2;
                 p += write_string( data, len, p, version, mvd->encoding );
@@ -430,40 +441,51 @@ static int serialise_groups( MVD *mvd, unsigned char *data, int len, int p,
     int i;
     int oldP = p;
     int gsize = hashmap_size( groups );
-    UChar **keys = calloc(gsize,sizeof(UChar*));
-    UChar **sorted = calloc(gsize,sizeof(UChar*));
-    if ( sorted != NULL && keys != NULL )
+    if ( gsize > 0 )
     {
-        hashmap_to_array( groups, keys );
-        for ( i=0;i<gsize;i++ )
+        UChar **keys = calloc(gsize,sizeof(UChar*));
+        UChar **sorted = calloc(gsize,sizeof(UChar*));
+        if ( sorted != NULL && keys != NULL )
         {
-            group *g = hashmap_get( groups, keys[i] );
-            int gid = group_id( g );
-            if ( gid <= gsize && gid > 0 )
-                sorted[gid-1] = keys[i];
-            else
+            hashmap_to_array( groups, keys );
+            for ( i=0;i<gsize;i++ )
             {
-                fprintf(stderr,"mvd: invalid group id %d\n",gid);
-                goto bail;
+                group *g = hashmap_get( groups, keys[i] );
+                int gid = group_id( g );
+                if ( gid <= gsize && gid > 0 )
+                    sorted[gid-1] = keys[i];
+                else
+                {
+                    fprintf(stderr,"mvd: invalid group id %d\n",gid);
+                    goto bail;
+                }
+            }
+            write_short( data, len, p, gsize );
+            p += 2;
+            // now write them out in order
+            for ( i=0;i<gsize;i++ )
+            {
+                group *g = hashmap_get( groups, sorted[i] );
+                int pid = group_parent( g );
+                write_short( data, len, p, pid );
+                p += 2;
+                p += write_string( data, len, p, sorted[i], mvd->encoding );
             }
         }
-        write_short( data, len, p, gsize );
-        p += 2;
-        // now write them out in order
-        for ( i=0;i<gsize;i++ )
-        {
-            group *g = hashmap_get( groups, sorted[i] );
-            int pid = group_parent( g );
-            write_short( data, len, p, pid );
-            p += 2;
-            p += write_string( data, len, p, sorted[i], mvd->encoding );
-        }
+        bail:
+        if ( keys != NULL )
+            free( keys );
+        if ( sorted != NULL )
+            free( sorted );
     }
-    bail:
-    if ( keys != NULL )
-        free( keys );
-    if ( sorted != NULL )
-        free( sorted );
+    else
+    {
+        write_short( data, len, p, 1 );
+        p += 2;
+        write_short( data, len, p, 0 );
+        p += 2;
+        p += write_string( data, len, p, BASE_GROUP, mvd->encoding );  
+    }
     return p - oldP;
 }
 /**

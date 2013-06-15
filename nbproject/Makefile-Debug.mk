@@ -72,11 +72,15 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=-L/usr/local/lib/nmerge-plugins -ldl -licuuc -lmvd
+LDLIBSOPTIONS=-ldl -licuuc -lmvd -Lplugins/mvd_add/dist/Debug/GNU-MacOSX -lmvd_add -Lmvd/dist/Debug/GNU-MacOSX -lmvd
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
 	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nmergec
+
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nmergec: plugins/mvd_add/dist/Debug/GNU-MacOSX/libmvd_add.dylib
+
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nmergec: mvd/dist/Debug/GNU-MacOSX/libmvd.dylib
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nmergec: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
@@ -189,6 +193,9 @@ ${OBJECTDIR}/src/zip/zutil.o: src/zip/zutil.c
 
 # Subprojects
 .build-subprojects:
+	cd plugins/mvd_add && ${MAKE}  -f Makefile CONF=Debug
+	cd mvd && ${MAKE}  -f Makefile CONF=Debug
+	cd plugins/mvd_add && ${MAKE}  -f Makefile CONF=Debug
 
 # Clean Targets
 .clean-conf: ${CLEAN_SUBPROJECTS}
@@ -197,6 +204,9 @@ ${OBJECTDIR}/src/zip/zutil.o: src/zip/zutil.c
 
 # Subprojects
 .clean-subprojects:
+	cd plugins/mvd_add && ${MAKE}  -f Makefile CONF=Debug clean
+	cd mvd && ${MAKE}  -f Makefile CONF=Debug clean
+	cd plugins/mvd_add && ${MAKE}  -f Makefile CONF=Debug clean
 
 # Enable dependency checking
 .dep.inc: .depcheck-impl

@@ -18,6 +18,7 @@ suffixtree *suffixtree_create( UChar *txt, size_t tlen, plugin_log *log );
 void suffixtree_dispose( suffixtree *st );
 int suffixtree_advance_pos( suffixtree *st, pos *p, UChar c );
 node *suffixtree_root( suffixtree *st );
+UChar *suffixtree_text( suffixtree *st );
 
 #ifdef	__cplusplus
 }

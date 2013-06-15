@@ -78,15 +78,48 @@
           </incDir>
         </cTool>
         <linkerTool>
-          <linkerAddLib>
-            <pElem>/usr/local/lib/nmerge-plugins</pElem>
-          </linkerAddLib>
           <linkerLibItems>
             <linkerLibStdlibItem>DynamicLinking</linkerLibStdlibItem>
             <linkerLibLibItem>icuuc</linkerLibLibItem>
             <linkerLibLibItem>mvd</linkerLibLibItem>
+            <linkerLibProjectItem>
+              <makeArtifact PL="plugins/mvd_add"
+                            CT="2"
+                            CN="Debug"
+                            AC="true"
+                            BL="true"
+                            WD="plugins/mvd_add"
+                            BC="${MAKE}  -f Makefile CONF=Debug"
+                            CC="${MAKE}  -f Makefile CONF=Debug clean"
+                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_add.${CND_DLIB_EXT}">
+              </makeArtifact>
+            </linkerLibProjectItem>
+            <linkerLibProjectItem>
+              <makeArtifact PL="mvd"
+                            CT="2"
+                            CN="Debug"
+                            AC="true"
+                            BL="true"
+                            WD="mvd"
+                            BC="${MAKE}  -f Makefile CONF=Debug"
+                            CC="${MAKE}  -f Makefile CONF=Debug clean"
+                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd.${CND_DLIB_EXT}">
+              </makeArtifact>
+            </linkerLibProjectItem>
           </linkerLibItems>
         </linkerTool>
+        <requiredProjects>
+          <makeArtifact PL="plugins/mvd_add"
+                        CT="1"
+                        CN="Debug"
+                        AC="true"
+                        BL="true"
+                        WD="plugins/mvd_add"
+                        BC="${MAKE}  -f Makefile CONF=Debug"
+                        CC="${MAKE}  -f Makefile CONF=Debug clean"
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/mvd_add">
+          </makeArtifact>
+        </requiredProjects>
       </compileType>
       <item path="include/b64.h" ex="false" tool="3" flavor2="0">
       </item>

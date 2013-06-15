@@ -384,7 +384,7 @@ pair *pair_split( pair **p, int at )
 {
     pair *first = pair_create_basic( (*p)->versions, (*p)->data, at+1 );
     pair *second = pair_create_basic( (*p)->versions, &(*p)->data[at+1], 
-        (*p)->len-at );
+        (*p)->len-(at+1) );
     if ( first != NULL && second != NULL )
         *p = first;
     else

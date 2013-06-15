@@ -108,6 +108,28 @@ static char *create_path( char *dir, char *file )
     }
     return path;
 }
+int write_mvd( MVD *mvd, char *file )
+{
+    int res = 0;
+    int size = mvd_datasize( mvd, 1 );
+    unsigned char *data = malloc( size );
+    if ( data != NULL )
+    {
+        int res = mvd_serialise( mvd, data, size, 1 );
+        if ( res )
+        {
+            FILE *dst = fopen( file, "w" );
+            if ( dst != NULL )
+            {
+                int nitems = fwrite( data, 1, size, dst );
+                if ( nitems == size )
+                    res = 1;
+                fclose( dst );
+            }
+        }
+    }
+    return res;
+}
 /**
  * Read a directory
  * @return number of files found or 0 on failure
@@ -145,6 +167,7 @@ static int read_dir( char *folder )
                         strcat( options, " encoding=utf-8" );
                         strcat( options, " description=test" );
                         res = process( &mvd, options, output, txt, flen );
+                        n_files++;
                         printf("%s",(char*)output);
                         free( txt );
                     }
@@ -156,6 +179,7 @@ static int read_dir( char *folder )
     }
     else
         fprintf(stderr,"test: failed to open directory %s\n",folder);
+    write_mvd( mvd, "test.mvd" );
     return n_files;
 }
 // arguments: folder of text files

@@ -146,6 +146,8 @@ static int read_args( int argc, char **argv )
                         break;
                     case 'u':
                         user_data = read_file( argv[++i], &user_data_len );
+                        if ( user_data == NULL )
+                            sane = 0;
                         break;
                     case 'v':
                         op = VERSION;
@@ -299,7 +301,7 @@ void do_command()
                 fprintf(stderr, "%s", output );
                 if ( mvd != NULL )
                 {
-                    res = mvdfile_save( mvd, mvdFile, 0 );
+                    //res = mvdfile_save( mvd, mvdFile, 0 );
                     mvd_dispose( mvd );
                 }
                 free( output );

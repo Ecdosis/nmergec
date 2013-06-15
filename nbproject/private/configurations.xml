@@ -26,9 +26,6 @@
       </nativedebugger>
       <runprofile version="9">
         <runcommandpicklist>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c create -o "description=\"test\" encoding=\"utf-8\"" -m test.mvd</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c create -h</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -h create</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" -l</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -m test.mvd -o "" </runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" -c create -m test.mvd -o "encoding=utf-16 description=test"</runcommandpicklistitem>
@@ -36,8 +33,11 @@
           <runcommandpicklistitem>"${OUTPUT_PATH}" -c create -o "encoding=utf-16 description=test debug=1" -m test.mvd</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" -c create -m test.mvd -o "description=test encoding=utf-8"</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -m test.mvd -o "encoding=utf-8 description=\"text 1\" vid=\"english/test\"" -u output.txt</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -m scene1.mvd -o "encoding=utf-8 description=\"Shakespeare King Lear act 1 scene 1\" vid=\"/Base/F1\"" -u output.txt</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -m scene1.mvd -o "encoding=utf-8 description=\"Shakespeare King Lear act 1 scene 1\" vid=\"/Base/F1\"" -u scene1.txt</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -m scene1.mvd -o "encoding=utf-8 description=\"Shakespeare King Lear act 1 scene 1\" vid=\"/Base/F1\"" -u scene1-permuted.txt</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>"${OUTPUT_PATH}" -c add -m test.mvd -o "encoding=utf-8 description=\"text 1\" vid=\"english/test\"" -u output.txt</runcommand>
+        <runcommand>"${OUTPUT_PATH}" -c add -m scene1.mvd -o "encoding=utf-8 description=\"Shakespeare King Lear act 1 scene 1\" vid=\"/Base/F1\"" -u scene1-permuted.txt</runcommand>
         <rundir></rundir>
         <buildfirst>true</buildfirst>
         <terminal-type>0</terminal-type>

@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <pthread.h>
 #include <string.h>
+#include <stdio.h>
 #include <unicode/uchar.h>
 #include "plugin_log.h"
 #include "node.h"
@@ -18,6 +19,7 @@
 #include "matcher.h"
 #include "utils.h"
 #include "dyn_array.h"
+#include "benchmark.h"
 
 #define PQUEUE_LIMIT 50
 // should be set to the number of (hyperthreaded) processors
@@ -28,11 +30,11 @@ struct alignment_struct
 {
     // the unaligned pair to align
     pair *p;
-    // our suffixtree - computed only once
+    // our suffixtree - computed only once from p
     suffixtree *st;
     // the log to record errors in
     plugin_log *log;
-    // next alignment n queue
+    // next alignment in queue
     alignment *next;
 };
 /**
@@ -126,27 +128,6 @@ alignment *alignment_pop( alignment *head )
     alignment *rest = head->next;
     head->next = NULL;
     return rest;
-}
-/**
- * Get the longest maximal unique match (MUM)
- * @param m the matcher in question
- * @return a match, which may be a chain of matches
- */
-static match *get_mum( aatree *pq )
-{
-    match *found = NULL;
-    while ( !aatree_empty(pq) )
-    {
-        match *mt = aatree_max( pq );
-        if ( match_freq(mt) == 1 )
-        {
-            found = mt;
-            break;
-        }
-        else if ( !aatree_delete(pq,mt) )
-            break;
-    }
-    return found;
 }
 /**
  * Merge a MUM into the list of pairs by transposition
@@ -257,7 +238,8 @@ static void alignment_merge_one( alignment *a, match *mum )
         linkpair_split( start_p, start_pos, a->log );
         start_p = linkpair_right( start_p );
     }
-    if ( end_pos != 0 )
+    // wrong: check that it's not at the end
+    if ( end_pos>0 && end_pos < pair_len(linkpair_pair(end_p)) )
         linkpair_split( end_p, end_pos, a->log );
     if ( match_transposed(mum,alignment_version(a),alignment_len(a)) )
         transpose_merge( mum, start_p, end_p, a );
@@ -345,7 +327,7 @@ int alignment_align( alignment *a, linkpair *pairs,
             {
                 if ( res = matcher_align(m) )
                 {
-                    match *mum = get_mum( pq );
+                    match *mum = matcher_get_mum( m );
                     if ( mum != NULL )
                         alignment_merge( a, mum, pairs, left, right );
                 }

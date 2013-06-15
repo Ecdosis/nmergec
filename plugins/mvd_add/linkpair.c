@@ -136,7 +136,7 @@ static void linkpair_fix( linkpair *lp, plugin_log *log )
                     break;
                 else
                 {
-                    bitset_or( bs, pair_versions(temp->p) );
+                    bs = bitset_or( bs, pair_versions(temp->p) );
                     dyn_array_add( implicits, temp->p );
                 }
                 temp = temp->right;
@@ -175,7 +175,7 @@ static void linkpair_fix( linkpair *lp, plugin_log *log )
             // 3a. get the versions of the preceding node
             pair *hint = NULL;
             linkpair *node = NULL;
-            while ( temp->left != NULL )
+            while ( !bitset_empty(bs) && temp->left != NULL )
             {
                 bitset *pv = pair_versions(temp->p);
                 bitset *lpv = pair_versions(temp->left->p);
@@ -197,7 +197,7 @@ static void linkpair_fix( linkpair *lp, plugin_log *log )
             if ( !bitset_empty(bs) )
             {
                 if ( hint != NULL )
-                    bitset_or( pair_versions(hint), bs );
+                    hint_or( hint, bs );
                 else
                 {
                     bitset_set( bs, 0 );
@@ -229,6 +229,7 @@ static void linkpair_fix( linkpair *lp, plugin_log *log )
  */
 linkpair *linkpair_next( linkpair *lp, bitset *bs )
 {
+    lp = lp->right;
     while ( lp != NULL 
         && !bitset_intersects(bs,pair_versions(linkpair_pair(lp))) )
         lp = linkpair_right(lp);

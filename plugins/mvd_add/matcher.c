@@ -20,7 +20,7 @@
 /**
  * A matcher is something that looks for matches by comparing the 
  * list of pairs with the suffix tree, which itself represents
- * the new version. After matching is ended matcher an return the 
+ * the new version. After matching is ended matcher returns the 
  * best MUM.
  */
 struct matcher_struct
@@ -76,15 +76,17 @@ int matcher_align( matcher *m )
     {
         pair *p = linkpair_pair( lp );
         bitset *bs = pair_versions(p);
+        // ignore pairs already aligned with the new version
         if ( bitset_next_set_bit(bs,m->version)!=m->version )
         {
             int j,length = pair_len( p );
             for ( j=0;j<length;j++ )
             {
+                // start a match at each character position
                 match *mt = match_create( lp, j, m->pairs, m->st, m->log );
                 if ( mt != NULL )
                 {
-                    match_set_versions( mt, bitset_clone(pair_versions(p)));
+                    match_set_versions( mt, bitset_clone(bs) );
                     while ( mt != NULL )
                     {
                         match *queued = NULL;
@@ -113,4 +115,26 @@ int matcher_align( matcher *m )
         lp = linkpair_right( lp );
     }
     return !aatree_empty(m->pq);
+}
+/**
+ * Get the longest maximal *unique* match (MUM)
+ * @param m the matcher in question
+ * @return a match, which may be a chain of matches
+ */
+match *matcher_get_mum( matcher *m )
+{
+    match *found = NULL;
+    while ( !aatree_empty(m->pq) )
+    {
+        match *mt = aatree_max( m->pq );
+        //match *mt = aatree_min( m->pq );
+        if ( match_freq(mt) == 1 )
+        {
+            found = mt;
+            break;
+        }
+        else if ( !aatree_delete(m->pq,mt) )
+            break;
+    }
+    return found;
 }
