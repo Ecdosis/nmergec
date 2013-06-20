@@ -24,6 +24,12 @@ linkpair *linkpair_next( linkpair *lp, bitset *bs );
 void linkpair_set_st_off( linkpair *lp, int st_off );
 int linkpair_st_off( linkpair *lp );
 pair *linkpair_pair( linkpair *lp );
+dyn_array *linkpair_to_pairs( linkpair *lp );
+int linkpair_node_to_right( linkpair *lp );
+int linkpair_node_to_left( linkpair *lp );
+bitset *linkpair_node_overhang( linkpair *lp );
+int linkpair_add_at_node( linkpair *lp, linkpair *after );
+int linkpair_add_after( linkpair *lp, linkpair *after );
 
 #ifdef	__cplusplus
 }

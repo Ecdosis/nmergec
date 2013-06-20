@@ -202,13 +202,14 @@ static linkpair *link_pairs( dyn_array *pairs, plugin_log *log )
 /**
  * Add a version to an MVD that already has at least one
  * @param mvd the mvd to add it to
+ * @param add the mvd_add object containing options
  * @param text the text to add
  * @param tlen the length of text in UChars
  * @param log the log to record errors in
  * @return 1 if it worked
  */
-static int add_subsequent_version( MVD *mvd, UChar *text, int tlen, 
-    plugin_log *log )
+static int add_subsequent_version( MVD *mvd, struct add_struct *add, 
+    UChar *text, int tlen, plugin_log *log )
 {
     int res = 1;
     alignment *head = NULL;
@@ -223,10 +224,25 @@ static int add_subsequent_version( MVD *mvd, UChar *text, int tlen,
             alignment *left,*right;
             dyn_array *pairs = mvd_get_pairs(mvd);
             linkpair *pairs_list = link_pairs(pairs,log);
+            // add new pair to the start
+            linkpair *start = alignment_linkpair( a );
+            linkpair_set_right( start, pairs_list );
+            linkpair_set_left( pairs_list, start );
+            // add its version to the mvd
+            version *new_v = version_create( add->vid, add->v_description );
+            if ( new_v != NULL )
+                mvd_add_version( mvd, new_v );
             // this does all the work
             res = alignment_align( head, pairs_list, &left, &right, log );
             if ( res )
-            {   
+            {
+                // for debugging we do this now but normally at the end
+                pairs = linkpair_to_pairs( pairs_list );
+                mvd_set_pairs( mvd, pairs );
+                verify *v = verify_create( pairs, mvd_count_versions(mvd) );
+                if ( !verify_check(v) )
+                    fprintf(stderr,"error: unbalnaced graph\n");
+                // end debug
                 head = alignment_pop( head );
                 // now update the list
                 if ( head != NULL )
@@ -284,12 +300,7 @@ static int add_mvd_text( struct add_struct *add, MVD *mvd,
         if ( mvd_count_versions(mvd)==0 )
             res = add_first_version( mvd, add, text, tlen, log );
         else
-        {
-            res = add_subsequent_version( mvd, text, tlen, log );
-            verify *v = verify_create( mvd );
-            if ( !verify_check(v) )
-                printf("mvd_add: failed mvd check\n");
-        }
+            res = add_subsequent_version( mvd, add, text, tlen, log );
     }
     else
     {
@@ -312,35 +323,45 @@ int process( MVD **mvd, char *options, unsigned char *output,
 {
     int res = 0;
     if ( *mvd == NULL )
-        *mvd = mvd_create();
+        *mvd = mvd_create( 1 );
     if ( *mvd != NULL )
     {
-        verify *v = verify_create( *mvd );
         plugin_log *log = plugin_log_create( output );
         if ( log != NULL )
         {
-            struct add_struct *add = calloc( 1, sizeof(struct add_struct) );
-            if ( add != NULL )
+            if ( !mvd_is_clean(*mvd) )
+                res = mvd_clean( *mvd );
+            if ( res )
             {
-                hashmap *map = parse_options( options );
-                if ( map != NULL )
+                struct add_struct *add = calloc( 1, sizeof(struct add_struct) );
+                if ( add != NULL )
                 {
-                    res = set_options( add, map, log );
-                    if ( res && data != NULL && data_len > 0 )
-                        res = add_mvd_text( add, *mvd, data, data_len, log );
+                    hashmap *map = parse_options( options );
+                    if ( map != NULL )
+                    {
+                        res = set_options( add, map, log );
+                        if ( res && data != NULL && data_len > 0 )
+                            res = add_mvd_text( add, *mvd, data, data_len, 
+                                log );
+                        else
+                            plugin_log_add(log,"mvd_add: length was 0\n");
+                        hashmap_dispose( map, free );
+                    }
                     else
-                        plugin_log_add(log,"mvd_add: length was 0\n");
-                    hashmap_dispose( map, free );
+                        plugin_log_add(log,"mvd_add: invalid options %s",
+                            options);
+                    free( add );
                 }
                 else
-                    plugin_log_add(log,"mvd_add: invalid options %s",options);
-                free( add );
+                    plugin_log_add(log,
+                        "mvd_add: failed to create mvd_add object\n");
+                strncpy( (char*)output, plugin_log_buffer(log), SCRATCH_LEN );
+                plugin_log_dispose( log );
             }
             else
-                plugin_log_add(log,
-                    "mvd_add: failed to create mvd_add object\n");
-            strncpy( (char*)output, plugin_log_buffer(log), SCRATCH_LEN );
-            plugin_log_dispose( log );
+            {
+                plugin_log_add(log,"mvd failed to clean\n");
+            }
         }
         else
         {

@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <unicode/uchar.h>
 #include "plugin_log.h"
 #include "node.h"
@@ -6,6 +7,7 @@
 #include "bitset.h"
 #include "link_node.h"
 #include "pair.h"
+#include "dyn_array.h"
 #include "linkpair.h"
 #include "match_state.h"
 /**
@@ -112,9 +114,9 @@ match_state *match_state_next( match_state *ms )
     return ms->next;
 }
 // accessors used for restoring state to the match
-pos *match_state_loc( match_state *ms )
+void match_state_loc( match_state *ms, pos *loc )
 {
-    return ms->loc;
+    *loc = *(ms->loc);
 }
 linkpair *match_state_start_p( match_state *ms )
 {

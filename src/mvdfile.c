@@ -660,7 +660,7 @@ MVD *mvd_parse( unsigned char *mvd_data, int len, int old )
         //printf("description=%s\n",u_print(description,buf,64));
     }
     // end of header
-    mvd = mvd_create();
+    mvd = mvd_create( !old );
     if ( description != NULL )
     {
         res = mvd_set_description( mvd, description );
@@ -907,7 +907,7 @@ void test_mvdfile( int *passed, int *failed )
     "Version 2\0\0\0\0\0\1C\0\11Version 3\0\1\0\0\0\1D\0\11Version 4"
     "\0\1\0\0\0\1E\0\11Version 5";
     
-    MVD *mvd = mvd_create();
+    MVD *mvd = mvd_create( 1 );
     if ( mvd != NULL )
     {
         UChar **groups = readGroupTable( mvd, (unsigned char*)gdata, 33,0);

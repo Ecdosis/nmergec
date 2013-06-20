@@ -12,6 +12,7 @@
 #include "pos.h"
 #include "suffixtree.h"
 #include "hashmap.h"
+#include "dyn_array.h"
 #include "linkpair.h"
 #include "match.h"
 #include "match_state.h"
@@ -168,7 +169,7 @@ int match_pop( match *m )
         m->queue = match_state_next( ms );
         m->start_p = match_state_start_p(ms);
         m->end_p = match_state_end_p(ms);
-        m->loc = *match_state_loc( ms );
+        match_state_loc( ms, &m->loc );
         m->start_p = match_state_start_p( ms );
         m->end_p = match_state_end_p( ms );
         m->start_pos = match_state_start_pos( ms );
@@ -290,7 +291,7 @@ int is_maximal( match *m, UChar *text )
     else
     {
         linkpair *lp = linkpair_left(m->start_p);
-        do
+        while ( lp != NULL )
         {
             pair *p = linkpair_pair(lp);
             if ( bitset_intersects( m->bs, pair_versions(p)) )
@@ -303,7 +304,7 @@ int is_maximal( match *m, UChar *text )
             }
             lp = linkpair_left(lp);
         }
-        while ( lp != NULL );
+        return 0;
     }
 }
 /**

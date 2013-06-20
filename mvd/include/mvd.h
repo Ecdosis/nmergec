@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 typedef struct MVD_struct MVD;
-MVD *mvd_create();
+MVD *mvd_create( int clean );
 void *mvd_dispose( MVD *mvd );
 int mvd_datasize( MVD *mvd, int old );
 int mvd_serialise( MVD *mvd, unsigned char *data, int len, int old );
@@ -26,6 +26,9 @@ int mvd_count_pairs( MVD *mvd );
 int mvd_set_description( MVD *mvd, UChar *description );
 int mvd_set_encoding( MVD *mvd, char *encoding );
 int mvd_add_pair( MVD *mvd, pair *tpl2 );
+void mvd_set_pairs( MVD *mvd, dyn_array *pairs );
+int mvd_clean( MVD *mvd );
+int mvd_is_clean( MVD *mvd );
 #define MVD_MAGIC_LEN 4
 #define MVD_MAGIC_OLD_STR "\336\255\300\336"
 #define MVD_MAGIC_NEW_STR "\140\015\300\336"

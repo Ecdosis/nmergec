@@ -13,7 +13,7 @@ extern "C" {
 #endif
 
 typedef struct verify_struct verify;
-verify *verify_create( MVD *m );
+verify *verify_create( dyn_array *pairs, int nversions );
 void verify_dispose( verify *v );
 int verify_check( verify *v );
 

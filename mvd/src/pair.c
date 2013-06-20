@@ -38,8 +38,9 @@ struct pair_struct
 static pair *pair_create( bitset*versions, UChar *data, int len, int type )
 {
     int ulen = len*sizeof(UChar);
-    size_t extraDataSize = (len-DATA_MINSIZE>0)?ulen-DATA_MINSIZE:0;
-    pair *p = calloc( 1, sizeof(pair)+extraDataSize );
+    int exists = DATA_MINSIZE*sizeof(UChar);
+    size_t extra = (ulen-exists>0)?ulen-exists:0;
+    pair *p = calloc( 1, sizeof(pair)+extra );
     if ( p != NULL )
     {
         p->versions = bitset_clone(versions);
@@ -70,8 +71,9 @@ pair *pair_create_basic( bitset *versions, UChar *data, int len )
  */
 pair *pair_create_hint( bitset *versions )
 {
-    bitset_set( versions, 0 );
-    return pair_create( versions, NULL, 0, BASIC_PAIR );
+    pair *h = pair_create( versions, NULL, 0, BASIC_PAIR );
+    bitset_set( h->versions, 0 );
+    return h;
 }
 /**
  * Get the pair's data. If it is a child, get the parent's data
@@ -163,6 +165,17 @@ pair *pair_set_parent( pair *p, pair *parent )
     if ( p != NULL )
         p->parent = parent;
     return p;
+}
+/**
+ * Reset the versions of this pair
+ * @param p the pair in question
+ * @param v the new set of versions
+ */
+void pair_set_versions( pair *p, bitset *v )
+{
+    if ( p->versions != NULL )
+        bitset_dispose( p->versions );
+    p->versions = v;
 }
 /**
  * Add a transpose child to this parent

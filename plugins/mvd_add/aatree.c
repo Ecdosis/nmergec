@@ -56,7 +56,11 @@ aatree *aatree_create( compare_func cf, int limit )
             t->cf = cf;
         }
         else
+        {
+            free( t );
+            t = NULL;
             fprintf(stderr,"aatree: failed to allocate object\n");
+        }
 	}
 	else
 		fprintf(stderr,"failed to inialise aatree\n");
@@ -87,7 +91,8 @@ void aanode_dispose( aanode *n, aanode *null_node, aatree_dispose_func disp )
 void aatree_dispose( aatree *t, aatree_dispose_func disp )
 {
     aanode_dispose( t->root, t->null_node, disp );
-    free( t->null_node );
+    // freed already by aanode_dispose of t->root aka null_node
+    //free( t->null_node );
     free( t );
 }
 /**

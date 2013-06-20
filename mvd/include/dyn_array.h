@@ -18,6 +18,7 @@ void dyn_array_dispose( dyn_array *da );
 int dyn_array_size( dyn_array *da );
 void *dyn_array_get( dyn_array *da, int index );
 int dyn_array_add( dyn_array *da, void *obj );
+int dyn_array_insert( dyn_array *da, void *obj, int i );
 void **dyn_array_data( dyn_array *da );
 void dyn_array_remove( dyn_array *da, int i );
 

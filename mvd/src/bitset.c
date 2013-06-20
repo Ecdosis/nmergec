@@ -14,6 +14,20 @@ struct bitset_struct
     unsigned char data[DATA_MINSIZE];
 };
 /**
+ * Get the size of a bitset given its data byte size
+ * @param byteSize the number of bytes needed in data, update it
+ * @return the overall size of the bitset in bytes
+ */
+static size_t get_bitset_size( size_t *byteSize )
+{
+    // round up to multiples of 2
+    int mod2 = *byteSize % 2;
+    if ( mod2 > 0 )
+        *byteSize += 2-mod2;
+    size_t extraBytes = *byteSize-DATA_MINSIZE;
+    return sizeof(bitset)+extraBytes;
+}
+/**
  * Create a bitset of a given size
  * @param bits the maximum number of bits to represent
  * @return an allocated bitset or NULL
@@ -23,8 +37,7 @@ bitset *bitset_create_exact( int bits )
     if ( bits < MIN_BITS )
         bits = MIN_BITS;
     size_t byteSize = bits/8;
-    size_t extraBytes = byteSize-DATA_MINSIZE;
-    size_t size = sizeof(bitset)+extraBytes;
+    size_t size = get_bitset_size( &byteSize );
     bitset *bs = calloc( 1, size );
     if ( bs == NULL )
         fprintf(stderr,"bitset: failed to allocate object\n");
@@ -50,6 +63,8 @@ bitset *bitset_clone( bitset *bs )
     bitset *new_bs = bitset_create_exact( bs->allocated*8 );
     if ( new_bs != NULL )
         memcpy( new_bs->data, bs->data, bs->allocated );
+    else
+        fprintf(stderr,"bitset: failed to clone bitset\n");
     return new_bs;
 }
 /** 
@@ -97,17 +112,15 @@ void *bitset_dispose( bitset *bs )
  */
 static bitset *bitset_resize( bitset *bs, size_t required )
 {
-    int i,mod2 = required % 4;
-    if ( mod2 > 0 )
-        required += 4-mod2;
-    required += sizeof(int);
-    bitset *temp = malloc( required ); 
+    // round up
+    int i;
+    size_t size = get_bitset_size( &required );
+    bitset *temp = calloc( size, 1 ); 
     if ( temp != NULL )
     {
-        memset( temp, 0, required );
         for ( i=0;i<bs->allocated;i++ )
             temp->data[i] = bs->data[i];
-        temp->allocated = required - sizeof(int);
+        temp->allocated = required;
         free( bs );
     }
     else
@@ -192,7 +205,7 @@ static int max( int a, int b )
  */
 static int min( int a, int b )
 {
-    return (a>b)?a:b;
+    return (a<b)?a:b;
 }/**
  * OR two bitsets together
  * @param bs this bitset which will be modified
@@ -201,8 +214,11 @@ static int min( int a, int b )
  */
 bitset *bitset_or( bitset *bs, bitset *other )
 {
-    int required = max(other->allocated,bs->allocated);
-    bs = bitset_resize( bs, required );
+    if ( bs->allocated < other->allocated )
+    {
+        size_t required = max(other->allocated,bs->allocated);
+        bs = bitset_resize( bs, required );
+    }
     if ( bs != NULL )
     {
         int i;

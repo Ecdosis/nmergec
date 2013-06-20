@@ -63,6 +63,26 @@ void *dyn_array_get( dyn_array *da, int index )
 {
     return da->items[index];
 }
+static int dyn_array_resize( dyn_array *da )
+{
+    int res = 1;
+    int i,new_size = (da->allocated*3)/2;
+    void ** temp = calloc( new_size, sizeof(void*) );
+    if ( temp != NULL )
+    {
+        for ( i=0;i<da->pos;i++ )
+            temp[i] = da->items[i];
+        free( da->items );
+        da->items = temp;
+        da->allocated = new_size;
+    }
+    else
+    {
+        fprintf(stderr,"dyn_array: failed to reallocate items\n");
+        res = 0;
+    }
+    return res;
+}
 /**
  * Append an item to the array
  * @param da the dynamic array in question
@@ -73,25 +93,31 @@ int dyn_array_add( dyn_array *da, void *obj )
 {
     int res = 1;
     if ( da->pos+1 >= da->allocated )
-    {
-        int i,new_size = (da->allocated*3)/2;
-        void ** temp = calloc( new_size, sizeof(void*) );
-        if ( temp != NULL )
-        {
-            for ( i=0;i<da->pos;i++ )
-                temp[i] = da->items[i];
-            free( da->items );
-            da->items = temp;
-            da->allocated = new_size;
-        }
-        else
-        {
-            fprintf(stderr,"dyn_array: failed to reallocate items\n");
-            res = 0;
-        }
-    }
+        res = dyn_array_resize( da );
     if ( res )
         da->items[da->pos++] = obj;
+    return res;
+}
+/**
+ * Insert a new element in the middle of an array
+ * @param da the dyn_array object
+ * @param obj the object to insert
+ * @param i the index BEFORE which to insert
+ * @return 1 if it worked (may resize) else 0
+ */
+int dyn_array_insert( dyn_array *da, void *obj, int i )
+{
+    int res = 1;
+    if ( da->pos+1 >= da->allocated )
+        res = dyn_array_resize( da );
+    if ( res )
+    {
+        int j;
+        for ( j=da->pos;j>i;j-- )
+            da->items[j] = da->items[j-1];
+        da->items[i] = obj;
+        da->pos++;
+    }
     return res;
 }
 /**

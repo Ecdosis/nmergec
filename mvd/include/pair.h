@@ -32,6 +32,7 @@ int pair_is_ordinary( pair *p );
 int pair_equals( pair *p, pair *q, char *encoding );
 pair *pair_parent( pair *p );
 int pair_set_id( pair *p, int id );
+void pair_set_versions( pair *p, bitset *v );
 UChar *pair_data( pair *p );
 int pair_len( pair *p );
 int pair_id( pair *p );

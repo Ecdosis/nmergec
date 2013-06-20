@@ -5,8 +5,9 @@
 #include "link_node.h"
 #include "pair.h"
 #include "plugin_log.h"
-#include "linkpair.h"
 #include "dyn_array.h"
+#include "linkpair.h"
+
 #define IMPLICIT_SIZE 12
 struct linkpair_struct
 {
@@ -25,6 +26,9 @@ linkpair *linkpair_create( pair *p, plugin_log *log )
         lp->p = p;
     else
         plugin_log_add( log, "linkpair: failed to create object\n");
+    bitset *bs = pair_versions(p);
+    if ( bitset_allocated(bs)>8 )
+        printf(">8");
     return lp;
 }
 /**
@@ -34,6 +38,25 @@ linkpair *linkpair_create( pair *p, plugin_log *log )
 void linkpair_dispose( linkpair *lp )
 {
     free( lp );
+}
+/**
+ * Get the amalgamated versions of a set of linkpairs
+ * @param set the set of linkpairs as an array
+ * @return a bitset being all their versions ORed together
+ */
+static bitset *get_set_versions( dyn_array *set )
+{
+    bitset *bs = bitset_create();
+    if ( bs != NULL )
+    {
+        int i;
+        for ( i=0;i<dyn_array_size(set);i++ )
+        {
+            linkpair *lp = dyn_array_get(set,i);
+            bs = bitset_or( bs, pair_versions(lp->p) );
+        }
+    }
+    return bs;
 }
 /**
  * Set the left pointer
@@ -113,112 +136,6 @@ int linkpair_trailing_node( linkpair *lp )
             return 1;
     }
     return 0;
-}
-/**
- * Fix a newly split-off trailing or inserted linkpair 
- * @param lp the linkpair to fix
- * @param log save errors here
- */
-static void linkpair_fix( linkpair *lp, plugin_log *log )
-{
-    // 1. find all pairs *implicitly* attached to lp->left+lp
-    // that were orphaned when this pair was split
-    linkpair *temp = lp->right;
-    dyn_array *implicits = dyn_array_create( IMPLICIT_SIZE );
-    if ( implicits != NULL )
-    {
-        bitset *bs = bitset_create();
-        if ( bs != NULL )
-        {
-            while ( temp != NULL )
-            {
-                if ( linkpair_trailing_node(temp) )
-                    break;
-                else
-                {
-                    bs = bitset_or( bs, pair_versions(temp->p) );
-                    dyn_array_add( implicits, temp->p );
-                }
-                temp = temp->right;
-            }
-            // 2. prune implicits
-            temp = lp->left;
-            while ( temp != NULL && !bitset_empty(bs) )
-            {
-                if ( pair_is_hint(temp->p) )
-                {
-                    // remove intersecting pairs from the implicits
-                    int i;
-                    for ( i=0;i<dyn_array_size(implicits);i++ )
-                    {
-                        pair *q = (pair*)dyn_array_get(implicits,i);
-                        bitset *qv = pair_versions(q);
-                        bitset *hv = pair_versions(temp->p);
-                        if ( bitset_intersects(qv,hv) )
-                        {
-                            dyn_array_remove(implicits,i);
-                            bitset_and_not( bs, qv );
-                        }
-                    }
-                }
-                else
-                {
-                    bitset_and_not( bs, pair_versions(temp->p) );
-                }
-                if ( linkpair_trailing_node(temp) )
-                    break;
-                else
-                    temp = temp->left;
-            }
-            // 3. ensure that all implicits attach to the node preceding lp
-            temp = lp->left;
-            // 3a. get the versions of the preceding node
-            pair *hint = NULL;
-            linkpair *node = NULL;
-            while ( !bitset_empty(bs) && temp->left != NULL )
-            {
-                bitset *pv = pair_versions(temp->p);
-                bitset *lpv = pair_versions(temp->left->p);
-                if ( pair_is_hint(temp->left->p) )
-                {
-                    bitset_and_not( bs, lpv );
-                    node = temp;
-                    hint = temp->left->p;     
-                    break;
-                }
-                else if ( bitset_intersects(pv,lpv) )
-                {
-                    node = temp;
-                    break;
-                }
-                temp = temp->left;
-            }
-            // 4. Add the remaining versions to the hint
-            if ( !bitset_empty(bs) )
-            {
-                if ( hint != NULL )
-                    hint_or( hint, bs );
-                else
-                {
-                    bitset_set( bs, 0 );
-                    pair *r = pair_create_basic( bs, NULL, 0 );
-                    if ( r != NULL )
-                    {
-                        linkpair *h = linkpair_create( r, log );
-                        if ( h != NULL )
-                        {
-                            h->right = node;
-                            h->left = node->left;
-                            node->left->right = h;
-                            node->left = h;
-                        }
-                    }
-                }
-            }
-            bitset_dispose( bs );
-        }
-        dyn_array_dispose( implicits );
-    }
 }
 /**
  * Get the next pair in an array
@@ -301,17 +218,140 @@ void linkpair_split( linkpair *lp, int at, plugin_log *log )
                 lp->right = lp2;
                 lp2->left = lp;
             }
-            linkpair_fix( lp2, log );
         }
     }
     else if ( pair_is_child(lp->p) )
     {
-        
+        // to do
     }
     else if ( pair_is_parent(lp->p) )
     {
-        
+        // to do
     }
+}
+/**
+ * Convert a list of linkpairs to a standard pair array
+ * @param lp the head of the linkpair list
+ * @return an allocated dynamic array of pairs or NULL
+ */
+dyn_array *linkpair_to_pairs( linkpair *lp )
+{
+    int npairs=0;
+    linkpair *temp = lp;
+    while ( temp != NULL )
+    {
+        npairs++;
+        temp = temp->right;
+    }
+    dyn_array *da = dyn_array_create( npairs );
+    if ( da != NULL )
+    {
+        temp = lp;
+        while ( temp != NULL )
+        {
+            dyn_array_add( da, temp->p );
+            temp = temp->right;
+        }
+    }
+    return da;
+}
+/**
+ * Do we define a node immediately on our right?
+ * @param lp the linkpair in question
+ * @return 1 if we do else 0
+ */
+int linkpair_node_to_right( linkpair *lp )
+{
+    int res = 0;
+    if ( lp->right != NULL )
+    {
+        if ( pair_is_hint(lp->right->p) )
+            res = 1;
+        else
+        {
+            bitset *bs1 = pair_versions(lp->p);
+            bitset *bs2 = pair_versions(lp->right->p);
+            res = bitset_intersects(bs1,bs2);
+        }
+    }
+    return res;
+}
+/**
+ * Do we define a node immediately on our left?
+ * @param lp the linkpair in question
+ * @return 1 if we do else 0
+ */
+int linkpair_node_to_left( linkpair *lp )
+{
+    int res = 0;
+    if ( lp->left != NULL )
+    {
+        if ( pair_is_hint(lp->left->p) )
+            res = 1;
+        else
+        {
+            bitset *bs1 = pair_versions(lp->p);
+            bitset *bs2 = pair_versions(lp->left->p);
+            res = bitset_intersects(bs1,bs2);
+        }
+    }
+    return res;
+}
+/**
+ * Compute the overhang for a linkpair node
+ * @param lp the leading pair of a node
+ * @return the bitset of the overhang or NULL (user to free)
+ */
+bitset *linkpair_node_overhang( linkpair *lp )
+{
+    bitset *bs = bitset_create();
+    bs = bitset_or( bs, pair_versions(lp->p) );
+    if ( pair_is_hint(lp->right->p) )
+    {
+        bs = bitset_or( bs, pair_versions(lp->right->p) );
+        lp = lp->right;
+    }
+    bitset_and_not( bs, pair_versions(lp->right->p) );
+    return bs;
+}
+/**
+ * Add a linkpair after a node. lp->right will be displaced by one 
+ * linkpair. Although this will increasse the node's overhang, the increase
+ * is exactly that of the displaced linkpair's versions, which will reattach 
+ * by the overhang, rather than the forced, rule.
+ * @param lp the incoming pair of a node
+ * @param after the linkpair to add into lp's node. must intersect with lp.
+ * @return 1 if the new node is a bona fide node
+ */
+int linkpair_add_at_node( linkpair *lp, linkpair *after )
+{
+    bitset *bs1 = pair_versions(lp->p);
+    if ( pair_is_hint(linkpair_pair(lp->right)) ) 
+        lp = lp->right;
+    after->right = lp->right;
+    after->left = lp;
+    if ( lp->right != NULL )
+        lp->left = after;
+    lp->right = after;
+    return bitset_intersects( bs1, pair_versions(after->p) );
+}
+/**
+ * Add a linkpair after a given point, creating a new node.
+ * @param lp the point to add it after
+ * @param after the linkpair to become after lp
+ * @return 1 if successful else 0
+ */
+int linkpair_add_after( linkpair *lp, linkpair *after )
+{
+    if ( !linkpair_node_to_right(lp) )
+    {
+        after->right = lp->right;
+        lp->right = after;
+        after->left = lp;
+        return 1;
+    }
+    else
+        return 0;
 }
 #ifdef LINKPAIR_TEST
 int main( int argc, char **argv )

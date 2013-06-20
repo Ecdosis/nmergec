@@ -24,6 +24,7 @@ suffixtree *alignment_suffixtree( alignment *a );
 int alignment_len( alignment *a );
 int alignment_align( alignment *a, linkpair *pairs, 
     alignment **left, alignment **right, plugin_log *log );
+linkpair *alignment_linkpair( alignment *a );
 #ifdef	__cplusplus
 }
 #endif

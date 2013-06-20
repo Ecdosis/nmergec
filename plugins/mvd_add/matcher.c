@@ -10,6 +10,7 @@
 #include "suffixtree.h"
 #include "state.h"
 #include "aatree.h"
+#include "dyn_array.h"
 #include "linkpair.h"
 #include "match.h"
 #include "alignment.h"
@@ -76,6 +77,8 @@ int matcher_align( matcher *m )
     {
         pair *p = linkpair_pair( lp );
         bitset *bs = pair_versions(p);
+        if ( bitset_allocated(bs) > 8 )
+            printf(">8");
         // ignore pairs already aligned with the new version
         if ( bitset_next_set_bit(bs,m->version)!=m->version )
         {

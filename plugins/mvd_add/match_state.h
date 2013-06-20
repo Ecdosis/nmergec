@@ -19,7 +19,7 @@ match_state *match_state_create( linkpair *start_p, linkpair *end_p,
 match_state *match_state_copy( match_state *ms, plugin_log *log );
 void match_state_dispose( match_state *ms );
 void match_state_push( match_state *head, match_state *ms );
-pos *match_state_loc( match_state *ms );
+void match_state_loc( match_state *ms, pos *loc );
 match_state *match_state_next( match_state *ms );
 linkpair *match_state_start_p( match_state *ms );
 linkpair *match_state_end_p( match_state *ms );

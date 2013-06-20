@@ -44,12 +44,14 @@ struct MVD_struct
     int versionTableSize;
     int pairsTableSize;
     int dataTableSize;
+    int clean;
 };
 /**
  * Create an empty MVD
+ * @param clean 1 if the mvd has no implicit pairs
  * @return the MVD or NULL
  */
-MVD *mvd_create()
+MVD *mvd_create( int clean )
 {
     MVD *mvd = calloc( 1, sizeof(MVD) );
     if ( mvd != NULL )
@@ -59,6 +61,7 @@ MVD *mvd_create()
         mvd->description = (UChar*)"\x0000";
         mvd->encoding = strdup(DEFAULT_ENCODING);
         mvd->set_size = DEFAULT_SET_SIZE;
+        mvd->clean = clean;
         if ( mvd->versions==NULL||mvd->pairs==NULL )
         {
             mvd_dispose( mvd );
@@ -791,6 +794,17 @@ int mvd_get_set_size( MVD *mvd )
     return mvd->set_size;
 }
 /**
+ * Rest the pairs array (but not its contents)
+ * @param mvd the mvd in question
+ * @param pairs the new list of pairs
+ */
+void mvd_set_pairs( MVD *mvd, dyn_array *pairs )
+{
+    if ( mvd->pairs != NULL )
+        dyn_array_dispose( mvd->pairs );
+    mvd->pairs = pairs;
+}
+/**
  * Get this MVD's encoding in US-ASCII format
  * @param mvd the mvd in question
  * @return an ASCII string
@@ -879,6 +893,97 @@ int mvd_check_pairs( MVD *mvd )
         pair *p = dyn_array_get( mvd->pairs, i );
         bitset *bs = pair_versions( p );
     }
+}
+/**
+ * Has this MVD already been cleaned?
+ * @param mvd the mvd to test
+ * @return 1 if it has no implicit pairs else 0
+ */
+int mvd_is_clean( MVD *mvd )
+{
+    return mvd->clean;
+}
+/**
+ * "Clean" an MVD by replacing all implicit pair attachments with hints. 
+ * Doesn't harm already cleaned mvds.
+ * @param mvd the mvd to clean
+ * @return 1 if it worked else 0
+ */
+int mvd_clean( MVD *mvd )
+{
+    int res = 1;
+    int i=1;
+    pair *prev,*current;
+    bitset *overhang = bitset_create();
+    if ( overhang != NULL )
+    {
+        current = dyn_array_get( mvd->pairs, 0 );
+        int last_node;
+        while ( res && i < dyn_array_size(mvd->pairs) )
+        {
+            prev = current;
+            current = dyn_array_get( mvd->pairs, i );
+            bitset *bs1 = pair_versions(prev);
+            bitset *bs2 = pair_versions(current);
+            if ( pair_is_hint(prev) )
+            {
+                bitset *diff = bitset_create();
+                // pair at i-2 must exist or the MVD is invalid
+                pair *prev_prev = dyn_array_get( mvd->pairs,i-2 );
+                diff = bitset_or( diff, pair_versions(prev_prev) );
+                diff = bitset_or( diff, bs1 );
+                bitset_and_not( diff, bs2 );
+                overhang = bitset_or( overhang, diff );
+                bitset_dispose( diff );
+                last_node = i-2;
+            }
+            else if ( bitset_intersects(bs1,bs2) )
+            {
+                bitset *diff = bitset_create();
+                if ( diff != NULL )
+                {
+                    diff = bitset_or( diff, bs1 );
+                    bitset_and_not( diff, bs2 );
+                    if ( !bitset_empty(diff) )
+                        overhang = bitset_or( overhang, diff );
+                    last_node = i-1;
+                    bitset_dispose( diff );
+                }
+                else
+                    res = 0;
+            }
+            else if ( bitset_intersects(bs2,overhang) )
+                bitset_and_not( overhang,bs2 );
+            else    // implicit, default pair
+            {
+                pair *p = dyn_array_get( mvd->pairs, i+1 );
+                if ( pair_is_hint(p) )
+                {
+                    bitset *bsx = bitset_or( pair_versions(p), bs2 );
+                    if ( bsx != pair_versions(p) )
+                        pair_set_versions( p, bsx );
+                }
+                else
+                {
+                    pair *h = pair_create_hint( bs2 );
+                    if ( h != NULL )
+                    {
+                        res = dyn_array_insert( mvd->pairs, h, last_node+1 );
+                        i++;
+                    }
+                    else
+                        res = 0;
+                }
+            }
+            i++;
+        }
+        bitset_dispose( overhang );
+    }
+    else
+        res = 0;
+    if ( res )
+        mvd->clean = 1;
+    return res;
 }
 #ifdef MVD_TEST
 /**

@@ -21,24 +21,25 @@ struct verify_struct
     bitset *all;
     int npairs;
     // not owned by us
-    MVD *m;
+    dyn_array *pairs;
 };
 /**
  * Create a verify object
- * @param m the mvd to verify
+ * @param pairs the mvd pairs array
+ * @param nversions the number of versions in the MVD
  * @return the completed object or NULL on failure
  */
-verify *verify_create( MVD *m )
+verify *verify_create( dyn_array *pairs, int nversions )
 {
     verify *v = calloc( 1, sizeof(verify) );
     if ( v != NULL )
     {
         int i;
-        v->m = m;
-        v->npairs = mvd_count_pairs(m);
+        v->pairs = pairs;
+        v->npairs = dyn_array_size( v->pairs );
         v->nodes = dyn_array_create( v->npairs/2 );
         v->all = bitset_create();
-        for ( i=1;i<=mvd_count_versions(m);i++ )
+        for ( i=1;i<=nversions;i++ )
             bitset_set( v->all, i );
         v->dangling = dyn_array_create( 12 );
         if ( v->nodes==NULL||v->dangling==NULL||v->all==NULL )
@@ -107,16 +108,16 @@ int verify_check( verify *v )
 {
     int i,j;
     int res = 1;
+    int noverhangs=0,ndefaults=0,nforced=0;
     pair *prev = NULL;
     pair *current = NULL;
-    dyn_array *pairs = mvd_get_pairs( v->m );
     vgnode *start = vgnode_create(VGNODE_START);
     hint *head = hint_create( v->all, start );
     vgnode *end = vgnode_create(VGNODE_END);
     dyn_array_add( v->nodes, start );
     for ( i=0;i<v->npairs;i++ )
     {
-        current = dyn_array_get( pairs, i );
+        current = dyn_array_get( v->pairs, i );
         if ( pair_is_hint(current) )
             continue;
         else if ( i>0&& (bitset_intersects(pair_versions(prev),
@@ -127,12 +128,13 @@ int verify_check( verify *v )
             {
                 bitset *oh;
                 vgnode_add_outgoing( n, current );
+                nforced++;
                 subtract_dangling( v, n, pair_versions(current) );
                 // check for overhang, create pseudo "hint"
                 oh = vgnode_overhang( n );
                 if ( pair_is_hint(prev) )
                 {
-                    bitset_or( oh, pair_versions(prev) );
+                    oh = bitset_or( oh, pair_versions(prev) );
                     bitset_clear_bit( oh, 0 );
                 }
                 if ( oh != NULL )
@@ -166,11 +168,13 @@ int verify_check( verify *v )
                     hint_dispose( h );
                 }
                 vgnode_add_outgoing( hn, current );
+                noverhangs++;
                 subtract_dangling( v, hn, pair_versions(current) );
             }
             else
             {
                 // attach to last node by default
+                ndefaults++;
                 int end_index = dyn_array_size(v->nodes)-1;
                 vgnode *u = dyn_array_get(v->nodes,end_index);
                 vgnode_add_outgoing( u, current );
@@ -186,6 +190,7 @@ int verify_check( verify *v )
         pair *p = dyn_array_get(v->dangling,j);
         vgnode_add_incoming( end, p );
     }
+    printf("nforced=%d noverhangs=%d ndefaults=%d\n",nforced,noverhangs,ndefaults);
     // verify that all nodes are balanced
     int nsize = dyn_array_size(v->nodes);
     for ( i=0;i<nsize;i++ )
