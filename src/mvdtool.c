@@ -103,7 +103,7 @@ char *read_file( char *file, int *len )
 static void usage()
 {
    fprintf(stdout,
-    "usage: nmerge [-l] [-p] [-v COMMAND] [-h COMMAND] [-u USER_DATA_FILE]\n"
+    "usage: nmerge [-l] [-p] [-v <VERSION>] [-h COMMAND] [-u USER_DATA_FILE]\n"
        "[-m <MVD>] [-o <OPT-string>] -c <COMMAND>\n");
 }
 /**
@@ -172,7 +172,7 @@ static int read_args( int argc, char **argv )
         switch ( op )
         {
             case RUN:
-                if ( mvdFile == NULL||command==NULL||options==NULL )
+                if ( mvdFile == NULL||command==NULL )
                     sane = 0;
                 break;
             case HELP:
@@ -299,9 +299,9 @@ void do_command()
                 int res = plugin_process( plug, &mvd, options, output, 
                     user_data, user_data_len );
                 fprintf(stderr, "%s", output );
-                if ( mvd != NULL )
+                if ( mvd != NULL && plugin_changes(plug) )
                 {
-                    //res = mvdfile_save( mvd, mvdFile, 0 );
+                    res = mvdfile_save( mvd, mvdFile, 0 );
                     mvd_dispose( mvd );
                 }
                 free( output );

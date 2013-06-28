@@ -29,6 +29,10 @@ int mvd_add_pair( MVD *mvd, pair *tpl2 );
 void mvd_set_pairs( MVD *mvd, dyn_array *pairs );
 int mvd_clean( MVD *mvd );
 int mvd_is_clean( MVD *mvd );
+int mvd_get_versions( MVD *mvd, version **versions, int limit );
+int mvd_get_description_len( MVD *mvd );
+UChar *mvd_description( MVD *mvd );
+
 #define MVD_MAGIC_LEN 4
 #define MVD_MAGIC_OLD_STR "\336\255\300\336"
 #define MVD_MAGIC_NEW_STR "\140\015\300\336"

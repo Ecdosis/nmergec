@@ -4,6 +4,7 @@
 #include "link_node.h"
 #include "version.h"
 #include "pair.h"
+#include "dyn_array.h"
 #include "mvd.h"
 #include "plugin.h"
 
@@ -18,6 +19,10 @@ int process( MVD **mvd, char *options, unsigned char *output,
 unsigned char *data, size_t data_len )
 {
     return 1;
+}
+int changes()
+{
+    return 0;
 }
 /**
  * Print a help message to stdout explaining what the paramerts are

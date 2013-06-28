@@ -72,7 +72,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=-ldl -licuuc -lmvd -Lplugins/mvd_add/dist/Debug/GNU-MacOSX -lmvd_add -Lmvd/dist/Debug/GNU-MacOSX -lmvd
+LDLIBSOPTIONS=-ldl -licuuc -lmvd -Lplugins/mvd_add/dist/Debug/GNU-MacOSX -lmvd_add -Lmvd/dist/Debug/GNU-MacOSX -lmvd -Lplugins/mvd_list/dist/Debug/GNU-MacOSX -lmvd_list
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
@@ -81,6 +81,8 @@ LDLIBSOPTIONS=-ldl -licuuc -lmvd -Lplugins/mvd_add/dist/Debug/GNU-MacOSX -lmvd_a
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nmergec: plugins/mvd_add/dist/Debug/GNU-MacOSX/libmvd_add.dylib
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nmergec: mvd/dist/Debug/GNU-MacOSX/libmvd.dylib
+
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nmergec: plugins/mvd_list/dist/Debug/GNU-MacOSX/libmvd_list.dylib
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nmergec: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
@@ -195,7 +197,9 @@ ${OBJECTDIR}/src/zip/zutil.o: src/zip/zutil.c
 .build-subprojects:
 	cd plugins/mvd_add && ${MAKE}  -f Makefile CONF=Debug
 	cd mvd && ${MAKE}  -f Makefile CONF=Debug
-	cd plugins/mvd_add && ${MAKE}  -f Makefile CONF=Debug
+	cd plugins/mvd_list && ${MAKE}  -f Makefile CONF=Debug
+	cd mvd && ${MAKE}  -f Makefile CONF=Debug
+	cd plugins/mvd_list && ${MAKE}  -f Makefile CONF=Debug
 
 # Clean Targets
 .clean-conf: ${CLEAN_SUBPROJECTS}
@@ -206,7 +210,9 @@ ${OBJECTDIR}/src/zip/zutil.o: src/zip/zutil.c
 .clean-subprojects:
 	cd plugins/mvd_add && ${MAKE}  -f Makefile CONF=Debug clean
 	cd mvd && ${MAKE}  -f Makefile CONF=Debug clean
-	cd plugins/mvd_add && ${MAKE}  -f Makefile CONF=Debug clean
+	cd plugins/mvd_list && ${MAKE}  -f Makefile CONF=Debug clean
+	cd mvd && ${MAKE}  -f Makefile CONF=Debug clean
+	cd plugins/mvd_list && ${MAKE}  -f Makefile CONF=Debug clean
 
 # Enable dependency checking
 .dep.inc: .depcheck-impl

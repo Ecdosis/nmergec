@@ -39,6 +39,8 @@ struct add_struct
     UChar *vid;
     // description of the version to be added
     UChar *v_description;
+    // MVD description - if need to create one
+    UChar *mvd_description;
     // the text itself - we use wide UTF-16 as the basic char type
     UChar *text;
     // number of wchar_t characters in text 
@@ -117,6 +119,20 @@ static int set_options( struct add_struct *add, hashmap *map, plugin_log *log )
             plugin_log_add(log,"mvd_add: missing version description\n");
         }
     }
+    if ( hashmap_contains(map,MVD_DESCRIPTION_KEY) )
+    {
+        char *key = hashmap_get(map,MVD_DESCRIPTION_KEY);
+        int tlen;
+        add->mvd_description = ascii_to_unicode(key,strlen(key),
+            add->encoding,&tlen,log );
+        if ( add->mvd_description == NULL )
+        {
+            sane = 0;
+            plugin_log_add(log,"mvd_add: missing mvd description\n");
+        }
+    }
+    else
+        add->mvd_description = u_strdup(DEFAULT_MVD_DESCRIPTION);
     return sane;
 }
 /**
@@ -150,7 +166,7 @@ static int add_first_version( MVD *mvd, struct add_struct *add, UChar *text,
                 plugin_log_add(log,
                 "mvd_add: failed to add version\n");
             else
-                plugin_log_add(log,"mvd_add: added version successfully!");
+                plugin_log_add(log,"mvd_add: added version successfully!\n");
         }
     }
     return res;
@@ -214,7 +230,7 @@ static int add_subsequent_version( MVD *mvd, struct add_struct *add,
     int res = 1;
     alignment *head = NULL;
     // create initial alignment
-    alignment *a = alignment_create( text, tlen, mvd_count_versions(mvd)+1, 
+    alignment *a = alignment_create( text, 0, tlen, mvd_count_versions(mvd)+1, 
         log );
     if ( a != NULL )
     {
@@ -225,44 +241,50 @@ static int add_subsequent_version( MVD *mvd, struct add_struct *add,
             dyn_array *pairs = mvd_get_pairs(mvd);
             linkpair *pairs_list = link_pairs(pairs,log);
             // add new pair to the start
+            if ( linkpair_list_circular( pairs_list ) )
+                printf("circular!\n");
             linkpair *start = alignment_linkpair( a );
             linkpair_set_right( start, pairs_list );
             linkpair_set_left( pairs_list, start );
+            pairs_list = start;
             // add its version to the mvd
             version *new_v = version_create( add->vid, add->v_description );
             if ( new_v != NULL )
-                mvd_add_version( mvd, new_v );
-            // this does all the work
-            res = alignment_align( head, pairs_list, &left, &right, log );
+                res = mvd_add_version( mvd, new_v );
             if ( res )
             {
-                // for debugging we do this now but normally at the end
-                pairs = linkpair_to_pairs( pairs_list );
-                mvd_set_pairs( mvd, pairs );
-                verify *v = verify_create( pairs, mvd_count_versions(mvd) );
-                if ( !verify_check(v) )
-                    fprintf(stderr,"error: unbalnaced graph\n");
-                // end debug
-                head = alignment_pop( head );
-                // now update the list
-                if ( head != NULL )
+                // this does all the work
+                res = alignment_align( head, &pairs_list, &left, &right, log );
+                if ( res )
                 {
-                    if ( left != NULL )
-                        alignment_push( head, left );
-                    if ( right != NULL )
-                        alignment_push( head, right );
+                    // for debugging we do this now but normally at the end
+                    pairs = linkpair_to_pairs( pairs_list );
+                    mvd_set_pairs( mvd, pairs );
+                    verify *v = verify_create( pairs, mvd_count_versions(mvd) );
+                    if ( !verify_check(v) )
+                        fprintf(stderr,"error: unbalnaced graph\n");
+                    // end debug
+                    head = alignment_pop( head );
+                    // now update the list
+                    if ( head != NULL )
+                    {
+                        if ( left != NULL )
+                            alignment_push( head, left );
+                        if ( right != NULL )
+                            alignment_push( head, right );
+                    }
+                    else if ( left != NULL )    // head,tail is NULL
+                    {
+                        head = left;
+                        if ( right != NULL )
+                            alignment_push( head, right );
+                    }
+                    else if ( right != NULL )   // left is NULL
+                        head = right;
                 }
-                else if ( left != NULL )    // head,tail is NULL
-                {
-                    head = left;
-                    if ( right != NULL )
-                        alignment_push( head, right );
-                }
-                else if ( right != NULL )   // left is NULL
-                    head = right;
+                else
+                    head = alignment_pop(head);
             }
-            else
-                head = alignment_pop(head);
         }
     }
     return res;
@@ -298,7 +320,10 @@ static int add_mvd_text( struct add_struct *add, MVD *mvd,
     if ( tlen > 0 )
     {
         if ( mvd_count_versions(mvd)==0 )
+        {
+            mvd_set_description( mvd, add->mvd_description );
             res = add_first_version( mvd, add, text, tlen, log );
+        }
         else
             res = add_subsequent_version( mvd, add, text, tlen, log );
     }
@@ -321,7 +346,7 @@ static int add_mvd_text( struct add_struct *add, MVD *mvd,
 int process( MVD **mvd, char *options, unsigned char *output, 
     unsigned char *data, size_t data_len )
 {
-    int res = 0;
+    int res = 1;
     if ( *mvd == NULL )
         *mvd = mvd_create( 1 );
     if ( *mvd != NULL )
@@ -397,6 +422,14 @@ char *plug_version()
 char *name()
 {
     return "add";
+}
+/**
+ * Do we change the MVD?
+ * @return 1 if we do else 0
+ */
+int changes()
+{
+    return 1;
 }
 /**
  * Provide a description of this plugin

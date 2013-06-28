@@ -61,7 +61,7 @@ LDLIBSOPTIONS=-licuuc -lmvd
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_create.${CND_DLIB_EXT}: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.c} -dynamiclib -install_name libmvd_create.${CND_DLIB_EXT} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_create.${CND_DLIB_EXT} -fPIC ${OBJECTFILES} ${LDLIBSOPTIONS} 
+	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_create.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -dynamiclib -install_name libmvd_create.${CND_DLIB_EXT} -fPIC
 
 ${OBJECTDIR}/_ext/688439529/plugin_log.o: ../shared/src/plugin_log.c 
 	${MKDIR} -p ${OBJECTDIR}/_ext/688439529

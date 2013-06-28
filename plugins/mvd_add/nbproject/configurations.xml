@@ -13,6 +13,7 @@
       <itemPath>match_state.h</itemPath>
       <itemPath>matcher.h</itemPath>
       <itemPath>node.h</itemPath>
+      <itemPath>../shared/include/option_keys.h</itemPath>
       <itemPath>path.h</itemPath>
       <itemPath>../../include/plugin.h</itemPath>
       <itemPath>../shared/include/plugin_log.h</itemPath>
@@ -80,6 +81,8 @@
       <item path="../../include/plugin.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../../mvd/include/utils.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../shared/include/option_keys.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../shared/include/plugin_log.h" ex="false" tool="3" flavor2="0">
       </item>
@@ -160,6 +163,8 @@
       <item path="../../include/plugin.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../../mvd/include/utils.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../shared/include/option_keys.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../shared/include/plugin_log.h" ex="false" tool="3" flavor2="0">
       </item>

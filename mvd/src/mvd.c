@@ -176,6 +176,26 @@ static hashmap *mvd_get_groups( MVD *mvd )
     return groups;
 }
 /**
+ * Get a list of versions
+ * @param mvd the MVD whose versions are required
+ * @param versions an array of version struct
+ * @param limit maximum size of versions array
+ * @return 1 if it worked else 0
+ */
+int mvd_get_versions( MVD *mvd, version **versions, int limit )
+{
+    int res = (limit >= dyn_array_size(mvd->versions));
+    if ( res )
+    {
+        int i;
+        for ( i=0;i<dyn_array_size(mvd->versions);i++ )
+        {
+            versions[i] = dyn_array_get(mvd->versions,i);
+        }
+    }
+    return res;
+}
+/**
  * Get the size of the data required in bytes to store this MVD:
  * <p>Header:</p>
  * <ul><li>magic string: 4 bytes must be 0x600DCODE</li>
@@ -814,12 +834,22 @@ char *mvd_get_encoding( MVD *mvd )
     return mvd->encoding;
 }
 /**
- * Add a new version path to the dynamic list
+ * Add a new (and unique) version path to the dynamic list
  * @param mvd the mvd object in question
- * @param v the version (versionID+description)
+ * @param v the version (versionID+description) or 0 if not unique
  */
 int mvd_add_version( MVD *mvd, version *v )
 {
+    int i;
+    for ( i=0;i<dyn_array_size(mvd->versions);i++ )
+    {
+        version *u = dyn_array_get(mvd->versions,i);
+        if ( u != NULL && u_strcmp(version_id(u),version_id(v))==0 )
+        {
+            fprintf(stderr,"mvd: new version id not unique\n");
+            return -1;
+        }
+    }
     return dyn_array_add( mvd->versions, v );
 }
 /**
@@ -862,6 +892,28 @@ int mvd_set_description( MVD *mvd, UChar *description )
     mvd->description = u_strdup( description );
     return mvd->description!= NULL;
 }
+/** 
+ * Get the length of the description string for this MVD
+ * @param mvd the mvd in question
+ * @return its length in UTF-16 bytes
+ */
+int mvd_get_description_len( MVD *mvd )
+{
+    if ( mvd->description != NULL )
+        return u_strlen(mvd->description);
+    else
+        return 0;
+}
+/** 
+ * Get the description string for this MVD
+ * @param mvd the mvd in question
+ * @return a UTF-16 string
+ */
+UChar *mvd_description( MVD *mvd )
+{
+    return mvd->description;
+}
+
 /** 
  * Set the encoding for this MVD
  * @param mvd the mvd in question

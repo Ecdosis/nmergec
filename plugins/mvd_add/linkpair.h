@@ -30,6 +30,9 @@ int linkpair_node_to_left( linkpair *lp );
 bitset *linkpair_node_overhang( linkpair *lp );
 int linkpair_add_at_node( linkpair *lp, linkpair *after );
 int linkpair_add_after( linkpair *lp, linkpair *after );
+int linkpair_list_circular( linkpair *lp );
+
+extern UChar USTR_EMPTY[];
 
 #ifdef	__cplusplus
 }

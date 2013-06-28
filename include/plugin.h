@@ -21,6 +21,7 @@ typedef char *(*plugin_version_type)();
 typedef char *(*plugin_name_type)();
 typedef char *(*plugin_description_type)();
 typedef int (*plugin_test_type)(int *p,int *f);
+typedef int (*plugin_changes_type)();
 plugin *plugin_create( void *handle );
 void plugin_dispose( plugin *plug );
 int plugin_process( plugin *plug, MVD **mvd, char *options, 
@@ -30,6 +31,7 @@ char *plugin_version( plugin *plug );
 char *plugin_description( plugin *plug );
 int plugin_test( plugin *plug, int *passed, int *failed );
 char *plugin_name( plugin *plug );
+int plugin_changes( plugin *plug );
 
 #ifdef	__cplusplus
 }

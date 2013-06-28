@@ -26,9 +26,9 @@ struct match_struct
     linkpair *end_p;
     // index into data of first pair where we started this match
     int start_pos;
-    // index into data of last pair of current match/mismatch
+    // inclusive index into data of last pair of current match/mismatch
     int end_pos;
-    // offset of match in suffixtree's underlying string
+    // offset of match in the local suffixtree's string
     int st_off;
     // last matched value of end_p
     linkpair *prev_p;
@@ -205,8 +205,15 @@ int match_restart( match *m )
     {
         do
         {
-            m->start_p = linkpair_next( linkpair_right(m->start_p), m->bs );
-            sp = linkpair_pair(m->start_p);
+            linkpair *lpr = linkpair_right(m->start_p);
+            if ( lpr != NULL )
+            {
+                m->start_p = linkpair_next( lpr, m->bs );
+                if ( m->start_p != NULL )
+                    sp = linkpair_pair(m->start_p);
+            }
+            else
+                m->start_p = NULL;
         }
         while (m->start_p != NULL && pair_len(sp)==0 );
         if ( m->start_p != NULL )
@@ -316,7 +323,7 @@ int is_maximal( match *m, UChar *text )
  */
 int match_advance( match *m, pos *loc, plugin_log *log )
 {
-    int res = 0;
+    int res = 1;
     if ( m->end_p != NULL )
     {
         linkpair *lp = m->end_p;
@@ -326,7 +333,10 @@ int match_advance( match *m, pos *loc, plugin_log *log )
         {
             lp = linkpair_right( lp );
             if ( lp == NULL )
-                m->end_p = NULL;
+            {
+                m->end_pos = pair_len( linkpair_pair(m->end_p) );
+                res = 0;
+            }
             else while ( lp != NULL )
             {
                 pair *p = linkpair_pair(lp);
@@ -358,9 +368,17 @@ int match_advance( match *m, pos *loc, plugin_log *log )
         }
         else
             m->end_pos++;
-        res = m->end_p != NULL;
     }
     return res;
+}
+/**
+ * Can we extend this match or are we at the end of the linkpair list?
+ * @param m the match to extend
+ * @return 1 if it can be extended theoretically, else 0
+ */
+static int match_extendible( match *m )
+{
+    return m->end_pos!=pair_len(linkpair_pair(m->end_p));
 }
 /**
  * Extend a match as far as you can
@@ -375,7 +393,7 @@ match *match_extend( match *mt, UChar *text, plugin_log *log )
     match *first = mt;
     do
     {
-        match *mt2 = match_clone( mt, log );
+        match *mt2 = (match_extendible(mt))?match_clone(mt,log):NULL;
         if ( mt2 != NULL )
         {
             int distance = 1;
@@ -576,6 +594,101 @@ int match_st_off( match *m )
 {
     return m->st_off;
 }
+int match_st_end( match *m )
+{
+    return m->st_off+m->len;
+}
+/** 
+ * Create a linkpair that contains a short sequence of the new version
+ * @param m1 the first match before m2
+ * @param m2 the second after m1
+ * @param v the id of the new version
+ */
+static linkpair *linkpair_between_matches( match *m1, match *m2, 
+    UChar *text, int v, plugin_log *log )
+{
+    linkpair *between = NULL;
+    int st_len = match_st_off(m2)-match_st_end(m1);
+    UChar *fragment = calloc( st_len+1, sizeof(UChar) );
+    if ( fragment != NULL )
+    {
+        memcpy( fragment, &text[match_st_end(m1)], st_len*sizeof(UChar) );
+        bitset *bs = bitset_create();
+        if ( bs != NULL )
+        {
+            bitset_set( bs, v );
+            pair *frag = pair_create_basic( bs, fragment, st_len );
+            if ( frag != NULL )
+                between = linkpair_create( frag, log );
+        }
+        free( fragment );
+    }
+    return between;
+}
+/**
+ * Split the underlying matches of the MVD. NB start_pos/end_pos are inclusive
+ * @param m the match
+ * @param text the text the match is aligned with
+ * @param v the number of the new version
+ * @param log the log to write errors to
+ */
+void match_split( match *m, UChar *text, int v, plugin_log *log )
+{
+    match *temp = m;
+    int i;
+    dyn_array *matches = dyn_array_create(5);
+    if ( matches != NULL )
+    {
+        dyn_array_add( matches, temp );
+        while ( temp->next != NULL )
+        {
+            temp = temp->next;
+            dyn_array_add( matches, temp );
+        }
+        for ( i=dyn_array_size(matches)-1;i>=0;i-- )
+        {
+            temp = dyn_array_get( matches, i );
+            if ( temp->end_pos < pair_len(linkpair_pair(temp->end_p))-1
+                && temp->end_pos > 0 )
+                linkpair_split( temp->end_p, temp->end_pos );
+            if ( temp->start_pos > 0 
+                && temp->start_pos < pair_len(linkpair_pair(temp->start_p))-1 )
+            {
+                linkpair *old_start_p = temp->start_p;
+                linkpair_split( temp->start_p, temp->start_pos );
+                temp->start_p = linkpair_right( temp->start_p );
+                if ( old_start_p==temp->end_p )
+                    temp->end_p = temp->start_p;
+            }
+            temp->start_pos = 0;
+            temp->end_pos = pair_len(linkpair_pair(temp->end_p))-1;
+            if ( linkpair_right(temp->end_p) == NULL )
+                temp->end_pos++;
+            if ( i < dyn_array_size(matches)-1 )
+            {
+                // add a short linking segment
+                linkpair *betw = linkpair_between_matches(temp,
+                    temp->next, text, v, log );
+                if ( betw != NULL )
+                {
+                    if ( linkpair_node_to_right(temp->end_p) )
+                    {
+                        // temporarily invalidates the pairs-list
+                        // but once we add v to temp->end_p
+                        // betw will form a node with temp->end_p 
+                        // and betw->right will also attach to it
+                        linkpair_add_at_node( temp->end_p, betw );
+                    }
+                    else
+                        linkpair_add_after( temp->end_p, betw );
+                }
+                else
+                    plugin_log_add(log,"match: failed to join matches\n");
+            }
+        }
+        dyn_array_dispose( matches );
+    }
+}
 /**
  * Get the next match in case it has been extended
  * @return the next match or NULL
@@ -600,37 +713,31 @@ int match_transposed( match *m, int new_version, int tlen )
     int st_left = 0;
     int st_right = tlen;
     // 1. find left direct align
-    linkpair *left = m->start_p;
+    linkpair *left = linkpair_left(m->start_p);
     while ( left != NULL )
     {
-        left = linkpair_left(left);
-        if ( left != NULL )
+        pair *p = linkpair_pair( left );
+        bitset *bs = pair_versions(p);
+        if ( bitset_next_set_bit(bs,new_version)==new_version 
+            && bitset_cardinality(bs)>1 )
         {
-            pair *p = linkpair_pair( left );
-            bitset *bs = pair_versions(p);
-            if ( bitset_next_set_bit(bs,new_version)==new_version 
-                && bitset_cardinality(bs)>1 )
-            {
-                st_left = pair_len(p)+linkpair_st_off(left);
-                break;
-            }
+            st_left = pair_len(p)+linkpair_st_off(left);
+            break;
         }
-    }
-    linkpair *right = m->end_p;
+        left = linkpair_left(left);
+    } 
+    linkpair *right = linkpair_right(m->end_p);
     while ( right != NULL )
     {
-        right = linkpair_right(right);
-        if ( right != NULL )
+        pair *p = linkpair_pair( right );
+        bitset *bs = pair_versions(p);
+        if ( bitset_next_set_bit(bs,new_version)==new_version 
+            && bitset_cardinality(bs)>1 )
         {
-            pair *p = linkpair_pair( right );
-            bitset *bs = pair_versions(p);
-            if ( bitset_next_set_bit(bs,new_version)==new_version 
-                && bitset_cardinality(bs)>1 )
-            {
-                st_right = linkpair_st_off(right);
-                break;
-            }
+            st_right = linkpair_st_off(right);
+            break;
         }
+        right = linkpair_right(right);
     }
     if ( m->st_off > st_left && m->st_off+m->len < st_right )
         return 0;

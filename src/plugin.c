@@ -23,6 +23,7 @@ struct plugin_struct
     plugin_test_type test;
     plugin_name_type name;
     plugin_description_type description;
+    plugin_changes_type changes;
 };
 /**
  * Create a plugin from a loaded library handle
@@ -61,6 +62,10 @@ plugin *plugin_create( void *handle )
         if ( plug->name == NULL )
             fprintf(stderr,"plugin: failed to find name function: %s\n", 
                 dlerror() );
+        plug->changes = dlsym(handle, "changes");
+        if ( plug->changes == NULL )
+            fprintf(stderr,"plugin: failed to find changes function: %s\n", 
+                dlerror() );
     }
     return plug;
 }
@@ -96,6 +101,15 @@ int plugin_process( plugin *plug, MVD **mvd, char *options,
 char *plugin_help( plugin *plug )
 {
 	return (plug->help)();
+}
+/**
+ * Does this plugin change the MVD so that it needs saving?
+ * @param plug the plugin in question
+ * @return 1 if it changes the MVD else 0
+ */
+int plugin_changes( plugin *plug )
+{
+	return (plug->changes)();
 }
 /**
  * Print plugin version and authorship information

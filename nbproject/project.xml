@@ -10,9 +10,13 @@
             <sourceEncoding>UTF-8</sourceEncoding>
             <make-dep-projects>
                 <make-dep-project>mvd</make-dep-project>
+                <make-dep-project>plugins/mvd_list</make-dep-project>
                 <make-dep-project>plugins/mvd_add</make-dep-project>
             </make-dep-projects>
-            <sourceRootList/>
+            <sourceRootList>
+                <sourceRootElem>mvd/src</sourceRootElem>
+                <sourceRootElem>plugins/mvd_list</sourceRootElem>
+            </sourceRootList>
             <confList>
                 <confElem>
                     <name>Debug</name>

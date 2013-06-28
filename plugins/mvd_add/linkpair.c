@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "unicode/uchar.h"
 #include "bitset.h"
 #include "link_node.h"
@@ -7,6 +8,7 @@
 #include "plugin_log.h"
 #include "dyn_array.h"
 #include "linkpair.h"
+#include "hashmap.h"
 
 #define IMPLICIT_SIZE 12
 struct linkpair_struct
@@ -16,7 +18,7 @@ struct linkpair_struct
     // doubly-linked list
     linkpair *left;
     linkpair *right;
-    // offset in suffixtree text if aligned to new version
+    // absolute offset in suffixtree text if aligned to new version
     int st_off;
 };
 linkpair *linkpair_create( pair *p, plugin_log *log )
@@ -26,9 +28,6 @@ linkpair *linkpair_create( pair *p, plugin_log *log )
         lp->p = p;
     else
         plugin_log_add( log, "linkpair: failed to create object\n");
-    bitset *bs = pair_versions(p);
-    if ( bitset_allocated(bs)>8 )
-        printf(">8");
     return lp;
 }
 /**
@@ -93,6 +92,21 @@ linkpair *linkpair_left( linkpair *lp )
 linkpair *linkpair_right( linkpair *lp )
 {
     return lp->right;
+}
+/**
+ * Replace one linkpair with another in the list
+ * @param old_lp the old linkpair in a list
+ * @param new_lp the new linkpair to add to the same list
+ */
+void linkpair_replace( linkpair *old_lp, linkpair *new_lp )
+{
+    if ( old_lp->left != NULL )
+        old_lp->left->right = new_lp;
+    if ( old_lp->right != NULL )
+        old_lp->right->left = new_lp;
+    new_lp->right = old_lp->right;
+    new_lp->left = old_lp->left;
+    
 }
 /**
  * Set the index into the suffixtree text
@@ -206,6 +220,7 @@ void linkpair_split( linkpair *lp, int at, plugin_log *log )
 {
     if ( pair_is_ordinary(lp->p) )
     {
+        // q is the new trailing pair
         pair *q = pair_split( &lp->p, at );
         if ( q != NULL )
         {
@@ -316,9 +331,9 @@ bitset *linkpair_node_overhang( linkpair *lp )
 }
 /**
  * Add a linkpair after a node. lp->right will be displaced by one 
- * linkpair. Although this will increasse the node's overhang, the increase
+ * linkpair. Although this will increase the node's overhang, the increase
  * is exactly that of the displaced linkpair's versions, which will reattach 
- * by the overhang, rather than the forced, rule.
+ * via the overhang, rather than the forced, rule.
  * @param lp the incoming pair of a node
  * @param after the linkpair to add into lp's node. must intersect with lp.
  * @return 1 if the new node is a bona fide node
@@ -331,7 +346,7 @@ int linkpair_add_at_node( linkpair *lp, linkpair *after )
     after->right = lp->right;
     after->left = lp;
     if ( lp->right != NULL )
-        lp->left = after;
+        lp->right->left = after;
     lp->right = after;
     return bitset_intersects( bs1, pair_versions(after->p) );
 }
@@ -346,12 +361,61 @@ int linkpair_add_after( linkpair *lp, linkpair *after )
     if ( !linkpair_node_to_right(lp) )
     {
         after->right = lp->right;
-        lp->right = after;
         after->left = lp;
+        if ( lp->right != NULL )
+            lp->right->left = after;
+        lp->right = after;
         return 1;
     }
     else
         return 0;
+}
+/**
+ * Check if a list is broken by being circular
+ * @param lp a linkpair pointer somewhere in the list
+ * @return 1 if it has two ends else 0
+ */
+int linkpair_list_circular( linkpair *lp )
+{
+    int res = 0;
+    hashmap *hm = hashmap_create( 12, 0 );
+    linkpair *right = lp->right;
+    char junk[16];
+    UChar key[32];
+    char ckey[32];
+    strcpy( junk, "junk" );
+    snprintf(ckey,32,"%lx",(long)right);
+    u_print( key, ckey, strlen(ckey) );
+    hashmap_put( hm, key, junk );
+    while ( !res && right != NULL )
+    {
+        snprintf(ckey,32,"%lx",(long)right);
+        //printf("%s\n",ckey);
+        ascii_to_uchar( ckey, key, 32 );
+        if ( hashmap_contains(hm,key) )
+            res = 1;
+        else
+        {
+            hashmap_put( hm, key, junk );
+            right = right->right;
+        }
+    }
+    linkpair *left = lp->left;
+    while ( !res && left != NULL )
+    {
+        snprintf(ckey,32,"%lx",(long)left);
+        //printf("%s\n",ckey);
+        ascii_to_uchar( ckey, key, 32 );
+        if ( hashmap_contains(hm,key) )
+            res = 1;
+        else
+        {
+            hashmap_put( hm, key, junk );
+            left = left->left;
+        }
+    }
+    hashmap_dispose( hm, NULL );
+    return res;
 }
 #ifdef LINKPAIR_TEST
 int main( int argc, char **argv )

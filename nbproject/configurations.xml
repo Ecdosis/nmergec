@@ -59,6 +59,10 @@
       <itemPath>Makefile</itemPath>
     </logicalFolder>
   </logicalFolder>
+  <sourceRootList>
+    <Elem>mvd/src</Elem>
+    <Elem>plugins/mvd_list</Elem>
+  </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
     <conf name="Debug" type="1">
@@ -106,18 +110,40 @@
                             OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd.${CND_DLIB_EXT}">
               </makeArtifact>
             </linkerLibProjectItem>
+            <linkerLibProjectItem>
+              <makeArtifact PL="plugins/mvd_list"
+                            CT="2"
+                            CN="Debug"
+                            AC="true"
+                            BL="true"
+                            WD="plugins/mvd_list"
+                            BC="${MAKE}  -f Makefile CONF=Debug"
+                            CC="${MAKE}  -f Makefile CONF=Debug clean"
+                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_list.${CND_DLIB_EXT}">
+              </makeArtifact>
+            </linkerLibProjectItem>
           </linkerLibItems>
         </linkerTool>
         <requiredProjects>
-          <makeArtifact PL="plugins/mvd_add"
-                        CT="1"
+          <makeArtifact PL="mvd"
+                        CT="2"
                         CN="Debug"
                         AC="true"
                         BL="true"
-                        WD="plugins/mvd_add"
+                        WD="mvd"
                         BC="${MAKE}  -f Makefile CONF=Debug"
                         CC="${MAKE}  -f Makefile CONF=Debug clean"
-                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/mvd_add">
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd.${CND_DLIB_EXT}">
+          </makeArtifact>
+          <makeArtifact PL="plugins/mvd_list"
+                        CT="2"
+                        CN="Debug"
+                        AC="true"
+                        BL="true"
+                        WD="plugins/mvd_list"
+                        BC="${MAKE}  -f Makefile CONF=Debug"
+                        CC="${MAKE}  -f Makefile CONF=Debug clean"
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_list.${CND_DLIB_EXT}">
           </makeArtifact>
         </requiredProjects>
       </compileType>

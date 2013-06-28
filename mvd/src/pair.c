@@ -390,7 +390,7 @@ bitset *pair_versions( pair *p )
 /**
  * Split a pair into two before the given offset. Free the original pair.
  * @param p VAR param the pair to split, becomes leading pair
- * @param at offset into p's data after which to split it
+ * @param at offset into p's data AFTER which to split it
  * @return the new trailing pair or NULL on failure
  */
 pair *pair_split( pair **p, int at )

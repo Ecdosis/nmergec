@@ -26,6 +26,7 @@
 // should be set to the number of (hyperthreaded) processors
 #define MAX_THREADS 8
 #define NUM_SEGMENTS 12
+UChar USTR_EMPTY[] = {0};
 
 struct alignment_struct 
 {
@@ -33,6 +34,8 @@ struct alignment_struct
     int version;
     // our text
     UChar *text;
+    // offset in text where we start
+    int start;
     // length of text in characters
     int tlen;
     // our linkpair, composed from the above
@@ -46,12 +49,13 @@ struct alignment_struct
 };
 /**
  * Create an alignment between a bit of text and the MVD.
- * @param text the text range to align to
+ * @param text the text of the whole new version
+ * @param start the start offset in text
  * @param tlen the length of text in UChars
  * @param version the ID of the new version
  * @param log the log to record errors in
  */
-alignment *alignment_create( UChar *text, int tlen, int version, 
+alignment *alignment_create( UChar *text, int start, int tlen, int version, 
     plugin_log *log )
 {
     alignment *a = calloc( 1, sizeof(alignment) );
@@ -61,6 +65,7 @@ alignment *alignment_create( UChar *text, int tlen, int version,
         if ( bs != NULL )
         {
             a->text = text;
+            a->start = start;
             a->tlen = tlen;
             a->version = version;
             a->log = log;
@@ -112,7 +117,7 @@ void alignment_dispose( alignment *a )
 UChar *alignment_text( alignment *a, int *tlen )
 {
     *tlen = a->tlen;
-    return a->text;
+    return &a->text[a->start];
 }
 /**
  * Get the log for this alignment
@@ -254,52 +259,19 @@ static int alignment_direct_merge( alignment *a, match *mum,
     {
         pair *p = linkpair_pair(start_p);
         bitset *bs = pair_versions(p);
-        bitset_set( bs, v );
-        if ( start_p != end_p )
-            start_p = linkpair_next( start_p, match_versions(mum) );
-    } while ( start_p != end_p );
-    // now split the new version pair into 1, 2 or 3 parts
-    linkpair *lhs,*rhs;
-    // split off lhs
-    int off = match_st_off( mum );
-    if ( off > 0 )
-    {
-        linkpair *old_right = linkpair_right(a->lp);
-        linkpair_split( a->lp, off, a->log );
-        // lp is the lhs. now separate them
-        rhs = linkpair_right( a->lp );
-        lhs = a->lp;
-        linkpair_set_right(lhs,old_right);
-    }
-    else
-    {
-        rhs = a->lp;
-        lhs = NULL;
-    }
-    // split off rhs
-    if ( off+match_len(mum) < a->tlen )
-    {
-        linkpair_split( rhs, off+match_len(mum) );
-        rhs = linkpair_right(rhs);
-        if ( linkpair_left(rhs) != a->lp )
-            linkpair_dispose( linkpair_left(rhs) );
-        linkpair_set_left(rhs,NULL);
-    }
-    // just leave lhs where it is
-    // but insert rhs after end_p
-    // no hints are created at this stage
-    if ( linkpair_node_to_right(end_p) )
-    {
-        res = linkpair_add_at_node( end_p, rhs );
-    }
-    else // 2. end_p does NOT define a node to its right
-    {
-        res = linkpair_add_after( end_p, rhs );
-    }
+        if ( bs != NULL )
+        {
+            bitset_set( bs, v );
+            if ( start_p != end_p )
+                start_p = linkpair_next( start_p, match_versions(mum) );
+        }
+        else
+            res = 0;
+    } while ( res && start_p != end_p );
     return res;
 }
 /**
- * Align a single match as part of a sequence of matches
+ * Align a single match (and any joined to it)
  * @param a the alignment object
  * @param mum the match to align from
  * @return 1 if it worked
@@ -307,22 +279,118 @@ static int alignment_direct_merge( alignment *a, match *mum,
 static int alignment_merge_one( alignment *a, match *mum )
 {
     int res = 1;
+    match_split( mum, a->text, a->version, a->log );
     linkpair *start_p = match_start_link( mum );
     linkpair *end_p = match_end_link( mum );
-    int start_pos = match_start_pos( mum );
-    int end_pos = match_end_pos( mum );
-    // split start and end pairs as required
-    if ( start_pos != 0 )
-    {
-        linkpair_split( start_p, start_pos, a->log );
-        start_p = linkpair_right( start_p );
-    }
-    if ( end_pos>0 && end_pos < pair_len(linkpair_pair(end_p)) )
-        linkpair_split( end_p, end_pos, a->log );
     if ( match_transposed(mum,alignment_version(a),alignment_len(a)) )
         res = alignment_transpose_merge( a, mum, start_p, end_p );
     else
         res = alignment_direct_merge( a, mum, start_p, end_p );
+    return res;
+}
+/**
+ * Split the left-hand-side off from the merged alignment
+ * @param a the alignment whose mum has been computed
+ * @param mum the mum in question
+ * @param pairs the overall pairs list, perhaps to update
+ * @param left update with the new left-hand alignment if any or NULL
+ * @return 1 if it worked
+ */
+static int alignment_create_lhs( alignment *a, match *mum, 
+    linkpair **pairs, alignment **left )
+{
+    int res = 0;
+    int v = alignment_version( a );
+    if ( match_st_off(mum)>0 )
+    {
+        int llen = match_st_off(mum);
+        *left = alignment_create( a->text, a->start,llen,v, a->log);
+        if ( *left != NULL )
+        {
+            // replace the old linkpair with the new lhs
+            linkpair *old = alignment_linkpair( a );
+            linkpair *lhs = alignment_linkpair( *left );
+            linkpair_replace( old, lhs );
+            if ( old == *pairs )
+                *pairs = lhs;
+            res = 1;
+        }
+    }
+    else // create an empty linkpair but no alignment
+    {
+        linkpair *old = alignment_linkpair( a );
+        if ( linkpair_left(old) != NULL )
+        {
+            bitset *bs = bitset_create();
+            if ( bs != NULL )
+            {
+                bitset_set( bs, alignment_version(a));
+                pair *p = pair_create_basic( bs, USTR_EMPTY, 0 );
+                if ( p != NULL )
+                {
+                    linkpair *lhs = linkpair_create( p, a->log );
+                    if ( lhs != NULL )
+                    {
+                        linkpair_replace( old, lhs );
+                        if ( old == *pairs )
+                            *pairs = lhs;
+                        res = 1;
+                    }
+                    else
+                        pair_dispose( p );
+                }
+                else
+                    bitset_dispose( bs );
+            }
+        }
+        *left = NULL;
+    }
+    if ( !res )
+        plugin_log_add(a->log,"alignment: failed to create lhs\n");
+    return res;
+}
+/**
+ * Split off the rhs of a match
+ * @param a the alignment
+ * @param last the last mum in the sequence (if several)
+ * @return 1 if it worked else 0
+ */
+int alignment_create_rhs( alignment *a, match *last, linkpair *last_merged, 
+    alignment **right )
+{
+    int res = 0;
+    int v = alignment_version( a );
+    if ( match_st_end(last)<a->tlen )
+    {
+        int rlen = a->tlen-match_st_end(last);
+        *right = alignment_create( a->text,match_st_end(last),rlen,v,a->log);
+        if ( *right == NULL )
+            res = 0;
+    }
+    else 
+    {
+        linkpair *old = alignment_linkpair( a );
+        if ( linkpair_right(old) != NULL )
+        {
+            bitset *bs = bitset_create();
+            if ( bs != NULL )
+            {
+                bitset_set( bs, alignment_version(a));
+                pair *p = pair_create_basic( bs, USTR_EMPTY, 0 );
+                if ( p != NULL )
+                {
+                    linkpair *rhs = linkpair_create( p, a->log );
+                    if ( rhs != NULL )
+                        res = linkpair_add_after( last_merged, rhs );
+                    else
+                        pair_dispose( p );
+                }
+                else
+                    bitset_dispose( bs );
+            }
+        }
+        *right = NULL;
+    }   
     return res;
 }
 /**
@@ -334,38 +402,19 @@ static int alignment_merge_one( alignment *a, match *mum )
  * @param right the leftover alignment on the right
  * @return 1 if it worked
  */
-static int alignment_merge( alignment *a, match *mum, linkpair *pairs, 
+static int alignment_merge( alignment *a, match *mum, linkpair **pairs, 
     alignment **left, alignment **right )
 {
     int res = 1;
-    // split off lhs
-    match *prev;
-    int v = alignment_version( a );
-    if ( match_st_off(mum)>0 )
+    res = alignment_create_lhs( a, mum, pairs, left );
+    if ( res )
     {
-        int llen = match_st_off(mum);
-        *left = alignment_create( a->text,llen,v, a->log);
+        alignment_merge_one( a, mum );
+        match *last = mum;
+        while ( match_next(last) != NULL )
+            last = match_next(last);
+        res = alignment_create_rhs( a, last, /*fill in!*/NULL, right );
     }
-    else
-        *left = NULL;
-    // align the middle bit
-    do
-    {
-        prev = mum;
-        res = alignment_merge_one( a, mum );
-        mum = match_next( mum );
-    }
-    while ( res && mum != NULL );
-    // split off rhs
-    if ( match_st_off(prev)+match_len(prev)<a->tlen )
-    {
-        int rlen = match_len(prev);
-        UChar *pdata = a->text;
-        *right = alignment_create( &pdata[match_st_off(prev)],rlen,v,a->log);
-    }
-    else
-        *right = NULL;
-    // no longer required
     alignment_dispose( a );
     return res;
 }
@@ -378,14 +427,14 @@ static int alignment_merge( alignment *a, match *mum, linkpair *pairs,
  * @param log the log to record errors in
  * @return 1 if it merged correctly, else 0
  */
-int alignment_align( alignment *a, linkpair *pairs, 
+int alignment_align( alignment *a, linkpair **pairs, 
     alignment **left, alignment **right, plugin_log *log )
 {
     int res = 0;
     aatree *pq = aatree_create( match_compare, PQUEUE_LIMIT );
     if ( pq != NULL )
     {
-        matcher *m = matcher_create( a, pq, pairs );
+        matcher *m = matcher_create( a, pq, *pairs );
         if ( m != NULL )
         {
             if ( res = matcher_align(m) )

@@ -16,7 +16,7 @@
         <gdb_options>
           <DebugOptions>
             <option name="gdb_source_dirs"
-                    value="/Users/desmond/NetBeansProjects/NMergeC/plugins/mvd_add"/>
+                    value="/Users/desmond/NetBeansProjects/NMergeC/plugins/mvd_list:/Users/desmond/NetBeansProjects/NMergeC/mvd"/>
           </DebugOptions>
         </gdb_options>
         <gdb_buildfirst gdb_buildfirst_overriden="false" gdb_buildfirst_old="false"/>
@@ -26,18 +26,18 @@
       </nativedebugger>
       <runprofile version="9">
         <runcommandpicklist>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -l</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -m test.mvd -o "" </runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c create -m test.mvd -o "encoding=utf-16 description=test"</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c create -o "encoding=utf-16 description=test" -m test.mvd</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c create -o "encoding=utf-16 description=test debug=1" -m test.mvd</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" -c create -m test.mvd -o "description=test encoding=utf-8"</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -m test.mvd -o "encoding=utf-8 description=\"text 1\" vid=\"english/test\"" -u output.txt</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -m scene1.mvd -o "encoding=utf-8 description=\"Shakespeare King Lear act 1 scene 1\" vid=\"/Base/F1\"" -u output.txt</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -m scene1.mvd -o "encoding=utf-8 description=\"Shakespeare King Lear act 1 scene 1\" vid=\"/Base/F1\"" -u scene1.txt</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -m scene1.mvd -o "encoding=utf-8 description=\"Shakespeare King Lear act 1 scene 1\" vid=\"/Base/F1\"" -u scene1-permuted.txt</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -m test.mvd -o "encoding=utf-8 description=\"The quick brown fox\" vid=\"/Base/A\"" -u tests/test1.txt</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -m test.mvd -o "encoding=utf-8 description=\"The quick brown fox\" vid=\"/Base/B\"" -u tests/text2.txt</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -m test.mvd -o "encoding=utf-8 description=\"The quick brown fox\" vid=\"/Base/A\"" -u tests/text1.txt</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c list -m scene1.mvd </runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -m scene1.mvd -c list</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>"${OUTPUT_PATH}" -c add -m scene1.mvd -o "encoding=utf-8 description=\"Shakespeare King Lear act 1 scene 1\" vid=\"/Base/F1\"" -u scene1-permuted.txt</runcommand>
+        <runcommand>"${OUTPUT_PATH}" -m scene1.mvd -c list</runcommand>
         <rundir></rundir>
         <buildfirst>true</buildfirst>
         <terminal-type>0</terminal-type>

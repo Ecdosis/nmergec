@@ -7,5 +7,5 @@ if [ `uname` = "Darwin" ]
   RTLIB=-lrt
   LIBSUFFIX=so
 fi
-gcc -DMEMWATCH -I/usr/local/include -I../include -Iinclude -fPIC ../src/memwatch.c src/*.c -shared -L/usr/local/lib -licuuc $RTLIB -o lib${PWD##*/}.$LIBSUFFIX
+gcc -g -DMEMWATCH -I/usr/local/include -I../include -Iinclude -fPIC ../src/memwatch.c src/*.c -shared -L/usr/local/lib -licuuc $RTLIB -o lib${PWD##*/}.$LIBSUFFIX
 cp lib${PWD##*/}.$LIBSUFFIX /usr/local/lib/

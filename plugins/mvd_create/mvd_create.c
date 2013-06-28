@@ -6,6 +6,7 @@
 #include "link_node.h"
 #include "version.h"
 #include "pair.h"
+#include "dyn_array.h"
 #include "mvd.h"
 #include "hashmap.h"
 #include "plugin.h"
@@ -31,7 +32,7 @@ unsigned char *data, size_t data_len )
 {
     int res = 1;
     plugin_log *log = plugin_log_create( scratch );
-    *mvd = mvd_create();
+    *mvd = mvd_create( 1 );
     if ( *mvd != NULL )
     {
         hashmap *map = parse_options( options );
@@ -92,6 +93,10 @@ unsigned char *data, size_t data_len )
     }
     plugin_log_dispose( log );
     return res;
+}
+int changes()
+{
+    return 1;
 }
 /**
  * Return a help message explaining what the parameters are

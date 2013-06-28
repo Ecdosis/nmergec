@@ -45,6 +45,7 @@ void match_inc_freq( match *m );
 int match_freq( match *m );
 match *match_next( match *m );
 void match_print( match *m, UChar *text );
+int match_st_end( match *m );
 
 #ifdef	__cplusplus
 }
