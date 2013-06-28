@@ -84,7 +84,9 @@
 #include "inftrees.h"
 #include "inflate.h"
 #include "inffast.h"
-
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 #ifdef MAKEFIXED
 #  ifndef BUILDFIXED
 #    define BUILDFIXED

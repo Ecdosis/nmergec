@@ -13,6 +13,7 @@
       <itemPath>include/hint.h</itemPath>
       <itemPath>include/hsieh.h</itemPath>
       <itemPath>include/link_node.h</itemPath>
+      <itemPath>../plugins/shared/include/memwatch.h</itemPath>
       <itemPath>include/mvd.h</itemPath>
       <itemPath>include/pair.h</itemPath>
       <itemPath>include/serialiser.h</itemPath>
@@ -37,6 +38,7 @@
       <itemPath>src/hint.c</itemPath>
       <itemPath>src/hsieh.c</itemPath>
       <itemPath>src/link_node.c</itemPath>
+      <itemPath>../plugins/shared/src/memwatch.c</itemPath>
       <itemPath>src/mvd.c</itemPath>
       <itemPath>src/pair.c</itemPath>
       <itemPath>src/serialiser.c</itemPath>
@@ -69,7 +71,11 @@
           <incDir>
             <pElem>include</pElem>
             <pElem>/usr/local/include</pElem>
+            <pElem>../plugins/shared/include</pElem>
           </incDir>
+          <preprocessorList>
+            <Elem>MEMWATCH</Elem>
+          </preprocessorList>
         </cTool>
         <linkerTool>
           <linkerLibItems>
@@ -77,6 +83,13 @@
           </linkerLibItems>
         </linkerTool>
       </compileType>
+      <item path="../plugins/shared/include/memwatch.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../plugins/shared/src/memwatch.c" ex="false" tool="0" flavor2="0">
+      </item>
       <item path="include/benchmark.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="include/bitset.h" ex="false" tool="3" flavor2="0">
@@ -161,6 +174,13 @@
           <developmentMode>5</developmentMode>
         </asmTool>
       </compileType>
+      <item path="../plugins/shared/include/memwatch.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="../plugins/shared/src/memwatch.c" ex="false" tool="0" flavor2="0">
+      </item>
       <item path="include/benchmark.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="include/bitset.h" ex="false" tool="3" flavor2="0">

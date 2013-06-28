@@ -35,7 +35,9 @@
 /* #define GEN_TREES_H */
 
 #include "zip/deflate.h"
-
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 #ifdef DEBUG
 #  include <ctype.h>
 #endif

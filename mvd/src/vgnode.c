@@ -9,7 +9,9 @@
 #include "pair.h"
 #include "vgnode.h"
 #include "dyn_array.h"
-
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 struct vgnode_struct
 {
     dyn_array *incoming;

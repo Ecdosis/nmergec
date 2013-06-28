@@ -12,6 +12,9 @@
 #include "mvd.h"
 #include "plugin.h"
 #include "plugin_log.h"
+#ifdef MEMWATCH 
+#include "memwatch.h"
+#endif
 
 /**
  * Sort the version list by version-id using shellsort
@@ -231,9 +234,11 @@ int process( MVD **mvd, char *options, unsigned char *output,
                 }
                 else
                     plugin_log_add(log,"mvd_list: failed to fetch versions\n");
+                free( versions );
             }
             else
                 plugin_log_add(log,"mvd_list: failed to retrieve versions\n");
+            plugin_log_dispose( log );
         }
     }
     return res;

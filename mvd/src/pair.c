@@ -136,6 +136,8 @@ pair *pair_create_parent( bitset *versions, UChar *data, int len )
 void pair_dispose( pair *p )
 {
     bitset_dispose( p->versions );
+    if ( p->type == PARENT_PAIR && p->children != NULL )
+        link_node_dispose( p->children );
     free( p );
 }
 /**

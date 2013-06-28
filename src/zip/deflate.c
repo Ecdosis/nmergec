@@ -50,7 +50,9 @@
 /* @(#) $Id$ */
 
 #include "deflate.h"
-
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 const char deflate_copyright[] =
    " deflate 1.2.7 Copyright 1995-2012 Jean-loup Gailly and Mark Adler ";
 /*

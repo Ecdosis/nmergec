@@ -6,6 +6,9 @@
 #include "pair.h"
 #include "vgnode.h"
 #include "hint.h"
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 struct hint_struct
 {
     bitset *bs;

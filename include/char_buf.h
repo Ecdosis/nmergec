@@ -14,6 +14,7 @@ extern "C" {
 
 typedef struct char_buf_struct char_buf;
 char_buf *char_buf_create( int initial );
+void char_buf_dispose( char_buf *cb );
 int char_buf_write( char_buf *cb, unsigned char *data, int len );
 unsigned char *char_buf_get( char_buf *cb, int *len );
 #ifdef MVD_TEST

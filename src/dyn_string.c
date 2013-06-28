@@ -63,6 +63,7 @@ dyn_string *dyn_string_dispose( dyn_string *ds )
 {
     if ( ds->data != NULL )
         free( ds->data );
+    free( ds );
     return NULL;
 }
 /**

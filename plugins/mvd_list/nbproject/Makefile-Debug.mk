@@ -35,6 +35,7 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
+	${OBJECTDIR}/_ext/688439529/memwatch.o \
 	${OBJECTDIR}/_ext/688439529/plugin_log.o \
 	${OBJECTDIR}/mvd_list.o
 
@@ -63,15 +64,20 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_list.${CND_DLIB_EXT}: ${OBJECT
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_list.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -dynamiclib -install_name libmvd_list.${CND_DLIB_EXT} -fPIC
 
+${OBJECTDIR}/_ext/688439529/memwatch.o: ../shared/src/memwatch.c 
+	${MKDIR} -p ${OBJECTDIR}/_ext/688439529
+	${RM} $@.d
+	$(COMPILE.c) -g -DMEMWATCH -I../shared/include -I../../include -I../../mvd/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/688439529/memwatch.o ../shared/src/memwatch.c
+
 ${OBJECTDIR}/_ext/688439529/plugin_log.o: ../shared/src/plugin_log.c 
 	${MKDIR} -p ${OBJECTDIR}/_ext/688439529
 	${RM} $@.d
-	$(COMPILE.c) -g -I../shared/include -I../../include -I../../mvd/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/688439529/plugin_log.o ../shared/src/plugin_log.c
+	$(COMPILE.c) -g -DMEMWATCH -I../shared/include -I../../include -I../../mvd/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/688439529/plugin_log.o ../shared/src/plugin_log.c
 
 ${OBJECTDIR}/mvd_list.o: mvd_list.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -g -I../shared/include -I../../include -I../../mvd/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/mvd_list.o mvd_list.c
+	$(COMPILE.c) -g -DMEMWATCH -I../shared/include -I../../include -I../../mvd/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/mvd_list.o mvd_list.c
 
 # Subprojects
 .build-subprojects:

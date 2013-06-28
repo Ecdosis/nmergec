@@ -4,6 +4,9 @@
 #include <assert.h>
 #include "zip/zlib.h"
 #include "char_buf.h"
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 #define CHUNK 16384
 #define min(a,b) (a<b)?a:b
 static char out[CHUNK];

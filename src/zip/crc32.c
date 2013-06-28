@@ -29,7 +29,9 @@
 #endif /* MAKECRCH */
 
 #include "zip/zutil.h"      /* for STDC and FAR definitions */
-
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 #define local static
 
 /* Definitions for doing the crc four data bytes at a time. */

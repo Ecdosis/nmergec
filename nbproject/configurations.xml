@@ -72,6 +72,7 @@
       </toolsSet>
       <compileType>
         <cTool>
+          <standard>3</standard>
           <commandlineTool>gcc</commandlineTool>
           <incDir>
             <pElem>include</pElem>
@@ -80,6 +81,9 @@
             <pElem>mvd/include</pElem>
             <pElem>plugins/shared/include</pElem>
           </incDir>
+          <preprocessorList>
+            <Elem>MEMWATCH</Elem>
+          </preprocessorList>
         </cTool>
         <linkerTool>
           <linkerLibItems>
@@ -139,7 +143,7 @@
                         CT="2"
                         CN="Debug"
                         AC="true"
-                        BL="true"
+                        BL="false"
                         WD="plugins/mvd_list"
                         BC="${MAKE}  -f Makefile CONF=Debug"
                         CC="${MAKE}  -f Makefile CONF=Debug clean"

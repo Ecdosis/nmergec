@@ -9,6 +9,9 @@
 #ifndef Z_SOLO
 #  include "gzguts.h"
 #endif
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 
 #ifndef NO_DUMMY_DECL
 struct internal_state      {int dummy;}; /* for buggy compilers */

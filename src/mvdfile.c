@@ -23,6 +23,7 @@
 #include "hashmap.h"
 #include "utils.h"
 #include "mvdfile.h"
+#include "encoding.h"
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
@@ -605,6 +606,8 @@ static int readPairsTable( unsigned char *mvd_data, int len,
             versions = bitset_dispose( versions );
         }
         res = (i== nPairs);
+        hashmap_dispose( parents, NULL );
+        hashmap_dispose( orphans, NULL );
     }
     //printf("direct=%d parent=%d\n",directDataLen,parentDataLen);
     return res;
@@ -681,6 +684,10 @@ MVD *mvd_parse( unsigned char *mvd_data, int len, int old )
             {
                 p = versionTableOffset;
                 res = readOldVersionTable( mvd_data, len, p, groups, mvd );
+                int i=0;
+                while ( groups[i]!= NULL )
+                    free( groups[i++] );
+                free( groups );
                 p = pairsTableOffset;
             }
             else 

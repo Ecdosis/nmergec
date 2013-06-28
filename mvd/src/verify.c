@@ -11,6 +11,9 @@
 #include "vgnode.h"
 #include "hint.h"
 #include "mvd.h"
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 /**
  * Verify that an MVD conforms to its own internal rules
  */

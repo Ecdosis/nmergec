@@ -35,6 +35,7 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
+	${OBJECTDIR}/_ext/1810560952/memwatch.o \
 	${OBJECTDIR}/src/benchmark.o \
 	${OBJECTDIR}/src/bitset.o \
 	${OBJECTDIR}/src/dyn_array.o \
@@ -76,6 +77,11 @@ LDLIBSOPTIONS=
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd.${CND_DLIB_EXT}: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -dynamiclib -install_name libmvd.${CND_DLIB_EXT} -fPIC
+
+${OBJECTDIR}/_ext/1810560952/memwatch.o: ../plugins/shared/src/memwatch.c 
+	${MKDIR} -p ${OBJECTDIR}/_ext/1810560952
+	${RM} $@.d
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1810560952/memwatch.o ../plugins/shared/src/memwatch.c
 
 ${OBJECTDIR}/src/benchmark.o: src/benchmark.c 
 	${MKDIR} -p ${OBJECTDIR}/src

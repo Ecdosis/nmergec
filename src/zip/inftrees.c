@@ -5,7 +5,9 @@
 
 #include "zutil.h"
 #include "inftrees.h"
-
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 #define MAXBITS 15
 
 const char inflate_copyright[] =

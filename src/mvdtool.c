@@ -299,9 +299,10 @@ void do_command()
                 int res = plugin_process( plug, &mvd, options, output, 
                     user_data, user_data_len );
                 fprintf(stderr, "%s", output );
-                if ( mvd != NULL && plugin_changes(plug) )
+                if ( mvd != NULL )
                 {
-                    res = mvdfile_save( mvd, mvdFile, 0 );
+                    if ( plugin_changes(plug) )
+                        res = mvdfile_save( mvd, mvdFile, 0 );
                     mvd_dispose( mvd );
                 }
                 free( output );

@@ -6,6 +6,9 @@
 /* @(#) $Id$ */
 
 #include "zutil.h"
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 
 #define local static
 

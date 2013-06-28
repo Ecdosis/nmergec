@@ -7,7 +7,9 @@
 #include "inftrees.h"
 #include "inflate.h"
 #include "inffast.h"
-
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 #ifndef ASMINF
 
 /* Allow machine dependent optimization for post-increment or pre-increment.

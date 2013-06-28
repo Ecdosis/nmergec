@@ -105,6 +105,7 @@ void *mvd_dispose( MVD *mvd )
         free( mvd->description );
     if ( mvd->encoding != NULL )
         free( mvd->encoding );
+    free( mvd );
     return NULL;
 }
 /**

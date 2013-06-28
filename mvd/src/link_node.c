@@ -27,7 +27,7 @@ link_node *link_node_create()
  */
 void link_node_dispose( link_node *ln )
 {
-    while ( ln->next != NULL )
+    while ( ln != NULL )
     {
         link_node *next = ln->next;
         free( ln );
