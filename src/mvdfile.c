@@ -160,8 +160,9 @@ static UChar *readEncodedString( unsigned char *data, int len,
 {
     UChar *str = NULL;
     short slen = readShort( data, len, p );
+    *dlen = 0;
     p += 2;
-    if ( slen+p <= len )
+    if ( slen>0 && slen+p <= len )
     {
         int nchars = measure_from_encoding(&data[p],slen,encoding)/2;
         str = calloc( nchars+1,sizeof(UChar) );
@@ -181,6 +182,11 @@ static UChar *readEncodedString( unsigned char *data, int len,
         }
         else
             fprintf(stderr,"encoding: failed to allocate string\n");
+    }
+    else
+    {
+        str = calloc(2,sizeof(UChar));
+        str[0] = 0;
     }
     return str;
 }

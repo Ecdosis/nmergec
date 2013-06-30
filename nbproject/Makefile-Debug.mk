@@ -35,10 +35,10 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
+	${OBJECTDIR}/plugins/shared/src/dyn_string.o \
 	${OBJECTDIR}/src/b64.o \
 	${OBJECTDIR}/src/char_buf.o \
 	${OBJECTDIR}/src/chunk_state.o \
-	${OBJECTDIR}/src/dyn_string.o \
 	${OBJECTDIR}/src/memwatch.o \
 	${OBJECTDIR}/src/mvdfile.o \
 	${OBJECTDIR}/src/mvdtool.o \
@@ -72,7 +72,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=-ldl -licuuc -lmvd -Lplugins/mvd_add/dist/Debug/GNU-MacOSX -lmvd_add -Lmvd/dist/Debug/GNU-MacOSX -lmvd -Lplugins/mvd_list/dist/Debug/GNU-MacOSX -lmvd_list
+LDLIBSOPTIONS=-ldl -licuuc -lmvd -Lplugins/mvd_add/dist/Debug/GNU-MacOSX -lmvd_add -Lmvd/dist/Debug/GNU-MacOSX -lmvd -Lplugins/mvd_list/dist/Debug/GNU-MacOSX -lmvd_list -Lplugins/mvd_export/dist/Debug/GNU-MacOSX -lmvd_export
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
@@ -84,9 +84,16 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nmergec: mvd/dist/Debug/GNU-MacOSX/li
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nmergec: plugins/mvd_list/dist/Debug/GNU-MacOSX/libmvd_list.dylib
 
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nmergec: plugins/mvd_export/dist/Debug/GNU-MacOSX/libmvd_export.dylib
+
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nmergec: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nmergec ${OBJECTFILES} ${LDLIBSOPTIONS}
+
+${OBJECTDIR}/plugins/shared/src/dyn_string.o: plugins/shared/src/dyn_string.c 
+	${MKDIR} -p ${OBJECTDIR}/plugins/shared/src
+	${RM} $@.d
+	$(COMPILE.c) -g -DMEMWATCH -Iinclude -Iinclude/zip -I/usr/local/include -Imvd/include -Iplugins/shared/include -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/plugins/shared/src/dyn_string.o plugins/shared/src/dyn_string.c
 
 ${OBJECTDIR}/src/b64.o: src/b64.c 
 	${MKDIR} -p ${OBJECTDIR}/src
@@ -102,11 +109,6 @@ ${OBJECTDIR}/src/chunk_state.o: src/chunk_state.c
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.c) -g -DMEMWATCH -Iinclude -Iinclude/zip -I/usr/local/include -Imvd/include -Iplugins/shared/include -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/chunk_state.o src/chunk_state.c
-
-${OBJECTDIR}/src/dyn_string.o: src/dyn_string.c 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.c) -g -DMEMWATCH -Iinclude -Iinclude/zip -I/usr/local/include -Imvd/include -Iplugins/shared/include -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/dyn_string.o src/dyn_string.c
 
 ${OBJECTDIR}/src/memwatch.o: src/memwatch.c 
 	${MKDIR} -p ${OBJECTDIR}/src
@@ -198,6 +200,7 @@ ${OBJECTDIR}/src/zip/zutil.o: src/zip/zutil.c
 	cd plugins/mvd_add && ${MAKE}  -f Makefile CONF=Debug
 	cd mvd && ${MAKE}  -f Makefile CONF=Debug
 	cd plugins/mvd_list && ${MAKE}  -f Makefile CONF=Debug
+	cd plugins/mvd_export && ${MAKE}  -f Makefile CONF=Debug
 	cd mvd && ${MAKE}  -f Makefile CONF=Debug
 
 # Clean Targets
@@ -210,6 +213,7 @@ ${OBJECTDIR}/src/zip/zutil.o: src/zip/zutil.c
 	cd plugins/mvd_add && ${MAKE}  -f Makefile CONF=Debug clean
 	cd mvd && ${MAKE}  -f Makefile CONF=Debug clean
 	cd plugins/mvd_list && ${MAKE}  -f Makefile CONF=Debug clean
+	cd plugins/mvd_export && ${MAKE}  -f Makefile CONF=Debug clean
 	cd mvd && ${MAKE}  -f Makefile CONF=Debug clean
 
 # Enable dependency checking

@@ -1,3 +1,24 @@
+/*
+ *  NMergeC is Copyright 2013 Desmond Schmidt
+ * 
+ *  This file is part of NMergeC. NMergeC is a C commandline tool and 
+ *  static library and a collection of dynamic libraries for merging 
+ *  multiple versions into multi-version documents (MVDs), and for 
+ *  reading, searching and comparing them.
+ *
+ *  NMergeC is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  NMergeC is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -81,7 +102,7 @@ static UChar *ascii_to_unicode( char *src, int src_len, char *encoding,
     else
         plugin_log_add(log,"mvd_add: failed to allocate UChar buffer\n");
     return dst;
-}                       
+}
 /**
  * Parse the options
  * @param map of key-value pairs already parsed
@@ -91,12 +112,13 @@ static UChar *ascii_to_unicode( char *src, int src_len, char *encoding,
 static int set_options( struct add_struct *add, hashmap *map, plugin_log *log )
 {
     int sane = 1;
+    char *value;
     if ( hashmap_contains(map,ENCODING_KEY) )
         add->encoding = hashmap_get(map,ENCODING_KEY);
     if ( hashmap_contains(map,VID_KEY) )
     {
         int tlen;
-        char *value = hashmap_get(map,VID_KEY);
+        value = hashmap_get(map,VID_KEY);
         add->vid = ascii_to_unicode( value, strlen(value), add->encoding, 
             &tlen, log );
         if ( add->vid == NULL )
@@ -107,11 +129,11 @@ static int set_options( struct add_struct *add, hashmap *map, plugin_log *log )
         plugin_log_add(log,"mvd_add: missing version ID\n");
         sane = 0;
     }
-    if ( hashmap_contains(map,DESCRIPTION_KEY) )
+    if ( hashmap_contains(map,LONG_NAME_KEY) )
     {
-        char *key = hashmap_get(map,DESCRIPTION_KEY);
+        value = hashmap_get(map,LONG_NAME_KEY);
         int tlen;
-        add->v_description = ascii_to_unicode(key,strlen(key),
+        add->v_description = ascii_to_unicode(value,strlen(value),
             add->encoding,&tlen,log );
         if ( add->v_description == NULL )
         {
@@ -119,11 +141,15 @@ static int set_options( struct add_struct *add, hashmap *map, plugin_log *log )
             plugin_log_add(log,"mvd_add: missing version description\n");
         }
     }
-    if ( hashmap_contains(map,MVD_DESCRIPTION_KEY) )
+    else if ( add->vid != NULL )
     {
-        char *key = hashmap_get(map,MVD_DESCRIPTION_KEY);
+        add->v_description = DEFAULT_LONG_NAME;
+    }
+    if ( hashmap_contains(map,DESCRIPTION_KEY) )
+    {
+        value = hashmap_get(map,DESCRIPTION_KEY);
         int tlen;
-        add->mvd_description = ascii_to_unicode(key,strlen(key),
+        add->mvd_description = ascii_to_unicode(value,strlen(value),
             add->encoding,&tlen,log );
         if ( add->mvd_description == NULL )
         {
@@ -132,7 +158,7 @@ static int set_options( struct add_struct *add, hashmap *map, plugin_log *log )
         }
     }
     else
-        add->mvd_description = u_strdup(DEFAULT_MVD_DESCRIPTION);
+        add->mvd_description = u_strdup(DEFAULT_DESCRIPTION);
     return sane;
 }
 /**
@@ -235,14 +261,12 @@ static int add_subsequent_version( MVD *mvd, struct add_struct *add,
     if ( a != NULL )
     {
         head = a;
-        while ( head != NULL )
+        while ( res && head != NULL )
         {
             alignment *left,*right;
             dyn_array *pairs = mvd_get_pairs(mvd);
             linkpair *pairs_list = link_pairs(pairs,log);
             // add new pair to the start
-            if ( linkpair_list_circular( pairs_list ) )
-                printf("circular!\n");
             linkpair *start = alignment_linkpair( a );
             linkpair_set_right( start, pairs_list );
             linkpair_set_left( pairs_list, start );
@@ -262,7 +286,9 @@ static int add_subsequent_version( MVD *mvd, struct add_struct *add,
                     mvd_set_pairs( mvd, pairs );
                     verify *v = verify_create( pairs, mvd_count_versions(mvd) );
                     if ( !verify_check(v) )
-                        fprintf(stderr,"error: unbalnaced graph\n");
+                        fprintf(stderr,"error: unbalanced graph\n");
+                    // temporary
+                    break;
                     // end debug
                     head = alignment_pop( head );
                     // now update the list
@@ -380,7 +406,6 @@ int process( MVD **mvd, char *options, unsigned char *output,
                 else
                     plugin_log_add(log,
                         "mvd_add: failed to create mvd_add object\n");
-                strncpy( (char*)output, plugin_log_buffer(log), SCRATCH_LEN );
                 plugin_log_dispose( log );
             }
             else

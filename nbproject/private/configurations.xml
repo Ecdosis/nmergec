@@ -26,18 +26,18 @@
       </nativedebugger>
       <runprofile version="9">
         <runcommandpicklist>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c create -m test.mvd -o "description=test encoding=utf-8"</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -m test.mvd -o "encoding=utf-8 description=\"text 1\" vid=\"english/test\"" -u output.txt</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -m scene1.mvd -o "encoding=utf-8 description=\"Shakespeare King Lear act 1 scene 1\" vid=\"/Base/F1\"" -u output.txt</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -m scene1.mvd -o "encoding=utf-8 description=\"Shakespeare King Lear act 1 scene 1\" vid=\"/Base/F1\"" -u scene1.txt</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -m scene1.mvd -o "encoding=utf-8 description=\"Shakespeare King Lear act 1 scene 1\" vid=\"/Base/F1\"" -u scene1-permuted.txt</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -m test.mvd -o "encoding=utf-8 description=\"The quick brown fox\" vid=\"/Base/A\"" -u tests/test1.txt</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -m test.mvd -o "encoding=utf-8 description=\"The quick brown fox\" vid=\"/Base/B\"" -u tests/text2.txt</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -m test.mvd -o "encoding=utf-8 description=\"The quick brown fox\" vid=\"/Base/A\"" -u tests/text1.txt</runcommandpicklistitem>
-          <runcommandpicklistitem>"${OUTPUT_PATH}" -c list -m scene1.mvd </runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" -m scene1.mvd -c list</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c list -m scene1.mvd </runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -m test.mvd -o "vid=\"/Base/B\"" -u tests/text2.txt</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -m test.mvd -o "encoding=utf-8 description=\"The quick brown fox\" long_name=\"version 1\" vid=\"/Base/A\"" -u tests/text1.txt</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -m test.mvd -o "encoding=utf-8 description=\"The quick brown fox\" vid=\"/Base/A\"" -u tests/text1.txt</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c add -m test.mvd -o "encoding=utf-8 vid=\"/Base/B\" long_name=\"version 2\"" -u tests/text2.txt</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c list -m test.mvd</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" -c export -m test.mvd -o "dest_file=test.json"</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>"${OUTPUT_PATH}" -m scene1.mvd -c list</runcommand>
+        <runcommand>"${OUTPUT_PATH}" -c export -m test.mvd -o "dest_file=test.json"</runcommand>
         <rundir></rundir>
         <buildfirst>true</buildfirst>
         <terminal-type>0</terminal-type>

@@ -145,6 +145,34 @@ void strip_quotes( char *str )
     str[j-i+1] = 0;
 }
 /**
+ * Store a key-value pair in a map. Free key but not value.
+ * @param hm the map
+ * @param key the utf-8 key
+ * @param value the utf-8 value
+ * @return 1 if it worked else 0
+ */
+static int store_key( hashmap *hm, char *key, char *value )
+{
+    // key and value are non-NULL on entry
+    int nbytes,res = 1;
+    int u_len = measure_from_encoding( key, strlen(key), "utf-8" );
+    UChar *u_key = calloc( u_len+1, sizeof(UChar) );
+    if ( u_key != NULL )
+    {
+        nbytes = convert_from_encoding( key, strlen(key), u_key, u_len, 
+            "utf-8" );
+        if (nbytes != u_len )
+            res = 0;
+    }
+    if ( res )
+        res = hashmap_put( hm, u_key, value );
+    // was duplicated
+    if ( u_key != NULL )
+        free( u_key );
+    free( key );
+    return res;
+}
+/**
  * Parse the options string into a map of key-value pairs
  * @param options the raw options string name=value. values are allocated.
  * @return a map of key value pairs
@@ -157,28 +185,69 @@ hashmap *parse_options( char *options )
         char *str = strdup( options );
         if ( str != NULL )
         {
-            char *token = strtok( str, " " );
-            while ( token != NULL )
+            int i,len = strlen( str );
+            int state = 0;
+            int key_start = 0;
+            int value_start = 0;
+            char *key = NULL;
+            char *value = NULL;
+            int res = 1;
+            for ( i=0;i<len;i++ )
             {
-                char *value = strchr( token, '=' );
-                if ( value != NULL )
+                switch ( state )
                 {
-                    *value = '\0';
-                    value++;
-                    strip_quotes( value );
-                    char *key = token;
-                    int klen = strlen(key);
-                    lowercase( key );
-                    UChar *u_key = calloc( klen+1, sizeof(UChar) );
-                    if ( u_key != NULL )
-                    {
-                        ascii_to_uchar( key, u_key, klen+1 );
-                        hashmap_put( map, u_key, strdup(value) );
-                        free( u_key );
-                    }
+                    case 0:// building key
+                        if ( str[i]=='=' )
+                        {
+                            str[i] = 0;
+                            key = strdup( &str[key_start] );
+                            state = 1;
+                        }
+                        break;
+                    case 1://looking for value
+                        if ( str[i]=='"' )
+                        {
+                            value_start = i+1;
+                            state = 2;
+                        }
+                        else if ( isalnum(str[i]) )
+                        {
+                            value_start = i;
+                            state = 3;
+                        }
+                        break;
+                    case 2: //parsing quoted value
+                        if ( str[i]=='"')
+                        {
+                            str[i]=0;
+                            value = strdup(&str[value_start]);
+                            if ( key != NULL && value != NULL )
+                                res = store_key(map,key,value);
+                            state = 4;
+                        }
+                        break;
+                    case 3:// parsing unquoted value
+                        if ( isspace(str[i])||i==len-1 )
+                        {
+                            str[i]=0;
+                            value = strdup(&str[value_start]);
+                            if ( key != NULL && value != NULL )
+                                res = store_key(map,key,value);
+                            state = 4;
+                        }
+                        break;
+                    case 4: // looking for key start
+                        if ( !isspace(str[i]) )
+                        {
+                            key_start = i;
+                            state = 0;
+                        }
+                        break;
                 }
-                token = strtok( NULL, " " );
+                if ( !res ) 
+                    break;
             }
+            free( str );
         }
     }
     return map;

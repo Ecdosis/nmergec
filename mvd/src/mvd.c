@@ -838,6 +838,7 @@ char *mvd_get_encoding( MVD *mvd )
  * Add a new (and unique) version path to the dynamic list
  * @param mvd the mvd object in question
  * @param v the version (versionID+description) or 0 if not unique
+ * @return 1 if successful else 0
  */
 int mvd_add_version( MVD *mvd, version *v )
 {
@@ -848,7 +849,7 @@ int mvd_add_version( MVD *mvd, version *v )
         if ( u != NULL && u_strcmp(version_id(u),version_id(v))==0 )
         {
             fprintf(stderr,"mvd: new version id not unique\n");
-            return -1;
+            return 0;
         }
     }
     return dyn_array_add( mvd->versions, v );

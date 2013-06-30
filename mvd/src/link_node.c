@@ -35,7 +35,7 @@ void link_node_dispose( link_node *ln )
     }
 }
 /**
- * Set the object in an exisitng link_node
+ * Set the object in an existing link_node
  * @param ln the link node in question
  * @param obj the object it is to contain
  */

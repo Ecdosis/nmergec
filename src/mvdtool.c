@@ -48,7 +48,7 @@ int old = 0;
 /** operations */
 operation op=EMPTY;
 /** optional user data */
-unsigned char *user_data;
+unsigned char *user_data = NULL;
 /** optional user data length */
 int user_data_len;
 static int file_size( const char *file_name )
@@ -296,6 +296,7 @@ void do_command()
             unsigned char *output = malloc( SCRATCH_LEN );
             if ( output != NULL )
             {
+                output[0] = 0;
                 int res = plugin_process( plug, &mvd, options, output, 
                     user_data, user_data_len );
                 fprintf(stderr, "%s", output );
@@ -306,6 +307,8 @@ void do_command()
                     mvd_dispose( mvd );
                 }
                 free( output );
+                if ( user_data != NULL )
+                    free( user_data );
             }
         } 
     }

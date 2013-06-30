@@ -35,10 +35,10 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
+	${OBJECTDIR}/plugins/shared/src/dyn_string.o \
 	${OBJECTDIR}/src/b64.o \
 	${OBJECTDIR}/src/char_buf.o \
 	${OBJECTDIR}/src/chunk_state.o \
-	${OBJECTDIR}/src/dyn_string.o \
 	${OBJECTDIR}/src/memwatch.o \
 	${OBJECTDIR}/src/mvdfile.o \
 	${OBJECTDIR}/src/mvdtool.o \
@@ -82,6 +82,11 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nmergec: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nmergec ${OBJECTFILES} ${LDLIBSOPTIONS}
 
+${OBJECTDIR}/plugins/shared/src/dyn_string.o: plugins/shared/src/dyn_string.c 
+	${MKDIR} -p ${OBJECTDIR}/plugins/shared/src
+	${RM} $@.d
+	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/plugins/shared/src/dyn_string.o plugins/shared/src/dyn_string.c
+
 ${OBJECTDIR}/src/b64.o: src/b64.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
@@ -96,11 +101,6 @@ ${OBJECTDIR}/src/chunk_state.o: src/chunk_state.c
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/chunk_state.o src/chunk_state.c
-
-${OBJECTDIR}/src/dyn_string.o: src/dyn_string.c 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.c) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/dyn_string.o src/dyn_string.c
 
 ${OBJECTDIR}/src/memwatch.o: src/memwatch.c 
 	${MKDIR} -p ${OBJECTDIR}/src

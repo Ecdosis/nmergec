@@ -35,7 +35,9 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
-	${OBJECTDIR}/mvd_export.o
+	${OBJECTDIR}/dom.o \
+	${OBJECTDIR}/mvd_export.o \
+	${OBJECTDIR}/mvd_json.o
 
 
 # C Compiler Flags
@@ -52,7 +54,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=
+LDLIBSOPTIONS=-lmvd -licuuc
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
@@ -60,12 +62,22 @@ LDLIBSOPTIONS=
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_export.${CND_DLIB_EXT}: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.c} -dynamiclib -install_name libmvd_export.${CND_DLIB_EXT} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_export.${CND_DLIB_EXT} -fPIC ${OBJECTFILES} ${LDLIBSOPTIONS} 
+	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_export.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -dynamiclib -install_name libmvd_export.${CND_DLIB_EXT} -fPIC
+
+${OBJECTDIR}/dom.o: dom.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} $@.d
+	$(COMPILE.c) -g -I../shared/include -I../../mvd/include -I../../include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/dom.o dom.c
 
 ${OBJECTDIR}/mvd_export.o: mvd_export.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.c) -g -I../../NMergeC/include/mvd -I../../NMergeC/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/mvd_export.o mvd_export.c
+	$(COMPILE.c) -g -I../shared/include -I../../mvd/include -I../../include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/mvd_export.o mvd_export.c
+
+${OBJECTDIR}/mvd_json.o: mvd_json.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} $@.d
+	$(COMPILE.c) -g -I../shared/include -I../../mvd/include -I../../include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/mvd_json.o mvd_json.c
 
 # Subprojects
 .build-subprojects:

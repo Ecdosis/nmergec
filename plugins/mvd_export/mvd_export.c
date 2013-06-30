@@ -1,3 +1,24 @@
+/*
+ *  NMergeC is Copyright 2013 Desmond Schmidt
+ * 
+ *  This file is part of NMergeC. NMergeC is a C commandline tool and 
+ *  static library and a collection of dynamic libraries for merging 
+ *  multiple versions into multi-version documents (MVDs), and for 
+ *  reading, searching and comparing them.
+ *
+ *  NMergeC is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  NMergeC is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 #include <stdio.h>
 #include "bitset.h"
 #include "unicode/uchar.h"
@@ -6,7 +27,13 @@
 #include "pair.h"
 #include "dyn_array.h"
 #include "mvd.h"
+#include "hashmap.h"
+#include "option_keys.h"
 #include "plugin.h"
+#include "utils.h"
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 
 /**
  * Do the work of this plugin
@@ -18,7 +45,11 @@
 int process( MVD **mvd, char *options, unsigned char *output,
     unsigned char *data, size_t data_len )
 {
-    return 1;
+    char *file = "default.json";
+    hashmap *map = parse_options( options );
+    if ( map != NULL && hashmap_contains(map,DEST_FILE_KEY) )
+        file = hashmap_get( map, DEST_FILE_KEY );
+    return mvd_json_externalise( *mvd, file, "utf-8" );
 }
 int changes()
 {
@@ -44,7 +75,7 @@ char *plug_version()
  */
 char *description()
 {
-    return "export an mvd to XML\n";
+    return "Export an mvd to JSON\n";
 }
 /**
  * Report the plugin's name

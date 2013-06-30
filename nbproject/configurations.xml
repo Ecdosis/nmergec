@@ -6,11 +6,12 @@
                    projectFiles="true">
       <itemPath>include/b64.h</itemPath>
       <itemPath>include/char_buf.h</itemPath>
-      <itemPath>include/dyn_string.h</itemPath>
+      <itemPath>plugins/shared/include/dyn_string.h</itemPath>
       <itemPath>include/memwatch.h</itemPath>
       <itemPath>include/mvdfile.h</itemPath>
       <itemPath>include/mvdtool.h</itemPath>
       <itemPath>include/operation.h</itemPath>
+      <itemPath>plugins/shared/include/option_keys.h</itemPath>
       <itemPath>include/plugin.h</itemPath>
       <itemPath>include/plugin_list.h</itemPath>
       <itemPath>plugins/shared/include/plugin_log.h</itemPath>
@@ -38,7 +39,7 @@
       <itemPath>src/b64.c</itemPath>
       <itemPath>src/char_buf.c</itemPath>
       <itemPath>src/chunk_state.c</itemPath>
-      <itemPath>src/dyn_string.c</itemPath>
+      <itemPath>plugins/shared/src/dyn_string.c</itemPath>
       <itemPath>src/memwatch.c</itemPath>
       <itemPath>src/mvdfile.c</itemPath>
       <itemPath>src/mvdtool.c</itemPath>
@@ -126,6 +127,18 @@
                             OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_list.${CND_DLIB_EXT}">
               </makeArtifact>
             </linkerLibProjectItem>
+            <linkerLibProjectItem>
+              <makeArtifact PL="plugins/mvd_export"
+                            CT="2"
+                            CN="Debug"
+                            AC="true"
+                            BL="true"
+                            WD="plugins/mvd_export"
+                            BC="${MAKE}  -f Makefile CONF=Debug"
+                            CC="${MAKE}  -f Makefile CONF=Debug clean"
+                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_export.${CND_DLIB_EXT}">
+              </makeArtifact>
+            </linkerLibProjectItem>
           </linkerLibItems>
         </linkerTool>
         <requiredProjects>
@@ -149,13 +162,31 @@
                         CC="${MAKE}  -f Makefile CONF=Debug clean"
                         OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_list.${CND_DLIB_EXT}">
           </makeArtifact>
+          <makeArtifact PL="plugins/mvd_add"
+                        CT="2"
+                        CN="Debug"
+                        AC="true"
+                        BL="false"
+                        WD="plugins/mvd_add"
+                        BC="${MAKE}  -f Makefile CONF=Debug"
+                        CC="${MAKE}  -f Makefile CONF=Debug clean"
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_add.${CND_DLIB_EXT}">
+          </makeArtifact>
+          <makeArtifact PL="plugins/mvd_export"
+                        CT="2"
+                        CN="Debug"
+                        AC="true"
+                        BL="false"
+                        WD="plugins/mvd_export"
+                        BC="${MAKE}  -f Makefile CONF=Debug"
+                        CC="${MAKE}  -f Makefile CONF=Debug clean"
+                        OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_export.${CND_DLIB_EXT}">
+          </makeArtifact>
         </requiredProjects>
       </compileType>
       <item path="include/b64.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="include/char_buf.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="include/dyn_string.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="include/memwatch.h" ex="false" tool="3" flavor2="0">
       </item>
@@ -171,18 +202,28 @@
       </item>
       <item path="include/zip/zip.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="plugins/shared/include/dyn_string.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="plugins/shared/include/option_keys.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
       <item path="plugins/shared/include/plugin_log.h"
             ex="false"
             tool="3"
             flavor2="0">
+      </item>
+      <item path="plugins/shared/src/dyn_string.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="src/b64.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="src/char_buf.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="src/chunk_state.c" ex="false" tool="0" flavor2="0">
-      </item>
-      <item path="src/dyn_string.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="src/memwatch.c" ex="false" tool="0" flavor2="0">
       </item>
@@ -242,8 +283,6 @@
       </item>
       <item path="include/char_buf.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="include/dyn_string.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="include/memwatch.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="include/mvdfile.h" ex="false" tool="3" flavor2="0">
@@ -258,18 +297,28 @@
       </item>
       <item path="include/zip/zip.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="plugins/shared/include/dyn_string.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="plugins/shared/include/option_keys.h"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
       <item path="plugins/shared/include/plugin_log.h"
             ex="false"
             tool="3"
             flavor2="0">
+      </item>
+      <item path="plugins/shared/src/dyn_string.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="src/b64.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="src/char_buf.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="src/chunk_state.c" ex="false" tool="0" flavor2="0">
-      </item>
-      <item path="src/dyn_string.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="src/memwatch.c" ex="false" tool="0" flavor2="0">
       </item>
