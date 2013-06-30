@@ -368,7 +368,6 @@ void bitset_tostring( bitset *bs, char *dst, int len )
                 snprintf(&dst[loc],len-loc,"%d",0);
         }
     }
-    printf("\n");
 }
 /**
  * Clear a specified bit

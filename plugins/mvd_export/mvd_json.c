@@ -57,7 +57,7 @@ static char *to_utf8( UChar *ustr, int ulen )
     char *dst = calloc( len+1, sizeof(char) );
     if ( dst != NULL )
     {
-        convert_to_encoding( ustr, ulen, dst, len+1 );
+        convert_to_encoding( ustr, ulen, dst, len+1, "utf-8" );
     }
     return dst;
 }
@@ -68,12 +68,12 @@ static char *to_utf8( UChar *ustr, int ulen )
  * @param index the index of the version (>=1)
  * @return 1 if it worked else 0
  */
-static int write_one_version( dom_element *vparent, version *v, int index )
+static int write_one_version( dom_item *vparent, version *v, int index )
 {
     int res = 1;
     char istr[8];
     snprintf( istr,8,"%d",index);
-    dom_element *velement = dom_element_create( "version" );
+    dom_item *velement = dom_object_create( "version" );
     if ( velement != NULL )
     {
         dom_attribute *attr = dom_attribute_create("id",istr);
@@ -92,13 +92,13 @@ static int write_one_version( dom_element *vparent, version *v, int index )
                     {
                         res = dom_add_attribute( velement, 
                             dom_attribute_create("vid",vid) );
-                        free( description );
                         if ( res )
                             res = dom_add_attribute( velement, 
                                 dom_attribute_create("description",
                                 description) );
                         if ( res )
                             res = dom_add_child( vparent, velement );
+                        free( description );
                     }
                     free( vid );
                 }
@@ -120,10 +120,10 @@ static int write_one_version( dom_element *vparent, version *v, int index )
  * @param dom the document to add them to
  * @param mvd the mvd to get them from
  */
-static int write_versions( dom_element *root, MVD *mvd )
+static int write_versions( dom_item *root, MVD *mvd )
 {
     int res = 1;
-    dom_element *v_parent = dom_element_create( "versions" );
+    dom_item *v_parent = dom_array_create( "versions" );
     if ( v_parent != NULL )
     {
         int i,nversions = mvd_count_versions( mvd );
@@ -157,11 +157,11 @@ static int write_versions( dom_element *root, MVD *mvd )
  * @param id VAR param: parent ID to update
  * @return 1 if it worked OK else 0
  */
-int write_one_pair( pair *p, dom_element *p_parent, hashmap *parents, 
+int write_one_pair( pair *p, dom_item *p_parent, hashmap *parents, 
     hashmap *orphans, int *id )
 {
     int res = 1;
-    dom_element *p_element = dom_element_create( "pair" );
+    dom_item *p_element = dom_object_create( "pair" );
     if ( p_element != NULL )
     {
         if ( pair_is_parent(p) )
@@ -180,13 +180,13 @@ int write_one_pair( pair *p, dom_element *p_parent, hashmap *parents,
             if ( ln != NULL )
             {
                 char *id_str = hashmap_get( parents, u_key );
-                dom_element *child = link_node_obj( ln );
+                dom_item *child = link_node_obj( ln );
                 while ( child != NULL )
                 {
                     dom_add_attribute( child, dom_attribute_create("parent", 
                         id_str) );
                     ln = link_node_next( ln );
-                    dom_element *child = link_node_obj( ln );
+                    dom_item *child = link_node_obj( ln );
                 }
                 hashmap_remove( orphans, u_key, NULL );
                 link_node_dispose( ln );
@@ -232,8 +232,8 @@ int write_one_pair( pair *p, dom_element *p_parent, hashmap *parents,
             if ( pair_is_hint(p) )
                 dom_add_attribute( p_element, 
                     dom_attribute_create("hint","true") );
-            int bytes = bitset_cardinality( pair_versions(p) );
-            char *bit_str = calloc( bytes, 1 );
+            int bytes = bitset_allocated(pair_versions(p))*8;
+            char *bit_str = calloc( bytes+1, 1 );
             if ( bit_str != NULL )
             {
                 bitset_tostring( pair_versions(p), bit_str, bytes );
@@ -264,10 +264,10 @@ int write_one_pair( pair *p, dom_element *p_parent, hashmap *parents,
  * @param encoding the XML encoding
  * @return 1 if it worked else 0
  */
-static int write_pairs( dom_element *root, MVD *mvd, char *encoding )
+static int write_pairs( dom_item *root, MVD *mvd, char *encoding )
 {
     int res = 1;
-    dom_element *p_parent = dom_element_create( "pairs" );
+    dom_item *p_parent = dom_array_create( "pairs" );
     if ( p_parent != NULL )
     {
         hashmap *parents = hashmap_create( 12, 0 );
@@ -308,7 +308,7 @@ static int write_pairs( dom_element *root, MVD *mvd, char *encoding )
 int mvd_json_externalise( MVD *mvd, char *dst, char *encoding ) 
 {
     int res = 1;
-    dom_element *root = dom_element_create( "mvd" );
+    dom_item *root = dom_object_create( "mvd" );
     if ( root != NULL )
     {
         char *desc = to_utf8( mvd_description(mvd), 

@@ -20,6 +20,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stdio.h>
+#include <stdlib.h>
 #include "bitset.h"
 #include "unicode/uchar.h"
 #include "link_node.h"
@@ -45,11 +46,17 @@
 int process( MVD **mvd, char *options, unsigned char *output,
     unsigned char *data, size_t data_len )
 {
+    int res = 1;
     char *file = "default.json";
     hashmap *map = parse_options( options );
     if ( map != NULL && hashmap_contains(map,DEST_FILE_KEY) )
+    {
         file = hashmap_get( map, DEST_FILE_KEY );
-    return mvd_json_externalise( *mvd, file, "utf-8" );
+    }
+    res = mvd_json_externalise( *mvd, file, "utf-8" );
+    if ( map != NULL )
+        hashmap_dispose( map, free );
+    return res;
 }
 int changes()
 {

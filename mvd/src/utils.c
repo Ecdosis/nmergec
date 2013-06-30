@@ -229,7 +229,8 @@ hashmap *parse_options( char *options )
                     case 3:// parsing unquoted value
                         if ( isspace(str[i])||i==len-1 )
                         {
-                            str[i]=0;
+                            if ( isspace(str[i]) )
+                                str[i] = 0;
                             value = strdup(&str[value_start]);
                             if ( key != NULL && value != NULL )
                                 res = store_key(map,key,value);
