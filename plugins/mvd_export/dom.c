@@ -96,8 +96,8 @@ void dom_item_dispose( dom_item *di )
             int i,nitems = dyn_array_size( di->array.items );
             for ( i=0;i<nitems;i++ )
             {
-                dom_item *di = dyn_array_get( di->array.items, i );
-                dom_item_dispose( di );
+                dom_item *di2 = dyn_array_get( di->array.items, i );
+                dom_item_dispose( di2 );
             }
             dyn_array_dispose( di->array.items );
         }
@@ -107,14 +107,15 @@ void dom_item_dispose( dom_item *di )
         int i=0;
         while ( di->elem.attrs[i] != NULL )
             dom_attribute_dispose( di->elem.attrs[i++] );
+        free( di->elem.attrs );
         if ( di->elem.children != NULL )
         {
-            i=0;
             dom_item *child = di->elem.children;
             while ( child != NULL )
             {
+                dom_item *next = child->next;
                 dom_item_dispose( child );
-                child = child->next;
+                child = next;
             }
         }
         if ( di->elem.text != NULL )

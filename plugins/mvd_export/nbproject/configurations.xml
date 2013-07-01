@@ -17,6 +17,7 @@
                    displayName="Source Files"
                    projectFiles="true">
       <itemPath>dom.c</itemPath>
+      <itemPath>../shared/src/memwatch.c</itemPath>
       <itemPath>mvd_export.c</itemPath>
       <itemPath>mvd_json.c</itemPath>
     </logicalFolder>
@@ -46,6 +47,9 @@
             <pElem>../../mvd/include</pElem>
             <pElem>../../include</pElem>
           </incDir>
+          <preprocessorList>
+            <Elem>MEMWATCH</Elem>
+          </preprocessorList>
         </cTool>
         <linkerTool>
           <linkerLibItems>
@@ -57,6 +61,8 @@
       <item path="../shared/include/dyn_string.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../shared/include/option_keys.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../shared/src/memwatch.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="dom.c" ex="false" tool="0" flavor2="0">
       </item>
@@ -91,6 +97,8 @@
       <item path="../shared/include/dyn_string.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../shared/include/option_keys.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../shared/src/memwatch.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="dom.c" ex="false" tool="0" flavor2="0">
       </item>

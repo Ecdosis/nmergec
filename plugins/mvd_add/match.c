@@ -336,7 +336,7 @@ int is_maximal( match *m, UChar *text )
     }
 }
 /**
- * Advance the match position
+ * Advance the match position - we have already matched the character
  * @param m the match object
  * @param loc the location in the suffix tree matched to so far
  * @param log the log to record errors in 
@@ -483,10 +483,11 @@ int match_single( match *m, UChar *text, plugin_log *log )
                 else
                     maximal = 1;
             }
-            if ( match_advance(m,loc,log) )
-                m->len++;
-            else
+            // we are already matched, so increase length
+            m->len++;
+            if ( !match_advance(m,loc,log) )
                 break;
+            
         }
         else
             break;
@@ -660,6 +661,7 @@ void match_split( match *m, UChar *text, int v, plugin_log *log )
     dyn_array *matches = dyn_array_create(5);
     if ( matches != NULL )
     {
+        // convert to an array because we need to go right-to-left
         dyn_array_add( matches, temp );
         while ( temp->next != NULL )
         {
@@ -676,7 +678,7 @@ void match_split( match *m, UChar *text, int v, plugin_log *log )
                 && temp->start_pos < pair_len(linkpair_pair(temp->start_p))-1 )
             {
                 linkpair *old_start_p = temp->start_p;
-                linkpair_split( temp->start_p, temp->start_pos );
+                linkpair_split( temp->start_p, temp->start_pos-1 );
                 temp->start_p = linkpair_right( temp->start_p );
                 if ( old_start_p==temp->end_p )
                     temp->end_p = temp->start_p;

@@ -201,14 +201,15 @@ alignment *alignment_pop( alignment *head )
  * @param a the alignment in question
  * @return 1 if it worked
  */
-static int alignment_transpose_merge( alignment *a, match *mum, 
-    linkpair *start_p, linkpair *end_p )
+static int alignment_transpose_merge( alignment *a, match *mum )
 {
     int i;
     int res = 1;
     dyn_array *segments = dyn_array_create( NUM_SEGMENTS );
     // 1 is simply the pairs within start_p to end_p inclusive
     // 2,3: break up the match in new version
+    linkpair *start_p = match_start_link( mum );
+    linkpair *end_p = match_end_link( mum );
     linkpair *lp = start_p;
     do
     {
@@ -270,25 +271,31 @@ static int alignment_transpose_merge( alignment *a, match *mum,
  * @param end_p the last linkpair of the match, ending at linkpair end
  * @param a the alignment to merge within
  */
-static int alignment_direct_merge( alignment *a, match *mum, 
-    linkpair *start_p, linkpair *end_p )
+static int alignment_direct_merge( alignment *a, match *mum )
 {
     int res = 1;
-    // align the middle bit
-    int v = alignment_version( a );
     do
     {
-        pair *p = linkpair_pair(start_p);
-        bitset *bs = pair_versions(p);
-        if ( bs != NULL )
+        linkpair *start_p = match_start_link( mum );
+        linkpair *end_p = match_end_link( mum );
+        // align the middle bit
+        int v = alignment_version( a );
+        do
         {
-            bitset_set( bs, v );
-            if ( start_p != end_p )
-                start_p = linkpair_next( start_p, match_versions(mum) );
-        }
-        else
-            res = 0;
-    } while ( res && start_p != end_p );
+            pair *p = linkpair_pair(start_p);
+            bitset *bs = pair_versions(p);
+            if ( bs != NULL )
+            {
+                bitset_set( bs, v );
+                if ( start_p != end_p )
+                    start_p = linkpair_next( start_p, match_versions(mum) );
+            }
+            else
+                res = 0;
+        } while ( res && start_p != end_p );
+        if ( res )
+            mum = match_next( mum );
+    } while ( res && mum != NULL );
     return res;
 }
 /**
@@ -301,12 +308,10 @@ static int alignment_merge_one( alignment *a, match *mum )
 {
     int res = 1;
     match_split( mum, a->text, a->version, a->log );
-    linkpair *start_p = match_start_link( mum );
-    linkpair *end_p = match_end_link( mum );
     if ( match_transposed(mum,alignment_version(a),alignment_len(a)) )
-        res = alignment_transpose_merge( a, mum, start_p, end_p );
+        res = alignment_transpose_merge( a, mum );
     else
-        res = alignment_direct_merge( a, mum, start_p, end_p );
+        res = alignment_direct_merge( a, mum );
     return res;
 }
 /**
@@ -390,7 +395,7 @@ int alignment_create_rhs( alignment *a, match *last, linkpair *last_merged,
     }
     else 
     {
-        linkpair *old = alignment_linkpair( a );
+        /*linkpair *old = alignment_linkpair( a );
         if ( linkpair_right(old) != NULL )
         {
             bitset *bs = bitset_create();
@@ -409,7 +414,7 @@ int alignment_create_rhs( alignment *a, match *last, linkpair *last_merged,
                 else
                     bitset_dispose( bs );
             }
-        }
+        }*/
         *right = NULL;
     }   
     return res;
@@ -430,11 +435,14 @@ static int alignment_merge( alignment *a, match *mum, linkpair **pairs,
     res = alignment_create_lhs( a, mum, pairs, left );
     if ( res )
     {
-        alignment_merge_one( a, mum );
         match *last = mum;
-        while ( match_next(last) != NULL )
-            last = match_next(last);
-        res = alignment_create_rhs( a, last, /*fill in!*/NULL, right );
+        res = alignment_merge_one( a, mum );
+        if ( res )
+        {
+            while ( match_next(last) != NULL )
+                last = match_next(last);
+            res = alignment_create_rhs( a, last, match_end_link(last), right );
+        }
     }
     alignment_dispose( a );
     return res;

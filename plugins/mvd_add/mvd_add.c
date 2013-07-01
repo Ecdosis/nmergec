@@ -281,7 +281,7 @@ static int add_subsequent_version( MVD *mvd, struct add_struct *add,
                 res = alignment_align( head, &pairs_list, &left, &right, log );
                 if ( res )
                 {
-                    // for debugging we do this now but normally at the end
+                    // do this now for debug but normally just once at the end
                     pairs = linkpair_to_pairs( pairs_list );
                     mvd_set_pairs( mvd, pairs );
                     verify *v = verify_create( pairs, mvd_count_versions(mvd) );

@@ -333,6 +333,7 @@ int mvd_json_externalise( MVD *mvd, char *dst, char *encoding )
                     if ( DST != NULL )
                     {
                         res = dom_externalise( root, DST );
+                        dom_item_dispose( root );
                         fclose( DST );
                     }
                     else

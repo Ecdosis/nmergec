@@ -389,6 +389,14 @@ bitset *pair_versions( pair *p )
 {
     return p->versions;
 }
+static void pair_print( pair *p )
+{
+    int i;
+    char *buf = calloc( p->len+1, 1 );
+    for ( i=0;i<p->len;i++ )
+        buf[i] = (char)p->data[i];
+    printf("%s\n",buf);
+}
 /**
  * Split a pair into two before the given offset. Free the original pair.
  * @param p VAR param the pair to split, becomes leading pair
@@ -410,6 +418,8 @@ pair *pair_split( pair **p, int at )
             pair_dispose( second );
         second = NULL;
     }
+//    pair_print(first);
+//    pair_print(second);
     return second;
 }
 #ifdef DEBUG_PAIR
