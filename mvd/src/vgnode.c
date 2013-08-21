@@ -59,7 +59,8 @@ void vgnode_dispose( vgnode *n )
  */
 void vgnode_add_incoming( vgnode *n, pair *p )
 {
-    dyn_array_add( n->incoming, p );
+    if ( n->kind != VGNODE_START )
+        dyn_array_add( n->incoming, p );
 }
 /**
  * Add a pair to the outgoing set
@@ -68,20 +69,23 @@ void vgnode_add_incoming( vgnode *n, pair *p )
  */
 void vgnode_add_outgoing( vgnode *n, pair *p )
 {
-    bitset *bs = bitset_create();
-    if ( bs != NULL )
+    if ( n->kind != VGNODE_END )
     {
-        int i;
-        for ( i=0;i<dyn_array_size(n->outgoing);i++ )
+        bitset *bs = bitset_create();
+        if ( bs != NULL )
         {
-            pair *q = dyn_array_get( n->outgoing, i );
-            bs = bitset_or( bs, pair_versions(q) );
+            int i;
+            for ( i=0;i<dyn_array_size(n->outgoing);i++ )
+            {
+                pair *q = dyn_array_get( n->outgoing, i );
+                bs = bitset_or( bs, pair_versions(q) );
+            }
+            if ( bitset_intersects( bs, pair_versions(p)) )
+                fprintf(stderr,"vgnode: unwanted outgoing arc\n");  
+            bitset_dispose( bs );
         }
-        if ( bitset_intersects( bs, pair_versions(p)) )
-            fprintf(stderr,"vgnode: unwanted outgoing arc\n");  
-        bitset_dispose( bs );
+        dyn_array_add( n->outgoing, p );
     }
-    dyn_array_add( n->outgoing, p );
 }
 /**
  * Verify that this vgnode is balanced (incoming=outgoing versions)
@@ -186,13 +190,18 @@ void vgnode_inversions( vgnode *n, char *dst, int len )
  */
 int vgnode_check_incoming( vgnode *n, bitset *pv )
 {
-    int i;
-    bitset *bs = bitset_create();
-    for ( i=0;i<dyn_array_size(n->incoming);i++ )
-        bs = bitset_or( bs, pair_versions(dyn_array_get(n->incoming,i)) );
-    int res = bitset_intersects(bs, pv );
-    free( bs );
-    return !res;
+    if ( n->kind != VGNODE_START )
+    {
+        int i;
+        bitset *bs = bitset_create();
+        for ( i=0;i<dyn_array_size(n->incoming);i++ )
+            bs = bitset_or( bs, pair_versions(dyn_array_get(n->incoming,i)) );
+        int res = bitset_intersects(bs, pv );
+        free( bs );
+        return !res;
+    }
+    else
+        return 0;
 }
 /**
  * Get the bits incoming - outgoing
@@ -212,3 +221,80 @@ bitset *vgnode_overhang( vgnode *n )
     bitset_dispose( bs2 );
     return bs1;
 }
+#ifdef MVD_TEST
+static UChar ustr1[] = {'a','b','a','c','k',0};
+static UChar ustr2[] = {'b','o','g','u','s',0};
+static UChar ustr3[] = {'f','i','f','t','h',0};
+void test_vgnode( int *passed, int *failed )
+{
+    char buf[9];
+    vgnode *body = vgnode_create( VGNODE_BODY );
+    vgnode *start = vgnode_create( VGNODE_START );
+    vgnode *end = vgnode_create( VGNODE_END );
+    bitset *bs1 = bitset_create();
+    bitset *bs2 = bitset_create();
+    bitset *bs3 = bitset_create();
+    bitset_set(bs1,2);
+    bitset_set(bs1,4);
+    bitset_set(bs2,1);
+    bitset_set(bs2,3);
+    bitset_set(bs3,1);
+    bitset_set(bs3,2);
+    bitset_set(bs3,3);
+    bitset_set(bs3,4);
+    pair *p1 = pair_create_basic(bs1,ustr1,5);
+    pair *p2 = pair_create_basic(bs2,ustr2,5);
+    pair *p3 = pair_create_basic(bs3,ustr3,5);
+    vgnode_add_incoming(body,p1);
+    vgnode_inversions(body,buf,8);
+    buf[8] = 0;
+    if ( strcmp(buf,"0010100")==0 )
+        (*passed)++;
+    else
+    {
+        fprintf(stderr,"vgnode: failed to get inversions\n");
+        (*failed)++;
+    }
+    vgnode_add_incoming(body,p2);
+    bitset *bs4 = vgnode_overhang(body);
+    if ( bitset_equals(bs4,bs3) )
+        (*passed)++;
+    else
+    {
+        fprintf(stderr,"vgnode: failed to get overhang\n");
+        (*failed)++;
+    }
+    vgnode_add_outgoing(body,p3);
+    if ( vgnode_verify(body,bs3) )
+        (*passed)++;
+    else
+    {
+        fprintf(stderr,"vgnode: failed to verify\n");
+        (*failed)++;
+    }
+    vgnode_add_incoming(start,p1);
+    vgnode_inversions(start,buf,8);
+    if ( strcmp(buf,"0000000")!=0 )
+    {
+        fprintf(stderr,"vgnode: added incoming to start node\n");
+        (*failed)++;
+    }
+    else
+        (*passed)++;
+    vgnode_add_outgoing(end,p3);
+    vgnode_outversions(start,buf,8);
+    if ( strcmp(buf,"0000000")!=0 )
+    {
+        fprintf(stderr,"vgnode: added outgoing to end node\n");
+        (*failed)++;
+    }
+    else
+        (*passed)++;
+    vgnode_dispose( start );
+    vgnode_dispose( body );
+    vgnode_dispose( end );
+    pair_dispose( p1 );
+    pair_dispose( p2 );
+    pair_dispose( p3 );
+}
+#endif

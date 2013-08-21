@@ -212,3 +212,9 @@ int verify_check( verify *v )
     }
     return res;
 }
+#ifdef MVD_TEST
+void test_verify( int *passed, int *failed )
+{
+    // can't do anything without an MVD
+}
+#endif

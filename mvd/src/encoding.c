@@ -100,7 +100,7 @@ int measure_to_encoding( UChar *src, size_t srclen, char *encoding )
  * @param src the source in the encoding
  * @param srclen its length in bytes
  * @param encoding the src's encoding
- * @return the number of BYTES needed
+ * @return the number of UCHARS needed
  */
 int measure_from_encoding( char *src, size_t srclen, char *encoding )
 {
@@ -117,12 +117,11 @@ int measure_from_encoding( char *src, size_t srclen, char *encoding )
             printf("encoding: %s\n",u_errorName(status));
             len = 0;
         }
-        len *= sizeof(UChar);	
         ucnv_close(conv);
 	}
     return len;
 }
-#ifdef ENCODING_DEBUG
+#ifdef MVD_TEST
 static int file_length( FILE *fp )
 {
 	int length = 0;
@@ -205,36 +204,50 @@ static int data_is_same( char *out, int out_len, char *in, int in_len )
     }
     return res;
 }
-int main( int argc, char **argv )
+void test_encoding( int *passed, int *failed )
 {
-    char *charset = (char*)"utf-8";
-    if ( argc >= 2 )
+    size_t srclen;
+    char *charset="utf-8";
+    char *src = read_file( "tests/can_1316_01.txt", &srclen );
+    if ( srclen > 0 )
     {
-        size_t srclen = 0;
-        if ( argc==3 )
-            charset=argv[2];
-        char *src = read_file( argv[1], &srclen );
-        if ( srclen > 0 )
+        size_t dstlen = measure_from_encoding( src, srclen, "utf-8" );
+        if ( dstlen > 0 )
         {
-            size_t dstlen = encoding_measure_utf16( src, srclen );
-            printf("dstlen=%zu srclen=%zu\n",dstlen,srclen);
-            if ( dstlen > 0 )
+            UChar *dst = (UChar*)calloc( dstlen+1, sizeof(UChar) );
+            if ( dst != NULL )
             {
-                UChar *dst = (UChar*)calloc( dstlen+1, sizeof(UChar) );
-                if ( dst != NULL )
+                int res = convert_from_encoding( src, srclen, 
+                    dst, dstlen+1, charset );
+                if ( res )
                 {
-                    int res = convert_from_encoding( src, srclen, 
-                        dst, dstlen+1, charset );
-                    if ( res )
-                        printf("conversion successful, sizeof(UChar)=%zu!\n",
-                            sizeof(UChar));
-                    else
-                        printf("conversion failed\n");
+                    (*passed)++;
+                    size_t dst2len = measure_to_encoding( dst, dstlen, "utf-8" );
+                    char *dst2 = calloc( dst2len+1, sizeof(char) );
+                    if ( dst2 != NULL )
+                    {
+                        int res = convert_to_encoding( dst, dstlen, 
+                            dst2, dst2len+1, "utf-8" );
+                        if ( res ) 
+                            (*passed)++;
+                        else
+                            (*failed)++;
+                        if ( !data_is_same(dst2,dst2len,src,srclen) )
+                            (*failed)++;
+                        else
+                            (*passed)++;
+                        free( dst2 );
+                    }
                 }
+                else
+                {
+                    printf("conversion failed\n");
+                    (*failed)++;
+                }
+                free( dst );
             }
         }
+        free( src );
     }
-    else
-        fprintf(stderr,"usage: ./encoding <file> [charset]\n");
 }
 #endif

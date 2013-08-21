@@ -128,3 +128,48 @@ void plugin_list_all( plugin_list *list )
 	}
 }
 // NB: can't really test this without creating plugins per se
+#ifdef MVD_TEST
+void test_plugin_list( int *passed, int *failed )
+{
+    // 1. list plugins in /usr/local/lib/nmerge-plugins/
+    char **paths;
+    int num_paths;
+    int res = get_plugins("/usr/local/lib/nmerge-plugins",&paths,&num_paths);
+    if ( res && num_paths >0 )
+    {
+        int i;
+        plugin_list *pl = plugin_list_create();
+        if ( pl != NULL )
+        {
+            for ( i=0;i<num_paths;i++ )
+            {
+                void *handle = dlopen( paths[i], RTLD_LOCAL|RTLD_LAZY );
+                if ( handle != NULL )
+                    plugin_list_add( pl, handle );
+                else
+                    res = 0;
+            }
+            if ( pl->num_plugins != num_paths )
+            {
+                fprintf(stderr,
+                    "plugin_list: found %d plugins but should be %d\n",
+                    pl->num_plugins,num_paths);
+                res = 0;
+            }
+            plugin_list_dispose( pl );
+        }
+    }
+    if ( res )
+        (*passed)++;
+    else
+        (*failed)++;
+}
+/*
+int main( int argc, char **argv )
+{
+    int passed=0,failed=0;
+    test_plugin_list( &passed, &failed );
+    printf("passed=%d failed=%d\n",passed,failed);
+}
+*/
+#endif

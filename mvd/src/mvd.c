@@ -1043,6 +1043,7 @@ int mvd_clean( MVD *mvd )
 /**
  * Test that the versions are all unique
  * @param mvd the mvd to test
+ * @return 0 if it failed else 1
  */
 int mvd_test_versions( MVD *mvd )
 {
@@ -1064,5 +1065,20 @@ int mvd_test_versions( MVD *mvd )
     }
     hashmap_dispose( hm, NULL );
     return res;
+}
+/**
+ * Test a loaded MVD. Remember we can't load an MVD here without creating 
+ * a backwards dependency on NMergeC which we don't want to do ...
+ * @param mvd the loaded MVD to test
+ * @param passed VAR param: update number of passed tests
+ * @param failed VAR param: update number of failed tests
+ */
+void test_mvd( MVD *mvd, int *passed, int *failed )
+{
+    // add more tests later ...
+    if ( mvd_test_versions(mvd) )
+        (*passed)++;
+    else
+        (*failed)++;
 }
 #endif

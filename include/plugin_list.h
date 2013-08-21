@@ -19,6 +19,9 @@ void plugin_list_add( plugin_list *list, void *handle );
 void plugin_list_dispose( plugin_list *list );
 plugin *plugin_list_get( plugin_list *list, char *name );
 void plugin_list_all( plugin_list *list );
+#ifdef MVD_TEST
+void test_plugin_list( int *passed, int *failed );
+#endif
 
 #ifdef	__cplusplus
 }

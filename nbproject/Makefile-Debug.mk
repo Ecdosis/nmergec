@@ -93,107 +93,107 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nmergec: ${OBJECTFILES}
 ${OBJECTDIR}/plugins/shared/src/dyn_string.o: plugins/shared/src/dyn_string.c 
 	${MKDIR} -p ${OBJECTDIR}/plugins/shared/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMEMWATCH -Iinclude -Iinclude/zip -I/usr/local/include -Imvd/include -Iplugins/shared/include -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/plugins/shared/src/dyn_string.o plugins/shared/src/dyn_string.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Imvd/include -Iplugins/shared/include -Iinclude/zip -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/plugins/shared/src/dyn_string.o plugins/shared/src/dyn_string.c
 
 ${OBJECTDIR}/src/b64.o: src/b64.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMEMWATCH -Iinclude -Iinclude/zip -I/usr/local/include -Imvd/include -Iplugins/shared/include -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/b64.o src/b64.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Imvd/include -Iplugins/shared/include -Iinclude/zip -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/b64.o src/b64.c
 
 ${OBJECTDIR}/src/char_buf.o: src/char_buf.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMEMWATCH -Iinclude -Iinclude/zip -I/usr/local/include -Imvd/include -Iplugins/shared/include -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/char_buf.o src/char_buf.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Imvd/include -Iplugins/shared/include -Iinclude/zip -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/char_buf.o src/char_buf.c
 
 ${OBJECTDIR}/src/chunk_state.o: src/chunk_state.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMEMWATCH -Iinclude -Iinclude/zip -I/usr/local/include -Imvd/include -Iplugins/shared/include -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/chunk_state.o src/chunk_state.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Imvd/include -Iplugins/shared/include -Iinclude/zip -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/chunk_state.o src/chunk_state.c
 
 ${OBJECTDIR}/src/memwatch.o: src/memwatch.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMEMWATCH -Iinclude -Iinclude/zip -I/usr/local/include -Imvd/include -Iplugins/shared/include -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/memwatch.o src/memwatch.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Imvd/include -Iplugins/shared/include -Iinclude/zip -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/memwatch.o src/memwatch.c
 
 ${OBJECTDIR}/src/mvdfile.o: src/mvdfile.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMEMWATCH -Iinclude -Iinclude/zip -I/usr/local/include -Imvd/include -Iplugins/shared/include -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvdfile.o src/mvdfile.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Imvd/include -Iplugins/shared/include -Iinclude/zip -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvdfile.o src/mvdfile.c
 
 ${OBJECTDIR}/src/mvdtool.o: src/mvdtool.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMEMWATCH -Iinclude -Iinclude/zip -I/usr/local/include -Imvd/include -Iplugins/shared/include -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvdtool.o src/mvdtool.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Imvd/include -Iplugins/shared/include -Iinclude/zip -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/mvdtool.o src/mvdtool.c
 
 ${OBJECTDIR}/src/operation.o: src/operation.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMEMWATCH -Iinclude -Iinclude/zip -I/usr/local/include -Imvd/include -Iplugins/shared/include -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/operation.o src/operation.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Imvd/include -Iplugins/shared/include -Iinclude/zip -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/operation.o src/operation.c
 
 ${OBJECTDIR}/src/plugin.o: src/plugin.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMEMWATCH -Iinclude -Iinclude/zip -I/usr/local/include -Imvd/include -Iplugins/shared/include -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/plugin.o src/plugin.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Imvd/include -Iplugins/shared/include -Iinclude/zip -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/plugin.o src/plugin.c
 
 ${OBJECTDIR}/src/plugin_list.o: src/plugin_list.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMEMWATCH -Iinclude -Iinclude/zip -I/usr/local/include -Imvd/include -Iplugins/shared/include -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/plugin_list.o src/plugin_list.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Imvd/include -Iplugins/shared/include -Iinclude/zip -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/plugin_list.o src/plugin_list.c
 
 ${OBJECTDIR}/src/test.o: src/test.c 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.c) -g -DMEMWATCH -Iinclude -Iinclude/zip -I/usr/local/include -Imvd/include -Iplugins/shared/include -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/test.o src/test.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Imvd/include -Iplugins/shared/include -Iinclude/zip -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/test.o src/test.c
 
 ${OBJECTDIR}/src/zip/adler32.o: src/zip/adler32.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
-	$(COMPILE.c) -g -DMEMWATCH -Iinclude -Iinclude/zip -I/usr/local/include -Imvd/include -Iplugins/shared/include -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/adler32.o src/zip/adler32.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Imvd/include -Iplugins/shared/include -Iinclude/zip -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/adler32.o src/zip/adler32.c
 
 ${OBJECTDIR}/src/zip/compress.o: src/zip/compress.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
-	$(COMPILE.c) -g -DMEMWATCH -Iinclude -Iinclude/zip -I/usr/local/include -Imvd/include -Iplugins/shared/include -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/compress.o src/zip/compress.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Imvd/include -Iplugins/shared/include -Iinclude/zip -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/compress.o src/zip/compress.c
 
 ${OBJECTDIR}/src/zip/crc32.o: src/zip/crc32.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
-	$(COMPILE.c) -g -DMEMWATCH -Iinclude -Iinclude/zip -I/usr/local/include -Imvd/include -Iplugins/shared/include -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/crc32.o src/zip/crc32.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Imvd/include -Iplugins/shared/include -Iinclude/zip -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/crc32.o src/zip/crc32.c
 
 ${OBJECTDIR}/src/zip/deflate.o: src/zip/deflate.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
-	$(COMPILE.c) -g -DMEMWATCH -Iinclude -Iinclude/zip -I/usr/local/include -Imvd/include -Iplugins/shared/include -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/deflate.o src/zip/deflate.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Imvd/include -Iplugins/shared/include -Iinclude/zip -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/deflate.o src/zip/deflate.c
 
 ${OBJECTDIR}/src/zip/inffast.o: src/zip/inffast.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
-	$(COMPILE.c) -g -DMEMWATCH -Iinclude -Iinclude/zip -I/usr/local/include -Imvd/include -Iplugins/shared/include -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/inffast.o src/zip/inffast.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Imvd/include -Iplugins/shared/include -Iinclude/zip -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/inffast.o src/zip/inffast.c
 
 ${OBJECTDIR}/src/zip/inflate.o: src/zip/inflate.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
-	$(COMPILE.c) -g -DMEMWATCH -Iinclude -Iinclude/zip -I/usr/local/include -Imvd/include -Iplugins/shared/include -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/inflate.o src/zip/inflate.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Imvd/include -Iplugins/shared/include -Iinclude/zip -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/inflate.o src/zip/inflate.c
 
 ${OBJECTDIR}/src/zip/inftrees.o: src/zip/inftrees.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
-	$(COMPILE.c) -g -DMEMWATCH -Iinclude -Iinclude/zip -I/usr/local/include -Imvd/include -Iplugins/shared/include -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/inftrees.o src/zip/inftrees.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Imvd/include -Iplugins/shared/include -Iinclude/zip -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/inftrees.o src/zip/inftrees.c
 
 ${OBJECTDIR}/src/zip/trees.o: src/zip/trees.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
-	$(COMPILE.c) -g -DMEMWATCH -Iinclude -Iinclude/zip -I/usr/local/include -Imvd/include -Iplugins/shared/include -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/trees.o src/zip/trees.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Imvd/include -Iplugins/shared/include -Iinclude/zip -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/trees.o src/zip/trees.c
 
 ${OBJECTDIR}/src/zip/zip.o: src/zip/zip.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
-	$(COMPILE.c) -g -DMEMWATCH -Iinclude -Iinclude/zip -I/usr/local/include -Imvd/include -Iplugins/shared/include -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/zip.o src/zip/zip.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Imvd/include -Iplugins/shared/include -Iinclude/zip -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/zip.o src/zip/zip.c
 
 ${OBJECTDIR}/src/zip/zutil.o: src/zip/zutil.c 
 	${MKDIR} -p ${OBJECTDIR}/src/zip
 	${RM} $@.d
-	$(COMPILE.c) -g -DMEMWATCH -Iinclude -Iinclude/zip -I/usr/local/include -Imvd/include -Iplugins/shared/include -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/zutil.o src/zip/zutil.c
+	$(COMPILE.c) -g -DMEMWATCH -DMVD_TEST -Iinclude -Imvd/include -Iplugins/shared/include -Iinclude/zip -std=c99 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/zip/zutil.o src/zip/zutil.c
 
 # Subprojects
 .build-subprojects:

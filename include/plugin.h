@@ -32,7 +32,11 @@ char *plugin_description( plugin *plug );
 int plugin_test( plugin *plug, int *passed, int *failed );
 char *plugin_name( plugin *plug );
 int plugin_changes( plugin *plug );
-
+int plugin_check_handles( plugin *plug, char **entry );
+#ifdef MVD_TEST
+int get_plugins( char *folder, char ***paths, int *num );
+void test_plugin( int *passed, int *failed );
+#endif
 #ifdef	__cplusplus
 }
 #endif

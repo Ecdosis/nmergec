@@ -25,6 +25,9 @@ void vgnode_outversions( vgnode *n, char *dst, int len );
 void vgnode_inversions( vgnode *n, char *dst, int len );
 bitset *vgnode_overhang( vgnode *n );
 int vgnode_check_incoming( vgnode *n, bitset *pv );
+#ifdef MVD_TEST
+void test_vgnode( int *passed, int *failed );
+#endif
 
 #ifdef	__cplusplus
 }

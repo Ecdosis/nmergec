@@ -11,7 +11,9 @@
 #ifdef	__cplusplus
 extern "C" {
 #endif
+#ifdef MVD_TEST
 void test_mvdtool( int *passed, int *failed );
+#endif
 
 #ifdef	__cplusplus
 }

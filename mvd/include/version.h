@@ -17,7 +17,9 @@ void version_dispose( version *v );
 UChar *version_description( version *v );
 UChar *version_id( version *v );
 int version_datasize( version *v, int old, char *encoding );
-
+#ifdef MVD_TEST
+void test_version( int *passed, int *failed );
+#endif
 #ifdef	__cplusplus
 }
 #endif

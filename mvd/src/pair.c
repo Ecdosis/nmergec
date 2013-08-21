@@ -35,7 +35,7 @@ struct pair_struct
  * @param type the type of pair
  * @return an allocated pair object or NULL
  */
-static pair *pair_create( bitset*versions, UChar *data, int len, int type )
+static pair *pair_create( bitset *versions, UChar *data, int len, int type )
 {
     int ulen = len*sizeof(UChar);
     int exists = DATA_MINSIZE*sizeof(UChar);
@@ -422,31 +422,223 @@ pair *pair_split( pair **p, int at )
 //    pair_print(second);
     return second;
 }
-#ifdef DEBUG_PAIR
-#include <stdio.h>
-int main( int argc, char **argv )
+#ifdef MVD_TEST
+static UChar data1[] = {'b','a','n','a','n','a'};
+static UChar data2[] = {'a','p','p','l','e'}; 
+static void test_pair_parent( int *passed, int *failed )
 {
-    struct basic_pair
+    int nbytes2 = sizeof(data2)/sizeof(UChar);
+    bitset *bs2 = bitset_create();
+    if ( bs2 != NULL )
+        bs2 = bitset_set( bs2, 5 );
+    bitset *bs3 = bitset_create();
+    if ( bs3 != NULL )
+        bs3 = bitset_set( bs3, 14 );
+    if ( bs2 != NULL && bs3 != NULL )
     {
-        unsigned char *data;
-        bitset *versions;
-        int len;
-    };
-    struct child_pair
+        pair *p2 = pair_create_parent( bs2, (UChar*)data2, nbytes2);
+        pair *p3 = pair_create_child( bs3 );
+        p2 = pair_add_child( p2, p3 );
+        p3 = pair_set_parent( p3, p2 );
+        if ( pair_parent(p3) != p2 )
+        {
+            (*failed)++;
+            fprintf(stderr,"pair: failed to add child\n");
+        }
+        else
+            (*passed)++;
+        pair_dispose( p2 );
+        pair_dispose( p3 );
+        bs2 = bitset_create();
+        bs3 = bitset_create();
+        if ( bs2 != NULL )
+            bs2 = bitset_set( bs2, 7 );
+        if ( bs3 != NULL )
+            bs3 = bitset_set( bs3, 23 );
+        if ( bs2 != NULL && bs3 != NULL )
+        {
+            p2 = pair_create_parent( bs2, data2, nbytes2 );
+            p3 = pair_create_child( bs3 );
+            if ( p2 != NULL && p3 != NULL )
+            {
+                p2 = pair_add_child(p2,p3);
+                p3 = pair_set_parent( p3, p2 );
+                if ( p2 != NULL && p3 != NULL )
+                {
+                    if ( pair_parent(p3)!= p2 )
+                    {
+                        fprintf(stderr,"pair: failed to set parent\n");
+                        (*failed)++;
+                    }
+                    else
+                        (*passed)++;
+                    link_node *ln = pair_first_child(p2);
+                    if ( ln==NULL|| link_node_obj(ln)!=p3 )
+                    {
+                        fprintf(stderr,"pair: failed to set child\n");
+                        (*failed)++;
+                    }
+                    else
+                        (*passed)++;
+                }
+                else
+                {
+                    fprintf(stderr,"pair: failed to set parent or child\n");
+                    (*failed) += 2;
+                }
+            }
+            else
+                (*failed)++;
+        }
+        if ( pair_len(p2)!=pair_len(p3)|| pair_len(p2)!=nbytes2 )
+        {
+            fprintf(stderr,"pair: pair length incorrect\n");
+            (*failed)++;
+        }
+        else
+            (*passed)++;
+        if ( p2 != NULL )
+            pair_dispose( p2 );
+        if ( p3 != NULL )
+            pair_dispose( p3 );
+    }
+    else
+        (*failed)++;
+}
+static void test_pair_hint( int *passed, int *failed )
+{
+    bitset *bs = bitset_create();
+    if ( bs != NULL )
+        bs = bitset_set( bs, 7 );
+    if ( bs != NULL )
+        bs = bitset_set( bs, 23 );
+    pair *p = pair_create_hint( bs );
+    if ( p != NULL )
     {
-        pair *parent;
-        bitset *versions;
-    };
-    struct parent_pair
+        if ( !pair_is_hint(p)||pair_is_ordinary(p)
+            ||pair_is_parent(p)||pair_is_child(p) )
+        {
+            fprintf(stderr,"pair: failed to create valid hint\n");
+            (*failed)++;
+        }
+        else
+            (*passed)++;
+        if ( pair_len(p)!=0 )
+        {
+            fprintf(stderr,"pair: failed to create hint\n");
+            (*failed)++;
+        }
+        else
+            (*passed)++;
+        pair_dispose( p );
+    }
+    else
+        (*failed)++;
+}
+static void test_pair_versions( int *passed, int *failed )
+{
+    bitset *bs = bitset_create();
+    if ( bs != NULL )
+        bs = bitset_set( bs, 7 );
+    if ( bs != NULL )
+        bs = bitset_set( bs, 23 );
+    int nbytes1 = sizeof(data1)/sizeof(UChar);
+    pair *p = pair_create_basic( bs,data1, nbytes1 );
+    if ( p != NULL )
     {
-        unsigned char *data;
-        int len;
-        bitset *versions;
-        link_node *children;
-    };
-    printf("sizeof(struct basic_pair)=%zu sizeof(struct child_pair)=%zu "
-        "sizeof(struct parent_pair)=%zu\n",
-        sizeof(struct basic_pair),sizeof(struct child_pair),
-        sizeof(struct parent_pair));
+        bitset *bs2 = bitset_create();
+        if ( bs2 != NULL )
+        {
+            bs2 = bitset_set( bs2, 13 );
+            if ( bs2 != NULL )
+            {
+                pair_set_versions( p, bs2 );
+                bitset *pv = pair_versions(p);
+                if ( bitset_next_set_bit(pv,13)!=13 
+                    || bitset_next_set_bit(pv,23)==23 )
+                {
+                    fprintf(stderr,"pair: failed to reset versions\n");
+                    (*failed)++;
+                }
+                else
+                    (*passed)++;
+            }
+            else
+                (*failed)++;
+        }
+        pair_dispose( p );
+    }
+    else
+        (*failed)++;
+}
+static void test_pair_id( int *passed, int *failed )
+{
+    bitset *bs = bitset_create();
+    if ( bs != NULL )
+        bs = bitset_set( bs, 7 );
+    if ( bs != NULL )
+        bs = bitset_set( bs, 23 );
+    int nbytes1 = sizeof(data1)/sizeof(UChar);
+    if ( bs != NULL )
+    {
+        pair *p = pair_create_basic( bs, data1, nbytes1 );
+        if ( p != NULL )
+        {
+            pair_set_id( p, 33 );
+            if ( pair_id(p) != 33 )
+            {
+                fprintf(stderr,"pair: failed to set id\n");
+                (*failed)++;
+            }
+            else
+                (*passed)++;
+            pair_dispose( p );
+        }
+        else
+            (*failed)++;
+    }
+    else
+        (*failed)++;
+}
+static void test_pair_split( int *passed, int *failed )
+{
+    bitset *bs = bitset_create();
+    if ( bs != NULL )
+        bs = bitset_set( bs, 7 );
+    if ( bs != NULL )
+        bs = bitset_set( bs, 23 );
+    int nbytes1 = sizeof(data1)/sizeof(UChar);
+    if ( bs != NULL )
+    {
+        pair *p = pair_create_basic( bs, data1, nbytes1 );
+        if ( p != NULL )
+        {
+            int at = nbytes1/2;
+            pair *q = pair_split( &p, at );
+            if ( q != NULL )
+            {
+                if ( pair_len(p)!= at || pair_len(q) != nbytes1-at )
+                {
+                    fprintf(stderr,"pair: failed to split\n");
+                    (*failed)++;
+                }
+                else
+                    (*passed)++;
+            }
+            else
+            {
+                fprintf(stderr,"pair: failed to split\n");
+                (*failed)++;
+            }
+        }
+        pair_dispose( p );
+    }
+}
+void test_pair( int *passed, int *failed )
+{
+    test_pair_parent( passed, failed );
+    test_pair_hint( passed, failed );
+    test_pair_versions( passed, failed );
+    test_pair_id( passed, failed );
 }
 #endif

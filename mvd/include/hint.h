@@ -21,6 +21,9 @@ hint *hint_delist( hint *h );
 void hint_append( hint *h, hint *other );
 vgnode *hint_node( hint *h );
 void hint_or( hint *h, bitset *bs );
+#ifdef MVD_TEST
+void test_hint( int *passed, int *failed );
+#endif
 
 #ifdef	__cplusplus
 }

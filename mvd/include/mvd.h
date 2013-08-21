@@ -32,6 +32,8 @@ int mvd_is_clean( MVD *mvd );
 int mvd_get_versions( MVD *mvd, version **versions, int limit );
 int mvd_get_description_len( MVD *mvd );
 UChar *mvd_description( MVD *mvd );
+int mvd_equals( MVD *mvd1, MVD *mvd2 );
+
 
 #define MVD_MAGIC_LEN 4
 #define MVD_MAGIC_OLD_STR "\336\255\300\336"

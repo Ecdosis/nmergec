@@ -22,7 +22,7 @@
  *      is used to find longer strings when a small match has been found.
  *      A similar algorithm is used in comic (by Jan-Mark Wams) and freeze
  *      (by Leonid Broukhis).
- *         A previous version of this file used a more sophisticated algorithm
+ *         A previous zversion of this file used a more sophisticated algorithm
  *      (by Fiala and Greene) which is guaranteed to run in linear amortized
  *      time, but has a larger average cost, uses more memory and is patented.
  *      However the F&G algorithm may be faster for some highly redundant
@@ -200,27 +200,27 @@ struct static_tree_desc_s {int dummy;}; /* for buggy compilers */
     zmemzero((Bytef *)s->head, (unsigned)(s->hash_size-1)*sizeof(*s->head));
 
 /* ========================================================================= */
-int ZEXPORT deflateInit_(strm, level, version, stream_size)
+int ZEXPORT deflateInit_(strm, level, zversion, stream_size)
     z_streamp strm;
     int level;
-    const char *version;
+    const char *zversion;
     int stream_size;
 {
     return deflateInit2_(strm, level, Z_DEFLATED, MAX_WBITS, DEF_MEM_LEVEL,
-                         Z_DEFAULT_STRATEGY, version, stream_size);
+                         Z_DEFAULT_STRATEGY, zversion, stream_size);
     /* To do: ignore strm->next_in if we use it as window */
 }
 
 /* ========================================================================= */
 int ZEXPORT deflateInit2_(strm, level, method, windowBits, memLevel, strategy,
-                  version, stream_size)
+                  zversion, stream_size)
     z_streamp strm;
     int  level;
     int  method;
     int  windowBits;
     int  memLevel;
     int  strategy;
-    const char *version;
+    const char *zversion;
     int stream_size;
 {
     deflate_state *s;
@@ -232,7 +232,7 @@ int ZEXPORT deflateInit2_(strm, level, method, windowBits, memLevel, strategy,
      * output size for (length,distance) codes is <= 24 bits.
      */
 
-    if (version == Z_NULL || version[0] != my_version[0] ||
+    if (zversion == Z_NULL || zversion[0] != my_version[0] ||
         stream_size != sizeof(z_stream)) {
         return Z_VERSION_ERROR;
     }
@@ -1142,7 +1142,7 @@ local void lm_init (s)
  * OUT assertion: the match length is not greater than s->lookahead.
  */
 #ifndef ASMV
-/* For 80x86 and 680x0, an optimized version will be provided in match.asm or
+/* For 80x86 and 680x0, an optimized zversion will be provided in match.asm or
  * match.S. The code will be functionally equivalent.
  */
 local uInt longest_match(s, cur_match)
@@ -1292,7 +1292,7 @@ local uInt longest_match(s, cur_match)
 #else /* FASTEST */
 
 /* ---------------------------------------------------------------------------
- * Optimized version for FASTEST only
+ * Optimized zversion for FASTEST only
  */
 local uInt longest_match(s, cur_match)
     deflate_state *s;

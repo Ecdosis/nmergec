@@ -22,6 +22,11 @@ void ascii_to_uchar( char *str, UChar *u_str, int len );
 void calc_ukey( UChar *u_key, long value, int len );
 void strip_quotes( char *str );
 hashmap *parse_options( char *options );
+int file_size( const char *file_name );
+char *read_file( char *file, int *len );
+#ifdef MVD_TEST
+void test_utils( int *passed, int *failed );
+#endif
 #ifdef __LITTLE_ENDIAN__
 #define SLASH (UChar*)"\x2F\x00"
 #else

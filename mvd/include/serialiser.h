@@ -18,7 +18,9 @@ int write_string( unsigned char *data, int len, int p, UChar *str,
 int write_ascii_string( unsigned char *data, int len, int p, char *str );
 int write_data( unsigned char *dst, int len, int p, unsigned char *src, 
     int src_len );
-
+#ifdef MVD_TEST
+void test_serialiser( int *passed, int *failed );
+#endif
 #ifdef	__cplusplus
 }
 #endif

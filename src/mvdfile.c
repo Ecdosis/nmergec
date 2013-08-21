@@ -164,7 +164,7 @@ static UChar *readEncodedString( unsigned char *data, int len,
     p += 2;
     if ( slen>0 && slen+p <= len )
     {
-        int nchars = measure_from_encoding(&data[p],slen,encoding)/2;
+        int nchars = measure_from_encoding(&data[p],slen,encoding);
         str = calloc( nchars+1,sizeof(UChar) );
         if ( str != NULL )
         {
@@ -219,7 +219,7 @@ static UChar **readGroupTable( MVD *mvd, unsigned char *mvd_data,
             int res = 1;
             for ( i=0;i<nGroups;i++ )
             {
-                char buf[64];
+                //char buf[64];
                 short dlen,parent = readShort( mvd_data, len, p );
                 //printf("parent=%d\n",parent);
                 assert( parent <= i && parent < nGroups );
@@ -470,7 +470,7 @@ static UChar *read_pair_data( unsigned char *data, int data_len, int *ulen,
         int dstLen = measure_from_encoding( data, data_len, encoding );
         dst = calloc( dstLen+1, sizeof(UChar) );
         if ( dst != NULL )
-            *ulen = convert_from_encoding(data,data_len,dst,dstLen, 
+            *ulen = convert_from_encoding(data,data_len,dst,dstLen+1, 
                 encoding)/sizeof(UChar);
         else
             fprintf(stderr,"mvdfile: failed to convert pair data\n");

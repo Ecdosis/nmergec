@@ -47,7 +47,9 @@ int pair_is_hint( pair *p );
 bitset *pair_versions( pair *p );
 pair *pair_split( pair **p, int at );
 
-
+#ifdef MVD_TEST
+void test_pair( int *passed, int *failed );
+#endif
 #ifdef	__cplusplus
 }
 #endif

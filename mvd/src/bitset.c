@@ -234,10 +234,12 @@ bitset *bitset_or( bitset *bs, bitset *other )
  */
 void bitset_and( bitset *bs, bitset *other )
 {
-    int i;
+    int i,j;
     int min_index = min(bs->allocated,other->allocated);
     for ( i=0;i<min_index;i++ )
         bs->data[i] &= other->data[i];
+    for ( j=i;j<bs->allocated;j++ )
+        bs->data[j] = 0;
 }
 /**
  * Do two bitsets intersect?
@@ -357,10 +359,10 @@ void bitset_tostring( bitset *bs, char *dst, int len )
 {
     int i,j;
     int loc = 0;
-    for ( i=0;i<bs->allocated;i++ )
+    for ( i=0;i<bs->allocated&&loc<len;i++ )
     {
         unsigned char mask = 1;
-        for ( j=0;j<8;j++,loc++ )
+        for ( j=0;j<8&&loc<len;j++,loc++ )
         {
             if ( bs->data[i] & mask<<j )
                 snprintf(&dst[loc],len-loc,"%d",1);
@@ -509,6 +511,7 @@ void test_bitset( int *passed, int *failed )
         bitset_dispose( bs );
     }
 }
+/*
 int main(int argc, char **argv)
 {
     bitset *bs1 = bitset_create();
@@ -523,4 +526,5 @@ int main(int argc, char **argv)
     bitset_print( bs2 );
     printf("printed bitset\n");
 }
+*/
 #endif

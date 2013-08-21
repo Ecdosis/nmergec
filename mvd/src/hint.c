@@ -131,3 +131,65 @@ void hint_or( hint *h, bitset *bs )
     // may reallocate h->bs
     h->bs = bitset_or( h->bs, bs );
 }
+#ifdef MVD_TEST
+void test_hint( int *passed, int *failed )
+{
+    int res = 1;
+    bitset *bs = bitset_create();
+    if ( bs != NULL )
+    {
+        bs = bitset_set(bs,1);
+        if ( bs != NULL )
+            bs = bitset_set(bs,23);
+        if ( bs != NULL )
+        {
+            hint *h = hint_create( bs, (vgnode*)0x123 );
+            if ( h != NULL )
+            {
+                if ( hint_node(h) != (vgnode*)0x123 )
+                {
+                    fprintf(stderr,"hint: failed to set node\n");
+                    res = 0;
+                }
+                bitset *bs2 = bitset_create();
+                if ( bs2 != NULL )
+                {
+                    bs2 = bitset_set( bs2, 12 );
+                    hint_or( h, bs2 );
+                    if ( !hint_contains(h,bs) )
+                    {
+                        fprintf(stderr,"hint: failed to save bs\n");
+                        res = 0;
+                    }
+                    if ( !hint_contains(h,bs2) )
+                    {
+                        fprintf(stderr,"hint: failed to save bs2\n");
+                        res = 0;
+                    }
+                    hint *h2 = hint_create( bs2, NULL );
+                    if ( h2 != NULL )
+                    {
+                        hint_append( h, h2 );
+                        hint *head = hint_delist( h );
+                        if ( head != h2 )
+                        {
+                            fprintf(stderr,"hint: delist failed\n");
+                            res = 0;
+                        }
+                        hint_dispose( h2 );
+                    }
+                    bitset_dispose( bs2 );
+                }
+                hint_dispose( h );
+            }
+            bitset_dispose( bs );
+        }
+        else
+            res = 0;
+    }
+    if ( res )
+        (*passed)++;
+    else
+        (*failed)++;
+}
+#endif

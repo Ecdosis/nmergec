@@ -17,6 +17,8 @@
 #include "plugin_list.h"
 #include "operation.h"
 #include "plugin_log.h"
+#include "hashmap.h"
+#include "utils.h"
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
@@ -51,52 +53,6 @@ operation op=EMPTY;
 unsigned char *user_data = NULL;
 /** optional user data length */
 int user_data_len;
-static int file_size( const char *file_name )
-{
-    FILE *fp = fopen( file_name, "r" );
-    long sz = -1;
-    if ( fp != NULL )
-    {
-        fseek(fp, 0L, SEEK_END);
-        sz = ftell(fp);
-        fclose( fp );
-    }
-    return (int) sz;
-}
-/**
- * Read a file and return its contents as an allocated buffer
- * @param file the file's path
- * @param len VAR param to set to the length of the contents
- * @return the file's contents, caller to free
- */
-char *read_file( char *file, int *len )
-{
-	FILE *fp = fopen(file,"r");
-	char *buf = NULL;
-	int res = 0;
-	if ( fp == NULL )
-	{
-		fprintf(stderr, "couldn't open %s\n", file);
-        return NULL;
-	}
-	*len = file_size(file);
-	if ( *len > 0 )
-	{
-		buf = malloc( (*len)+1 );
-		if ( buf != NULL )
-			res = fread( buf, 1, *len, fp );
-		if ( res != *len )
-		{
-			free( buf );
-			buf = NULL;
-		}
-	}
-	else
-	{
-		fprintf(stderr,"file %s length is 0\n", file);
-	}
-	return buf;
-}
 /**
  * Tell the user about how to use this program
  */
@@ -364,7 +320,7 @@ int main( int argc, char **argv )
  * @param failed VAR param update with the number of failed tests
  * @return 1 if the test succeeded
  */
-static int test_mvd( char *path, int *passed, int *failed )
+static int test_mvd_file( char *path, int *passed, int *failed )
 {
     MVD *mvd1 = mvdfile_load( path );
     if ( mvd1 != NULL )
@@ -442,7 +398,7 @@ static void test_mvd_dir( char *folder, int *passed, int *failed )
                 if ( path != NULL )
                 {
                     snprintf( path, plen, "%s/%s", folder, dp->d_name );
-                    res = test_mvd( path, passed, failed );
+                    res = test_mvd_file( path, passed, failed );
                     free( path );
                     if ( !res )
                         break;

@@ -4,6 +4,20 @@
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
+      <logicalFolder name="zip" displayName="zip" projectFiles="true">
+        <itemPath>include/zip/crc32.h</itemPath>
+        <itemPath>include/zip/deflate.h</itemPath>
+        <itemPath>include/zip/gzguts.h</itemPath>
+        <itemPath>include/zip/inffast.h</itemPath>
+        <itemPath>include/zip/inffixed.h</itemPath>
+        <itemPath>include/zip/inflate.h</itemPath>
+        <itemPath>include/zip/inftrees.h</itemPath>
+        <itemPath>include/zip/trees.h</itemPath>
+        <itemPath>include/zip/zconf.h</itemPath>
+        <itemPath>include/zip/zip.h</itemPath>
+        <itemPath>include/zip/zlib.h</itemPath>
+        <itemPath>include/zip/zutil.h</itemPath>
+      </logicalFolder>
       <itemPath>include/b64.h</itemPath>
       <itemPath>include/char_buf.h</itemPath>
       <itemPath>plugins/shared/include/dyn_string.h</itemPath>
@@ -15,7 +29,6 @@
       <itemPath>include/plugin.h</itemPath>
       <itemPath>include/plugin_list.h</itemPath>
       <itemPath>plugins/shared/include/plugin_log.h</itemPath>
-      <itemPath>include/zip/zip.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
@@ -63,6 +76,7 @@
   <sourceRootList>
     <Elem>mvd/src</Elem>
     <Elem>plugins/mvd_list</Elem>
+    <Elem>include/zip</Elem>
   </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
@@ -77,13 +91,13 @@
           <commandlineTool>gcc</commandlineTool>
           <incDir>
             <pElem>include</pElem>
-            <pElem>include/zip</pElem>
-            <pElem>/usr/local/include</pElem>
             <pElem>mvd/include</pElem>
             <pElem>plugins/shared/include</pElem>
+            <pElem>include/zip</pElem>
           </incDir>
           <preprocessorList>
             <Elem>MEMWATCH</Elem>
+            <Elem>MVD_TEST</Elem>
           </preprocessorList>
         </cTool>
         <linkerTool>
@@ -200,7 +214,29 @@
       </item>
       <item path="include/plugin_list.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="include/zip/crc32.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/zip/deflate.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/zip/gzguts.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/zip/inffast.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/zip/inffixed.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/zip/inflate.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/zip/inftrees.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/zip/trees.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/zip/zconf.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="include/zip/zip.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/zip/zlib.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/zip/zutil.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="plugins/shared/include/dyn_string.h"
             ex="false"
@@ -295,7 +331,29 @@
       </item>
       <item path="include/plugin_list.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="include/zip/crc32.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/zip/deflate.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/zip/gzguts.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/zip/inffast.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/zip/inffixed.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/zip/inflate.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/zip/inftrees.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/zip/trees.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/zip/zconf.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="include/zip/zip.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/zip/zlib.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/zip/zutil.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="plugins/shared/include/dyn_string.h"
             ex="false"

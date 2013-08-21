@@ -6,7 +6,7 @@
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
-static const char *table[] = {"EMPTY", "HELP", "LIST", "RUN", "VERSION" };
+static const char *table[] = {"ADD", "EMPTY", "HELP", "LIST", "RUN", "VERSION" };
 /**
  * Convert a string to uppercase
  * @param str
@@ -66,7 +66,8 @@ void test_operation( int *passed, int *failed )
     int op_passed = 0;
     int op_failed = 0;
     test_op( "EMPTY", EMPTY, &op_passed, &op_failed );
-    test_op( "ADD", HELP, &op_passed, &op_failed );
+    test_op( "ADD", ADD, &op_passed, &op_failed );
+    test_op( "HELP", HELP, &op_passed, &op_failed );
     test_op( "LIST", LIST, &op_passed, &op_failed );
     test_op( "RUN", RUN, &op_passed, &op_failed );
     test_op( "VERSION", VERSION, &op_passed, &op_failed );

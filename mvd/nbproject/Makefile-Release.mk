@@ -48,6 +48,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/src/mvd.o \
 	${OBJECTDIR}/src/pair.o \
 	${OBJECTDIR}/src/serialiser.o \
+	${OBJECTDIR}/src/test.o \
 	${OBJECTDIR}/src/utils.o \
 	${OBJECTDIR}/src/verify.o \
 	${OBJECTDIR}/src/version.o \
@@ -142,6 +143,11 @@ ${OBJECTDIR}/src/serialiser.o: src/serialiser.c
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/serialiser.o src/serialiser.c
+
+${OBJECTDIR}/src/test.o: src/test.c 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.c) -O2 -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/test.o src/test.c
 
 ${OBJECTDIR}/src/utils.o: src/utils.c 
 	${MKDIR} -p ${OBJECTDIR}/src

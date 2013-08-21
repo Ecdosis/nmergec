@@ -89,3 +89,25 @@ int version_datasize( version *v, int old, char *encoding )
         return nbytes+measure_to_encoding(slash_pos+1,u_strlen(slash_pos+1),
             encoding);
 }
+#ifdef MVD_TEST
+static UChar uid[] = {'B','a','s','e','/','F','1',0};
+static UChar udesc[] = {'A','b','o','u','t',' ','S','h','a','k','e','s','e','a','r','e',0};
+void test_version( int *passed, int *failed )
+{
+    version *v = version_create( uid, udesc );
+    if ( v != NULL )
+    {
+        UChar *desc = version_description(v);
+        UChar *id = version_id(v);
+        int dsize = version_datasize(v,0,"utf-8");
+        if ( u_strcmp(desc,udesc)!=0||u_strcmp(uid,id)!=0||dsize!=27 )
+        {
+            fprintf(stderr,"version: failed to create version\b");
+            (*failed)++;
+        }
+        else
+            (*passed)++;
+        version_dispose( v );
+    }
+}
+#endif

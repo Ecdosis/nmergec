@@ -12,7 +12,9 @@
 extern "C" {
 #endif
 
-typedef enum { EMPTY=0, HELP, LIST, RUN, VERSION } operation;
+typedef enum { ADD=0, EMPTY, HELP, LIST, RUN, VERSION } operation;
+void test_operation( int *passed, int *failed );
+operation operation_value( const char *value );
 
 
 #ifdef	__cplusplus

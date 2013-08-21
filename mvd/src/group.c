@@ -8,6 +8,9 @@
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
+#ifdef MVD_TEST
+static UChar test_name[] = {'b','a','n','a','n','a',0};
+#endif
 /** Stores group information for old-format MVDs */
 struct group_struct
 {
@@ -97,3 +100,27 @@ int group_datasize( group *g, char *encoding )
    }
    return g->size;
 }
+#ifdef MVD_TEST
+void test_group( int *passed, int *failed )
+{
+    group *g = group_create( 2, 1, test_name );
+    if ( g != NULL )
+    {
+        group_set_parent( g, 7 );
+        if ( group_parent(g)==7&&group_id(g)==2&&group_datasize(g,"utf-8")==10 )
+            (*passed)++;
+        else
+        {
+            fprintf(stderr, "group: id=%d parent=%d datasize=%d\n",
+                group_id(g),group_parent(g),group_datasize(g,"utf-8"));
+            (*failed)++;
+        }
+        group_dispose( g );
+    }
+    else
+    {
+        fprintf(stderr,"group: failed to allocate object\n");
+        (*failed)++;
+    }
+}
+#endif

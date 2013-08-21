@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "operation.h"
+#include <stdint.h>
 #include "mvdtool.h"
 #include "chunk_state.h"
 #include "bitset.h"
@@ -22,9 +23,10 @@
 #include "char_buf.h"
 #include "dyn_string.h"
 #include "hashmap.h"
-#include <stdint.h>
 #include "hsieh.h"
+#include "plugin.h"
 #include "zip.h"
+#include "plugin_list.h"
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
@@ -48,19 +50,17 @@ int main(int argc, char** argv)
     int passed=0;
     int failed=0;
     
-    report_test( "bitset", test_bitset, &passed, &failed );
-    report_test( "chunk_state", test_chunk_state,&passed,&failed);
-    report_test( "mvdtool", test_mvdtool,&passed,&failed);
-    report_test( "b64", test_b64,&passed,&failed);
+    // test nmerge main program
     report_test( "zip", test_zip,&passed,&failed);
+    report_test( "b64", test_b64,&passed,&failed);
+    report_test( "char_buf", test_char_buf,&passed,&failed);
+    report_test( "chunk_state", test_chunk_state,&passed,&failed);
     report_test( "dyn_string", test_dyn_string,&passed,&failed);
     report_test( "mvdfile", test_mvdfile,&passed,&failed);
-    report_test( "char_buf", test_char_buf,&passed,&failed);
-    report_test( "dyn_array", test_dyn_array,&passed,&failed);
-    report_test( "dyn_string", test_dyn_string,&passed,&failed);
-    report_test( "hashmap", test_hashmap,&passed,&failed );
-    report_test( "hsieh", test_hsieh,&passed,&failed );
-    report_test( "link_node", test_link_node,&passed,&failed );
+    report_test( "mvdtool", test_mvdtool,&passed,&failed);
+    report_test( "operation", test_operation,&passed,&failed);
+    report_test( "plugin", test_plugin,&passed,&failed);
+    report_test( "plugin_list", test_plugin_list,&passed,&failed);
     
     fprintf( stdout, "total passed %d failed %d tests\n",total_passed,
         total_failed);

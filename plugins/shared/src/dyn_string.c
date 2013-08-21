@@ -128,6 +128,7 @@ UChar *dyn_string_data( dyn_string *ds )
 {
     return ds->data;
 }
+#ifdef MVD_TEST
 /**
  * Test the dyn_string object
  * @param passed VAR param update number of passed tests
@@ -166,3 +167,4 @@ void test_dyn_string( int *passed, int *failed )
     else
         *failed += 1;
 }
+#endif

@@ -17,6 +17,7 @@
             <sourceRootList>
                 <sourceRootElem>mvd/src</sourceRootElem>
                 <sourceRootElem>plugins/mvd_list</sourceRootElem>
+                <sourceRootElem>include/zip</sourceRootElem>
             </sourceRootList>
             <confList>
                 <confElem>

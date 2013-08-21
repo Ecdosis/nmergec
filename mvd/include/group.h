@@ -18,7 +18,9 @@ void group_set_parent( group *g, int parent );
 int group_id( group *g );
 int group_parent( group *g );
 int group_datasize( group *g, char *encoding );
-
+#ifdef MVD_TEST
+void test_group( int *passed, int *failed );
+#endif
 #ifdef	__cplusplus
 }
 #endif
