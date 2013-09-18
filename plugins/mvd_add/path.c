@@ -20,8 +20,12 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <unicode/uchar.h>
 #include "plugin_log.h"
 #include "path.h"
+#include "encoding.h"
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
@@ -66,9 +70,9 @@ void path_prepend( path *p, int len )
  * @param str the string it refers to
  * @return the first char
  */
-char path_first( path *p, char *str )
+UChar path_first( path *p, UChar *ustr )
 {
-    return str[p->start];
+    return ustr[p->start];
 }
 /**
  * Dispose of a path cleanly
@@ -96,4 +100,65 @@ int path_len( path *p )
 {
     return p->len;
 }
-
+#ifdef MVD_TEST
+static char *cstr = "Lorem ipsum dolor sit amet, consectetur";
+static char buffer[SCRATCH_LEN];
+void path_test( int *passed, int *failed )
+{
+    plugin_log *log = plugin_log_create( buffer );
+    if ( log != NULL )
+    {
+        path *p = path_create( 23, 5, log );
+        if ( path_len(p)==5 )
+            (*passed)++;
+        else
+        {
+            fprintf(stderr,"path: incorrect length\n");
+            (*failed)++;
+        }
+        path_prepend(p,11);
+        if ( path_start(p)==12 )
+            (*passed)++;
+        else
+        {
+            fprintf(stderr,"path: prepend failed\n");
+            (*failed)++;
+        }
+        if ( path_len(p)!=35 )
+            (*passed)++;
+        else
+        {
+            fprintf(stderr,"path: path length wrong\n");
+            (*failed)++;
+        }
+        int clen = strlen(cstr);
+        int ulen = measure_from_encoding( cstr, clen, "utf-8" );
+        if ( ulen > 0 )
+        {
+            UChar *dst = calloc( ulen+1, sizeof(UChar) );
+            if ( dst != NULL )
+            {
+                int res = convert_from_encoding( cstr, clen, dst, 
+                    ulen+1, "utf-8" );
+                if ( res )
+                {
+                    UChar uc = path_first(p,dst);
+                    if ( uc != (UChar)'d' )
+                    {
+                        (*failed)++;
+                        fprintf(stderr,"path: failed to index into string\n");
+                    }
+                    else
+                        (*passed)++;
+                }
+                free( dst );
+            }
+        }
+        plugin_log_dispose( log );
+    }
+    else
+    {
+        (*failed)++;
+    }
+}
+#endif

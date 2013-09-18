@@ -25,6 +25,8 @@
 #include <ctype.h>
 #include <limits.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <dirent.h>
 #include "bitset.h"
 #include "link_node.h"
 #include "unicode/uchar.h"
@@ -470,7 +472,87 @@ char *description()
  * @param f VAR param update number of failed tests
  * @return 1 if all tests passed else 0
  */
-int test( int *p, int *f )
+#ifdef MVD_TEST
+static char *folder;
+static char output[SCRATCH_LEN];
+
+static char *create_path( char *dir, char *file )
 {
-    return 1;
+    int len1 = strlen( dir );
+    int len2 = strlen( file );
+    char *path = malloc( len1+len2+2 );
+    if ( path != NULL )
+    {
+        strcpy( path, dir );
+        strcat( path, "/" );
+        strcat( path, file );
+    }
+    return path;
 }
+/**
+ * Read a directory
+ * @return number of files found or 0 on failure
+ */
+static int read_dir( char *folder )
+{
+    int n_files = 0;
+    DIR *dir;
+    int res = 1;
+    struct dirent *ent;
+    UChar desc[6];
+    MVD *mvd=mvd_create(1);
+    mvd_set_encoding(mvd, "utf-8");
+    ascii_to_uchar( "test", desc, 6 );
+    mvd_set_description( mvd, desc);
+    if ((dir = opendir(folder)) != NULL) 
+    {
+        while ((ent = readdir(dir)) != NULL && res) 
+        {
+            int flen;
+            if ( strcmp(ent->d_name,".")!=0&&strcmp(ent->d_name,"..")!=0 )
+            {
+                char *path = create_path(folder,ent->d_name);
+                if ( path != NULL )
+                {
+                    char *txt = read_file( path, &flen );
+                    if ( txt == NULL )
+                        break;
+                    else
+                    {
+                        char options[128];
+                        options[0] = 0;
+                        strcat( options, "vid=" );
+                        strcat( options, ent->d_name );
+                        strcat( options, " encoding=utf-8" );
+                        strcat( options, " description=test" );
+                        res = process( &mvd, options, output, txt, flen );
+                        n_files++;
+                        printf("%s",(char*)output);
+                        free( txt );
+                    }
+                    free( path );
+                }
+            }
+        }
+        closedir( dir );
+    }
+    else
+        fprintf(stderr,"test: failed to open directory %s\n",folder);
+    write_mvd( mvd, "test.mvd" );
+    return n_files;
+}
+// arguments: folder of text files
+void test_mvd_add( int *passed, int *failed )
+{
+    int res = read_dir( "tests" );
+    if ( res )
+    {
+        (*passed)++;
+    }
+    else
+    {
+        (*failed)++;
+        fprintf(stderr,"mvd_add: failed to load test directory\n");
+    }
+}
+#endif

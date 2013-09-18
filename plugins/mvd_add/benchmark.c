@@ -28,7 +28,7 @@
 #include "memwatch.h"
 #endif
 /**
- * Get the current memory usage of this process
+ * Get the current memory usage of this process (unreliable)
  * @return the fixed memory in use by this process
  */
 long get_mem_usage()

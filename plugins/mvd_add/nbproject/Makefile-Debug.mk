@@ -65,7 +65,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=-licuuc -lmvd
+LDLIBSOPTIONS=-licuuc -lmvd -lm
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}

@@ -28,17 +28,29 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <limits.h>
 #include <string.h>
 #include "unicode/uchar.h"
 #include "plugin_log.h"
 #include "node.h"
-#include "print_tree.h"
 #include "path.h"
 #include "node.h"
 #include "pos.h"
 #include "suffixtree.h"
+#ifdef MVD_TEST
+#include <dirent.h>
+#include <errno.h>
+#include "plugin_log.h"
+#include "version.h"
+#include "bitset.h"
+#include "link_node.h"
+#include "pair.h"
+#include "dyn_array.h"
+#include "mvd.h"
+#include "plugin.h"
+#include "hashmap.h"
+#include "utils.h"
+#endif
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
@@ -405,3 +417,165 @@ UChar *suffixtree_text( suffixtree *st )
 {
     return st->str;
 }
+#ifdef MVD_TEST
+static char *folder;
+typedef struct entry_struct entry;
+static char buffer[SCRATCH_LEN];
+struct entry_struct
+{
+    char *file;
+    int size;
+    long time;
+    long space;
+    entry *next;
+};
+static entry *entries=NULL;
+static void append_entry( entry *e )
+{
+    if (entries == NULL )
+        entries = e;
+    else
+    {
+        entry *f = entries;
+        while ( f->next != NULL )
+            f = f->next;
+        f->next = e;
+    }
+}
+static void dispose_entries()
+{
+    entry *e = entries;
+    while ( e != NULL )
+    {
+        entry *next = e->next;
+        free( e->file );
+        free( e );
+        e = next;
+    }
+}
+static char *create_path( char *dir, char *file )
+{
+    int len1 = strlen( dir );
+    int len2 = strlen( file );
+    char *path = malloc( len1+len2+2 );
+    if ( path != NULL )
+    {
+        strcpy( path, dir );
+        strcat( path, "/" );
+        strcat( path, file );
+    }
+    return path;
+}
+/**
+ * Read a directory, saving the file information in entries
+ * @param folder the folder where the files are
+ * @param passed VAR param number of passed tests
+ * @param failed VAR param number of failed tests
+ * @return number of files found or 0 on failure
+ */
+static int read_dir( char *folder, int *passed, int *failed, plugin_log *log )
+{
+    int n_files = 0;
+    DIR *dir;
+    struct dirent *ent;
+    if ((dir = opendir(folder)) != NULL) 
+    {
+        while ((ent = readdir(dir)) != NULL) 
+        {
+            int flen;
+            int old_passed = *passed;
+            if ( strcmp(ent->d_name,".")!=0&&strcmp(ent->d_name,"..")!=0 )
+            {
+                char *path = create_path(folder,ent->d_name);
+                //printf("building tree for %s\n",ent->d_name);
+                char *txt = read_file( path, &flen );
+                if ( txt == NULL )
+                    break;
+                else
+                {
+                    int tlen = strlen(txt);
+                    long mem2,mem1 = get_mem_usage();
+                    int64_t time2,time1 = epoch_time();
+                    int ulen = measure_from_encoding( txt, flen, "utf-8" );
+                    if ( ulen > 0 )
+                    {
+                        UChar *dst = calloc( ulen+1, sizeof(UChar) );
+                        if ( dst != NULL )
+                        {
+                            int res = convert_from_encoding( txt, flen, dst, 
+                                ulen+1, "utf-8" );
+                            if ( res )
+                            {
+                                suffixtree *tree = suffixtree_create( dst, 
+                                    ulen, log );
+                                if ( tree != NULL )
+                                {
+                                    mem2 = get_mem_usage();
+                                    time2 = epoch_time();
+                                    entry *e = calloc( 1, sizeof(entry) );
+                                    if ( e != NULL )
+                                    {
+                                        e->file = strdup(ent->d_name);
+                                        e->space = mem2-mem1;
+                                        e->time = time2-time1;
+                                        e->size = flen;
+                                        append_entry( e );
+                                        (*passed)++;
+                                        n_files++;
+                                    }
+                                    else
+                                    {
+                                        n_files = 0;
+                                        dispose_entries();
+                                        fprintf(stderr,
+                                            "test: failed to allocate entry\n");
+                                        break;
+                                    }
+                                    suffixtree_dispose( tree );
+                                }
+                            }
+                            free(dst);
+                        }
+                    }
+                    free( txt );
+                }
+                if ( *passed == old_passed )
+                {
+                    (*failed)++;
+                    fprintf(stderr,"suffixtree: failed to create tree %s\n",path);
+                }
+                if ( path != NULL )
+                    free( path );
+            }
+        }
+        closedir( dir );
+    }
+    else
+        fprintf(stderr,"test: failed to open directory %s\n",folder);
+    return n_files;
+}
+// arguments: folder of text files
+void suffixtree_test( int *passed, int *failed )
+{
+    plugin_log *log = plugin_log_create( buffer );
+    if ( log != NULL )
+    {
+        int res = read_dir( "tests", passed, failed, log );
+        if ( res > 0 )
+        {
+            entry *e = entries;
+            while ( e != NULL )
+            {
+                //printf("%s\t%d\t%ld\t%ld\n",e->file,e->size,e->time,e->space);
+                e = e->next;
+            }
+            dispose_entries();
+        }
+    }
+    else
+    {
+        fprintf(stderr,"suffixtree: failed to initialise log\n");
+        (*failed)++;
+    }
+}
+#endif

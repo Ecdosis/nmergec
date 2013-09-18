@@ -33,8 +33,9 @@ void path_prepend( path *p, int len );
 void path_dispose( path *p );
 int path_start( path *p );
 int path_len( path *p );
-char path_first( path *p, char *str );
+UChar path_first( path *p, UChar *str );
 path *path_next( path *p );
+void path_test( int *passed, int *failed );
 
 
 

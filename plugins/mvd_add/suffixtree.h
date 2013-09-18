@@ -19,7 +19,9 @@ void suffixtree_dispose( suffixtree *st );
 int suffixtree_advance_pos( suffixtree *st, pos *p, UChar c );
 node *suffixtree_root( suffixtree *st );
 UChar *suffixtree_text( suffixtree *st );
-
+#ifdef MVD_TEST
+void suffixtree_test( int *passed, int *failed );
+#endif
 #ifdef	__cplusplus
 }
 #endif

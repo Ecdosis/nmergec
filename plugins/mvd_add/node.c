@@ -22,8 +22,10 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <stdio.h>
+#include <string.h>
 #include "plugin_log.h"
 #include "unicode/uchar.h"
+#include "encoding.h"
 #include "node.h"
 #include "hashtable.h"
 #ifdef MEMWATCH
@@ -484,3 +486,125 @@ void node_print_children( UChar *str, node *v, plugin_log *log )
     node_iterator_dispose( iter );
     printf("\n");
 }
+#ifdef MVD_TEST
+static char buffer[SCRATCH_LEN];
+static UChar ustr[42];
+static char *cstr = "Lorem ipsum dolor sit amet, consectetur";
+/**
+ * Test a node
+ * @param passed VAR param number of passed tests
+ * @param failed number of failed tests
+ */
+void node_test( int *passed, int *failed )
+{
+    int res = convert_from_encoding( cstr, strlen(cstr), ustr, 42, "utf-8" );
+    if ( !res )
+    {
+        (*failed)++;
+        fprintf(stderr,"node: failed to encode utf16 string. "
+            "skipping other tests...\n");
+        return;
+    }
+    plugin_log *log = plugin_log_create( buffer );
+    if ( log != NULL )
+    {
+        node *n = node_create( 0, 20, log );
+        if ( n != NULL )
+        {
+            if ( n->start == 0 && n->len == 20 )
+                (*passed)++;
+            else
+            {
+                fprintf(stderr,"node: failed to initialise node\n");
+                (*failed)++;
+            }
+            node_dispose( n );
+        }
+        else
+            (*failed)++;
+        n = node_create_leaf( 27, log );
+        if ( n != NULL )
+        {
+            if ( n->start == 27 && n->len == INFINITY )
+                (*passed)++;
+            else
+            {
+                fprintf(stderr,"node: failed to initialise leaf\n");
+                (*failed)++;
+            }
+            node_dispose( n );
+        }
+        else
+            (*failed)++;
+        // test multiple children forcing hashtable representation
+        n = node_create( 0, 20, log );
+        if ( n != NULL )
+        {
+            int i;
+            srand((unsigned)time(NULL));
+            for ( i=0;i<MAX_LIST_CHILDREN;i++ )
+            {
+                node *o = node_create(rand()%20,rand()%20,log);
+                node_add_child( n, o, ustr, log );
+            }
+            if ( plugin_log_pos(log)!= 0 )
+            {
+                fprintf(stderr,"node: failed to add %d children\n",
+                    MAX_LIST_CHILDREN);
+                (*failed)++;
+            }
+            else
+                (*passed)++;
+            if ( !PARENT_HASH(n) )
+            {
+                fprintf(stderr,"node: failed to convert node to hash\n");
+                (*failed)++;
+            }
+            else
+                (*passed)++;
+            // test iterator
+            node_iterator *iter = node_children( n, log );
+            if ( iter != NULL )
+            {
+                while ( node_iterator_has_next(iter) )
+                {
+                    node *o = node_iterator_next(iter);
+                    if ( o != NULL )
+                    {
+                        UChar uc1 = node_first_char( o, ustr );
+                        node *p = node_find_child( n, ustr, uc1 );
+                        UChar uc2 = node_first_char( p, ustr );
+                        if ( uc2 != uc1 )
+                        {
+                            (*failed)++;
+                            fprintf(stderr,
+                                "node: failed to find node for char %c\n",
+                                (char)uc1);
+                            break;
+                        }
+                        node_set_link( n, o );
+                        node *link = node_link(n);
+                        if ( link != o )
+                        {
+                            (*failed)++;
+                            fprintf(stderr, "node: failed to set link\n");
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        (*failed)++;
+                        fprintf(stderr,"node: iterator failed\n");
+                        break;
+                    }
+                }
+                if ( !node_iterator_has_next(iter) )
+                    (*passed)+=2;
+                node_iterator_dispose( iter );
+            }
+            node_dispose( n );
+        }
+        plugin_log_dispose( log );
+    }
+}
+#endif

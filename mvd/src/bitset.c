@@ -380,8 +380,9 @@ void bitset_clear_bit( bitset *bs, int i )
 {
     int index = i/8;
     int mod = i%8;
-    unsigned char bit = 1;
-    bs->data[index] |= bit<<mod;
+    unsigned char bit = 1<<mod;
+    unsigned char mask = bit^(unsigned char)0xff;
+    bs->data[index] &= mask;
 }
 #ifdef MVD_TEST
 /**
@@ -498,6 +499,35 @@ void test_bitset( int *passed, int *failed )
             *failed += 1;
             
         }
+        bitset *bs1 = bitset_create();
+        bitset *bs2 = bitset_create();
+        if ( bs1 != NULL && bs2 != NULL )
+        {
+            bitset_set( bs1, 3 );
+            bitset_set( bs1, 27 );
+            bitset_set(bs2,7);
+            bitset_set(bs2,13);
+            bitset_set(bs2,21);
+            if ( bitset_intersects(bs1,bs2) )
+            {
+                fprintf(stderr,"bitset: bitset_intersects 1 failed\n");
+                (*failed)++;
+            }
+            else
+                (*passed)++;
+            bitset_set(bs2,27);
+            if ( !bitset_intersects(bs1,bs2) )
+            {
+                fprintf(stderr,"bitset: bitset_intersects 2 failed\n");
+                (*failed)++;
+            }
+            else
+                (*passed)++;
+        }
+        if ( bs1 != NULL )
+            bitset_dispose( bs1 );
+        if ( bs2 != NULL )
+            bitset_dispose( bs2 );
         // if this fails memwatch will pick it up
         bitset_dispose( other );
         bitset_clear( bs );
@@ -509,6 +539,19 @@ void test_bitset( int *passed, int *failed )
         bit_test( bs, 13, 23, passed, failed );
         bit_test( bs, 24, -1, passed, failed );
         bitset_dispose( bs );
+        // bitset_clear_bit
+        bitset *bsx = bitset_create();
+        bitset_set(bsx,0);
+        bitset_set(bsx,27);
+        bitset_clear_bit(bsx,0);
+        bitset_clear_bit(bsx,27);
+        if ( !bitset_empty(bsx) )
+        {
+            fprintf(stderr,"bitset: clear_bit failed\n");
+            (*failed)++;
+        }
+        else
+            (*passed)++;
     }
 }
 /*

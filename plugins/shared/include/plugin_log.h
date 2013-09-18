@@ -20,6 +20,7 @@ void plugin_log_add( plugin_log *log, char *fmt, ... );
 void plugin_log_clear( plugin_log *log );
 char *plugin_log_buffer( plugin_log *log );
 int plugin_log_pos( plugin_log *log );
+void plugin_log_test( int *passed, int *failed );
 
 
 #ifdef	__cplusplus

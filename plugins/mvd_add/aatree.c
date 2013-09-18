@@ -423,6 +423,16 @@ static int compare( int *a, int *b )
 		return 0;
 }
 /**
+ * Is this tree empty?
+ * @param t the tree in question
+ * @return 1 if it si else 0
+ */
+int aatree_empty( aatree *t )
+{
+    return t->size==0;
+}
+#ifdef MVD_TEST
+/**
  * Test an aatree
  * @param passed VAR param number of passed tests
  * @param failed number of failed tests
@@ -443,7 +453,7 @@ void aatree_test( int *passed, int *failed )
     if ( aatree_verify(t,t->root) )
     {
         *passed += 1;
-        printf("aatree: tree was OK. size=%d\n",t->size);
+        //printf("aatree: tree was OK. size=%d\n",t->size);
     }
     else
     {
@@ -460,12 +470,4 @@ void aatree_test( int *passed, int *failed )
     else
         *passed += 1;
 }
-/**
- * Is this tree empty?
- * @param t the tree in question
- * @return 1 if it si else 0
- */
-int aatree_empty( aatree *t )
-{
-    return t->size==0;
-}
+#endif

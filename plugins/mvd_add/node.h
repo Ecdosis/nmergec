@@ -55,6 +55,7 @@ int node_end( node *v, int max );
 void node_print_children( UChar *str, node *v, plugin_log *log );
 node *node_find_child( node *v, UChar *str, UChar c );
 UChar node_first_char( node *v, UChar *str );
+void node_test( int *passed, int *failed );
 
 #ifdef	__cplusplus
 }

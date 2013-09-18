@@ -108,3 +108,58 @@ char *plugin_log_buffer( plugin_log *log )
 {
     return log->scratch;
 }
+#ifdef MVD_TEST
+#include <math.h>
+static char buf[SCRATCH_LEN];
+void plugin_log_test( int *passed, int *failed )
+{
+    const char *lorem_ipsum = "At vero eos et accusamus et iusto odio "
+    "dignissimos ducimus qui blanditiis praesentium voluptatum deleniti "
+    "atque corrupti quos dolores et quas molestias excepturi sint occaecati "
+    "cupiditate non provident, similique sunt in culpa qui officia deserunt "
+    "mollitia animi, id est laborum et dolorum fuga. Et harum quidem rerum "
+    "facilis est et expedita distinctio. Nam libero tempore, cum soluta nobis "
+    "est eligendi optio cumque nihil impedit quo minus id quod maxime placeat"
+    " facere possimus, omnis voluptas assumenda est, omnis dolor repellendus."
+    " Temporibus autem quibusdam et aut officiis debitis aut rerum "
+    "necessitatibus saepe eveniet ut et voluptates repudiandae sint et "
+    "molestiae non recusandae. Itaque earum rerum hic tenetur a sapiente "
+    "delectus, ut aut reiciendis voluptatibus maiores alias consequatur "
+    "aut perferendis doloribus asperiores repellat.";
+    plugin_log *log = plugin_log_create( buf );
+    if ( log != NULL )
+    {
+        int n = 42;
+        char *fmt1 = "The answer is %d\n";
+        char *fmt2 = "Its name was %s\n";
+        char *name = "fred";
+        plugin_log_add( log, fmt1, n );
+        plugin_log_add( log, fmt2, name );
+        if ( plugin_log_pos(log) !=
+            strlen(fmt1)
+            +strlen(fmt2)
+            +strlen(name)
+            +(int)log10(n)-3 )
+        {
+            fprintf(stderr,"plugin_log: failed to copy data\n");
+            (*failed)++;
+        }
+        else
+            (*passed)++;
+        int old_pos = plugin_log_pos(log);
+        plugin_log_add( log, "%s", lorem_ipsum );
+        if ( plugin_log_pos(log) != old_pos+127 )
+        {
+            fprintf(stderr,"plugin_log: failed to copy longer data\n");
+            (*failed)++;
+        }
+        else
+            (*passed);
+        plugin_log_dispose( log );
+        // managed to allocate
+        (*passed)++;
+    }
+    else
+        (*failed)++;
+}
+#endif

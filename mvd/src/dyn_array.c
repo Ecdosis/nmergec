@@ -157,7 +157,7 @@ void test_dyn_array( int *passed, int *failed )
                 res = dyn_array_add( da, "pineapple" );
                 if ( !res )
                 {
-                    fprintf(stderr,"dyn_array: failed teo reallocate array\n");
+                    fprintf(stderr,"dyn_array: failed to reallocate array\n");
                     *failed += 1;
                 }
                 else

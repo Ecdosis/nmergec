@@ -400,14 +400,14 @@ static void pair_print( pair *p )
 /**
  * Split a pair into two before the given offset. Free the original pair.
  * @param p VAR param the pair to split, becomes leading pair
- * @param at offset into p's data AFTER which to split it
+ * @param at offset into p's data BEFORE which to split it
  * @return the new trailing pair or NULL on failure
  */
 pair *pair_split( pair **p, int at )
 {
-    pair *first = pair_create_basic( (*p)->versions, (*p)->data, at+1 );
-    pair *second = pair_create_basic( (*p)->versions, &(*p)->data[at+1], 
-        (*p)->len-(at+1) );
+    pair *first = pair_create_basic( (*p)->versions, (*p)->data, at );
+    pair *second = pair_create_basic( (*p)->versions, &(*p)->data[at], 
+        (*p)->len-at );
     if ( first != NULL && second != NULL )
         *p = first;
     else
@@ -418,8 +418,6 @@ pair *pair_split( pair **p, int at )
             pair_dispose( second );
         second = NULL;
     }
-//    pair_print(first);
-//    pair_print(second);
     return second;
 }
 #ifdef MVD_TEST
@@ -640,5 +638,6 @@ void test_pair( int *passed, int *failed )
     test_pair_hint( passed, failed );
     test_pair_versions( passed, failed );
     test_pair_id( passed, failed );
+    test_pair_split( passed, failed );
 }
 #endif

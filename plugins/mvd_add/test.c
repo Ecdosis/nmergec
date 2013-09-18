@@ -18,10 +18,10 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */#ifdef MVD_ADD_TEST
+ */
+#ifdef MVD_TEST
 #include <stdio.h>
 #include <stdlib.h>
-#include <dirent.h>
 #include <limits.h>
 #include <errno.h>
 #include <string.h>
@@ -38,12 +38,17 @@
 #include "mvd.h"
 #include "plugin.h"
 #include "hashmap.h"
+#include "hashtable.h"
 #include "utils.h"
+#include "aatree.h"
+#include "path.h"
+#include "linkpair.h"
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
-static char *folder;
-static char output[SCRATCH_LEN];
+static int total_passed = 0;
+static int total_failed = 0;
+
                     
 /**
  * Get the length of an open file
@@ -79,55 +84,6 @@ static int file_length( FILE *fp )
     }
 	return length;
 }
-/**
- * Read a file
- * @param file the path to the file
- * @param flen update with the length of the file
- * @return NULL on failure else the allocated text content
- */
-static char *read_file( char *file, int *flen )
-{
-    char *data = NULL;
-    FILE *fp = fopen( file, "r" );
-    if ( fp != NULL )
-    {
-        int len = file_length( fp );
-        data = malloc( len+1 );
-        if ( data != NULL )
-        {
-            int read = fread( data, 1, len, fp );
-            if ( read != len )
-            {
-                fprintf(stderr,"mvd_add: failed to read %s\n",file);
-                free( data );
-                data = NULL;
-                *flen = 0;
-            }
-            else
-            {
-                data[len] = 0;
-                *flen = len;
-            }
-        }
-        else
-            fprintf(stderr,"mvd_add: failed to allocate file buffer\n");
-        fclose( fp );
-    }
-    return data;
-}
-static char *create_path( char *dir, char *file )
-{
-    int len1 = strlen( dir );
-    int len2 = strlen( file );
-    char *path = malloc( len1+len2+2 );
-    if ( path != NULL )
-    {
-        strcpy( path, dir );
-        strcat( path, "/" );
-        strcat( path, file );
-    }
-    return path;
-}
 int write_mvd( MVD *mvd, char *file )
 {
     int res = 0;
@@ -150,66 +106,28 @@ int write_mvd( MVD *mvd, char *file )
     }
     return res;
 }
-/**
- * Read a directory
- * @return number of files found or 0 on failure
- */
-static int read_dir( char *folder )
+typedef void (*test_function)(int *p,int *f);
+static void report_test( const char *name, test_function tf, int *p, int *f )
 {
-    int n_files = 0;
-    DIR *dir;
-    int res = 1;
-    struct dirent *ent;
-    UChar desc[6];
-    MVD *mvd=mvd_create();
-    mvd_set_encoding(mvd, "utf-8");
-    ascii_to_uchar( "test", desc, 6 );
-    mvd_set_description( mvd, desc);
-    if ((dir = opendir(folder)) != NULL) 
-    {
-        while ((ent = readdir(dir)) != NULL && res) 
-        {
-            int flen;
-            if ( strcmp(ent->d_name,".")!=0&&strcmp(ent->d_name,"..")!=0 )
-            {
-                char *path = create_path(folder,ent->d_name);
-                if ( path != NULL )
-                {
-                    char *txt = read_file( path, &flen );
-                    if ( txt == NULL )
-                        break;
-                    else
-                    {
-                        char options[128];
-                        options[0] = 0;
-                        strcat( options, "vid=" );
-                        strcat( options, ent->d_name );
-                        strcat( options, " encoding=utf-8" );
-                        strcat( options, " description=test" );
-                        res = process( &mvd, options, output, txt, flen );
-                        n_files++;
-                        printf("%s",(char*)output);
-                        free( txt );
-                    }
-                    free( path );
-                }
-            }
-        }
-        closedir( dir );
-    }
-    else
-        fprintf(stderr,"test: failed to open directory %s\n",folder);
-    write_mvd( mvd, "test.mvd" );
-    return n_files;
+    (tf)(p,f);
+    fprintf(stderr,"%s: passed %d failed %d tests\n",name,*p,*f );
+    total_passed += *p;
+    total_failed += *f;
+    *p = *f = 0;
 }
-// arguments: folder of text files
 int main( int argc, char **argv )
 {
-    if ( argc == 2 )
-    {
-        int res = read_dir( argv[1] );
-    }
-    else
-        printf("mvd_add: usage ./mvd_add <dir>\n");
+    int passed=0;
+    int failed=0;
+    report_test( "aatree", aatree_test,&passed,&failed);
+    report_test( "node", node_test,&passed,&failed);
+    report_test( "hashtable", hashtable_test,&passed,&failed);
+    report_test( "suffixtree", suffixtree_test,&passed,&failed);
+    report_test( "plugin_log", plugin_log_test,&passed,&failed);
+    report_test( "path", path_test,&passed,&failed);
+    report_test( "linkpair", linkpair_test,&passed,&failed);
+    
+    fprintf( stdout, "total passed %d failed %d tests\n",total_passed,
+        total_failed);
 }
 #endif

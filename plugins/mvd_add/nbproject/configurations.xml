@@ -75,6 +75,7 @@
           <linkerLibItems>
             <linkerLibLibItem>icuuc</linkerLibLibItem>
             <linkerLibLibItem>mvd</linkerLibLibItem>
+            <linkerLibStdlibItem>Mathematics</linkerLibStdlibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>
@@ -159,6 +160,92 @@
         <asmTool>
           <developmentMode>5</developmentMode>
         </asmTool>
+      </compileType>
+      <item path="../../include/plugin.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../../mvd/include/utils.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../shared/include/option_keys.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../shared/include/plugin_log.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../shared/src/plugin_log.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="aatree.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="aatree.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="alignment.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="alignment.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="benchmark.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="benchmark.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="hashtable.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="hashtable.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="linkpair.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="linkpair.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="match.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="match.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="match_state.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="match_state.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="matcher.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="matcher.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="mvd_add.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="node.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="path.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="path.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="pos.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="state.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="suffixtree.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="suffixtree.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="test.c" ex="false" tool="0" flavor2="0">
+      </item>
+    </conf>
+    <conf name="Test" type="1">
+      <toolsSet>
+        <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
+        <compilerSet>default</compilerSet>
+      </toolsSet>
+      <compileType>
+        <cTool>
+          <incDir>
+            <pElem>../shared/include</pElem>
+            <pElem>../../mvd/include</pElem>
+            <pElem>../../include</pElem>
+          </incDir>
+          <preprocessorList>
+            <Elem>MVD_TEST</Elem>
+          </preprocessorList>
+        </cTool>
+        <linkerTool>
+          <linkerLibItems>
+            <linkerLibLibItem>icuuc</linkerLibLibItem>
+            <linkerLibLibItem>mvd</linkerLibLibItem>
+          </linkerLibItems>
+        </linkerTool>
       </compileType>
       <item path="../../include/plugin.h" ex="false" tool="3" flavor2="0">
       </item>

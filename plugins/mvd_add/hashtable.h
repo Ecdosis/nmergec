@@ -20,6 +20,7 @@ int hashtable_replace( hashtable *ht, UChar *str, node *v, node *u );
 node *hashtable_get( hashtable *ht, UChar c );
 int hashtable_size( hashtable *ht );
 void hashtable_to_array( hashtable *ht, node **nodes );
+void hashtable_test( int *passed, int *failed );
 
 #ifdef	__cplusplus
 }

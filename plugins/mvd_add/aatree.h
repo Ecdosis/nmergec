@@ -12,6 +12,8 @@ void *aatree_min( aatree *t );
 void *aatree_add( aatree *t, void *item );
 int aatree_delete( aatree *t, void *item );
 int aatree_empty( aatree*t );
+#ifdef MVD_TEST
 void aatree_test( int *passed, int *failed );
+#endif
 #endif 
 

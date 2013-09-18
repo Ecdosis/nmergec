@@ -24,6 +24,7 @@
 #include <string.h>
 #include "plugin_log.h"
 #include "unicode/uchar.h"
+#include "unicode/ustring.h"
 #include "node.h"
 #include "hashtable.h"
 
@@ -43,7 +44,7 @@ struct hashtable_struct
     int nitems;
 };
 /**
- * Create a hashtable by conversion from a list of child-nodes
+ * Create a hashtable by conversion from a list of suffixtree child-nodes
  * @param children add these nodes to the hashtable for starters
  * @param str the text we represent
  * @param log the log to report errors to
@@ -287,26 +288,48 @@ int hashtable_size( hashtable *ht )
 {
     return ht->nitems;
 }
-#ifdef HASHTABLE_TEST
-extern UChar *str;
-int main( int argc, char **argv )
+#ifdef MVD_TEST
+static UChar ustr[42];
+static char buffer[SCRATCH_LEN];
+static char *cstr = "Lorem ipsum dolor sit amet, consectetur";
+
+void hashtable_test( int *passed, int *failed )
 {
-    node *root = node_create(0,0);
-    int i,slen = strlen(str)-1;
-    for ( i=0;i<slen;i++ )
+    int res = convert_from_encoding( cstr, strlen(cstr), ustr, 42, "utf-8" );
+    if ( !res )
     {
-        node *v = node_create(i,1);
-        if ( find_child(root,str[i])==NULL )
-            node_add_child( root, v );
+        (*failed)++;
+        fprintf(stderr,"hashtable: failed to encode utf16 string. "
+            "skipping other tests...\n");
+        return;
+    }
+    plugin_log *log = plugin_log_create( buffer );
+    if ( log != NULL )
+    {    
+        node *root = node_create(0,0,log);
+        int i,slen = u_strlen(ustr)-1;
+        for ( i=0;i<slen;i++ )
+        {
+            node *v = node_create(i,1,log);
+            if ( node_find_child(root,ustr,ustr[i])==NULL )
+                node_add_child( root, v, ustr, log);
+            else
+                node_dispose( v );
+        }
+        for ( i=0;i<slen;i++ )
+        {
+            node *v = node_find_child(root,ustr,ustr[i]);
+            if ( v == NULL )
+                break;
+        }
+        if ( i< slen )
+        {
+            fprintf(stderr,"hashtable: couldn't find %c\n",cstr[i]);
+            (*failed)++;
+        }
         else
-            node_dispose( v );
+            (*passed)++;
+        node_dispose( root );
     }
-    for ( i=0;i<slen;i++ )
-    {
-        node *v = find_child(root,str[i]);
-        if ( v == NULL )
-            printf("couldn't find %c\n",str[i]);
-    }
-    node_dispose( root );
 }
 #endif

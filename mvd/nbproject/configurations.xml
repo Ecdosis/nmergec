@@ -62,7 +62,7 @@
   </logicalFolder>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
-    <conf name="Debug" type="2">
+    <conf name="Debug" type="1">
       <toolsSet>
         <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
         <compilerSet>default</compilerSet>
@@ -74,6 +74,9 @@
             <pElem>/usr/local/include</pElem>
             <pElem>../plugins/shared/include</pElem>
           </incDir>
+          <preprocessorList>
+            <Elem>MVD_TEST</Elem>
+          </preprocessorList>
         </cTool>
         <linkerTool>
           <linkerLibItems>
