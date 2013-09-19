@@ -43,6 +43,7 @@
 #include "aatree.h"
 #include "path.h"
 #include "linkpair.h"
+#include "orphanage.h"
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
@@ -126,6 +127,7 @@ int main( int argc, char **argv )
     report_test( "plugin_log", plugin_log_test,&passed,&failed);
     report_test( "path", path_test,&passed,&failed);
     report_test( "linkpair", linkpair_test,&passed,&failed);
+    report_test( "orphanage", orphanage_test,&passed,&failed);
     
     fprintf( stdout, "total passed %d failed %d tests\n",total_passed,
         total_failed);

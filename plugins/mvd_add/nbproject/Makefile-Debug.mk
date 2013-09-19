@@ -46,6 +46,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/matcher.o \
 	${OBJECTDIR}/mvd_add.o \
 	${OBJECTDIR}/node.o \
+	${OBJECTDIR}/orphanage.o \
 	${OBJECTDIR}/path.o \
 	${OBJECTDIR}/suffixtree.o \
 	${OBJECTDIR}/test.o
@@ -129,6 +130,11 @@ ${OBJECTDIR}/node.o: node.c
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
 	$(COMPILE.c) -g -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/node.o node.c
+
+${OBJECTDIR}/orphanage.o: orphanage.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} $@.d
+	$(COMPILE.c) -g -I../../include -I../../mvd/include -I../shared/include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/orphanage.o orphanage.c
 
 ${OBJECTDIR}/path.o: path.c 
 	${MKDIR} -p ${OBJECTDIR}

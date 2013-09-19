@@ -226,38 +226,75 @@ void linkpair_add_hint( linkpair *lp, int version, plugin_log *log )
     }
 }
 /**
- * Split a linkpair and adjust parent/child if not a basic pair
- * @param lp the linkpair to split
- * @param at the offset in the pair data before which to split
- * @param log the log to record errors in
+ * Split a simple data pair. It doesn't matter if it is part of a node.
+ * @param lp the linkpair to split.
+ * @param at point before which to split
+ * @param log record failures in the log
+ * @return 1 if it worked else 0
  */
-void linkpair_split( linkpair *lp, int at, plugin_log *log )
+static int linkpair_split_data_pair( linkpair *lp, int at, plugin_log *log )
 {
-    if ( pair_is_ordinary(lp->p) )
+    int res = 1;
+    // q is the new trailing pair
+    pair *q = pair_split( &lp->p, at );
+    if ( q != NULL )
     {
-        // q is the new trailing pair
-        pair *q = pair_split( &lp->p, at );
-        if ( q != NULL )
+        linkpair *lp2 = linkpair_create( q, log );
+        if ( lp2 != NULL )
         {
-            linkpair *lp2 = linkpair_create( q, log );
-            if ( lp2 != NULL )
-            {
-                lp2->right = lp->right;
-                if ( lp2->right != NULL )
-                    lp2->right->left = lp2;
-                lp->right = lp2;
-                lp2->left = lp;
-            }
+            lp2->right = lp->right;
+            if ( lp2->right != NULL )
+                lp2->right->left = lp2;
+            lp->right = lp2;
+            lp2->left = lp;
         }
     }
-    else if ( pair_is_child(lp->p) )
+    else
     {
-        // to do
+        plugin_log_add(log,"failed to split pair\n");
+        res = 0;
     }
-    else if ( pair_is_parent(lp->p) )
+    return res;
+}
+/**
+ * Split a parent linkpair and all its children
+ * @param lp the linkpair to split
+ * @param at the position before which to split it
+ * @param log
+ * @return 
+ */
+static int linkpair_split_parent_pair( linkpair *lp, int at, plugin_log *log )
+{
+    
+}
+/**
+ * Split a linkpair and adjust parent/child if not a basic pair
+ * @param lp the linkpair to split
+ * @param at the offset in the pair data BEFORE which to split
+ * @param log the log to record errors in
+ * @return 1 if it split successfully
+ */
+int linkpair_split( linkpair *lp, int at, plugin_log *log )
+{
+    int res = 0;
+    if ( at > 0 && at < pair_len(lp->p) )
     {
-        // to do
+        if ( pair_is_ordinary(lp->p) )
+        {
+            res = linkpair_split_data_pair(lp,at,log);
+        }
+        else if ( pair_is_child(lp->p) )
+        {
+            pair *parent = pair_parent(lp->p);
+            res = linkpair_split_parent_pair(lp,at,log);
+            //split the parent, then all its children
+        }
+        else if ( pair_is_parent(lp->p) )
+        {
+            res = linkpair_split_parent_pair(lp,at,log);
+        }
     }
+    return res;
 }
 /**
  * Convert a list of linkpairs to a standard pair array
@@ -344,7 +381,7 @@ bitset *linkpair_node_overhang( linkpair *lp )
  * Add a linkpair after a node. lp->right will be displaced by one 
  * linkpair. Although this will increase the node's overhang, the increase
  * is exactly that of the displaced linkpair's versions, which will reattach 
- * via the overhang, rather than the forced, rule.
+ * via the overhang, instead of the forced rule.
  * @param lp the incoming pair of a node
  * @param after the linkpair to add into lp's node. must intersect with lp.
  * @return 1 if the new node is a bona fide node
@@ -364,7 +401,7 @@ int linkpair_add_at_node( linkpair *lp, linkpair *after )
 /**
  * Add a linkpair after a given point, creating a new node.
  * @param lp the point to add it after
- * @param after the linkpair to become after lp
+ * @param after the linkpair to become the one after lp
  * @return 1 if successful else 0
  */
 int linkpair_add_after( linkpair *lp, linkpair *after )
@@ -444,16 +481,18 @@ int linkpair_list_circular( linkpair *lp )
     return res;
 }
 /**
- * Remove a pair, disposing of it and delinking it form the list
+ * Remove a linkpair, disposing of it and delinking it from the list
  * @param lp the linkpair to remove
+ * @param dispose if 1 dispose of the removed linkpair
  */
-void linkpair_remove( linkpair *lp )
+void linkpair_remove( linkpair *lp, int dispose )
 {
     if ( lp->left != NULL )
         lp->left->right = lp->right;
     if ( lp->right != NULL )
         lp->right->left = lp->left;
-    linkpair_dispose( lp );
+    if ( dispose )
+        linkpair_dispose( lp );
 }
 #ifdef MVD_TEST
 static UChar data1[7] = {'b','a','n','a','n','a',0};
@@ -461,15 +500,16 @@ static UChar data2[6] = {'a','p','p','l','e',0};
 static UChar data3[5] = {'p','e','a','r',0};
 static UChar data4[7] = {'o','r','a','n','g','e',0};
 static UChar data5[6] = {'g','u','a','v','a',0};
+static UChar data6[8] = {'c','u','m','q','u','a','t',0};
 static char buf[SCRATCH_LEN];
-static bitset *bs1,*bs2,*bs3,*bs4,*bs5,*bsr,*bsl;
-static linkpair *lp1,*lp2,*lp3,*lp4,*lpl,*lpr;
-static pair *p1,*p2,*p3,*p4,*pl,*pr;
+static bitset *bs1,*bs2,*bs3,*bs4,*bs5,*bsr,*bsl,*bsm;
+static linkpair *lp1,*lp2,*lp3,*lp4,*lpl,*lpr,*lpc;
+static pair *p1,*p2,*p3,*p4,*pl,*pr,*pc;
 static int make_test_data( plugin_log *log )
 {
-    lp1 = lp2 = lp3 = lp4 = NULL;
-    bs1 = bs2 = bs3 = bs4 = bs5 = NULL;
-    p1 = p2 = p3 = p4 = NULL;
+    lp1 = lp2 = lp3 = lp4 = lpr = lpl = lpc = NULL;
+    bs1 = bs2 = bs3 = bs4 = bs5 = bsl = bsr = bsm = NULL;
+    p1 = p2 = p3 = p4 = pl = pr = pc = NULL;
     bs1 = bitset_create();
     bitset_set(bs1,3);
     bitset_set(bs1,27);
@@ -495,8 +535,11 @@ static int make_test_data( plugin_log *log )
     bsr = bitset_set(bsr,3);
     if ( bsr != NULL )
         bsr = bitset_set(bsr,21);
+    bsm = bitset_create();
+    bitset_set(bsm,23);
+    bitset_set(bsm,7);
     if ( bs1 != NULL && bs2 != NULL && bs3 != NULL && bs4 != NULL 
-        && bs5 != NULL && bsl != NULL && bsr != NULL )
+        && bs5 != NULL && bsl != NULL && bsr != NULL && bsm != NULL )
     {
         p1 = pair_create_basic(bs1, data1, 6);
         p2 = pair_create_basic(bs2, data2, 5);
@@ -504,8 +547,9 @@ static int make_test_data( plugin_log *log )
         p4 = pair_create_basic(bs4, data4, 6);
         pl = pair_create_basic(bsl,data4,6);
         pr = pair_create_basic(bsr,data5,5);
+        pc = pair_create_basic(bsm,data6,7);
         if ( p1 != NULL && p2 != NULL && p3 != NULL && p4 != NULL 
-            && pl != NULL && pr != NULL )
+            && pl != NULL && pr != NULL && pc != NULL )
         {
             lp1 = linkpair_create( p1, log );
             lp2 = linkpair_create( p2, log );
@@ -513,8 +557,9 @@ static int make_test_data( plugin_log *log )
             lp4 = linkpair_create( p4, log );
             lpl = linkpair_create( pl, log );
             lpr = linkpair_create( pr, log );
+            lpc = linkpair_create( pc, log );
             if ( lp1 != NULL && lp2 != NULL && lp3 != NULL && lp4 != NULL 
-                && lpl != NULL && lpr != NULL )
+                && lpl != NULL && lpr != NULL && lpc != NULL )
                 return 1;
         }
     }
@@ -534,6 +579,8 @@ static void free_test_data( plugin_log *log )
         linkpair_dispose( lpl );
     if ( lpr != NULL )
         linkpair_dispose( lpr );
+    if ( lpc != NULL )
+        linkpair_dispose( lpc );
     if ( p1 != NULL )
         pair_dispose( p1 );
     if ( p2 != NULL )
@@ -546,6 +593,8 @@ static void free_test_data( plugin_log *log )
         pair_dispose( pl );
     if ( pr != NULL )
         pair_dispose( pr );
+    if ( pc != NULL )
+        pair_dispose( pc );
     if ( bs1 != NULL )
         bitset_dispose( bs1 );
     if ( bs2 != NULL )
@@ -560,6 +609,8 @@ static void free_test_data( plugin_log *log )
         bitset_dispose( bsl );
     if ( bsr != NULL )
         bitset_dispose( bsr );
+    if ( bsm != NULL )
+        bitset_dispose( bsm );
     if ( log != NULL )
         plugin_log_dispose( log );
 }
@@ -670,7 +721,7 @@ static void linkpair_test_hint( int *passed, int *failed, plugin_log *log )
     }
     else
     {
-        linkpair_remove(left);
+        linkpair_remove(left,1);
         (*passed)++;
     }
     int len2 = linkpair_list_len(lp1);
@@ -847,6 +898,120 @@ static void linkpair_test_overhang( int *passed, int *failed, plugin_log *log )
         pair_dispose( ph );
     }
 }
+static void linkpair_test_add_at_node( int *passed, int *failed, 
+    plugin_log *log )
+{
+    linkpair_set_right(lpl,lpr);
+    linkpair_set_left(lpr,lpl);
+    int res = linkpair_add_at_node( lpl, lpc );
+    if ( res )
+    {
+        (*passed)++;
+        if ( !linkpair_node_to_right(lpl) || !linkpair_node_to_left(lpc) 
+            || linkpair_node_to_left(lpr) )
+        {
+            fprintf(stderr,"linkpair: add_at_node failed 1\n");
+            (*failed)++;
+        }
+        else
+            (*passed)++;
+        int len = linkpair_list_len(lpl);
+        if ( len != 3 )
+        {
+            fprintf(stderr,"linkpair: length of add_at_node list wrong\n");
+            (*failed)++;
+        }
+        else
+            (*passed)++;
+    }
+    else
+    {
+        (*failed)++;
+        fprintf(stderr,"linkpair: add_at_node failed 2\n");
+    }
+}
+static void linkpair_test_add_after( int *passed, int *failed, plugin_log *log )
+{
+    lpr->right = lpr->left = NULL;
+    lpl->left = lpl->right = NULL;
+    lpc->left = lpc->right = NULL;
+    int res = linkpair_add_after( lpl, lpr );
+    if ( !res )
+    {
+        fprintf(stderr,"linkpair: failed to add after\n");
+        (*failed)++;
+        
+    }
+    else
+        (*passed)++;
+    if ( res )
+    {
+        res = linkpair_add_after(lpl,lpc);
+        if ( res )
+        {
+            fprintf(stderr,"linkpair: add_after should have failed\n");
+            (*failed)++;
+        }
+        else
+            (*passed)++;
+    }
+}
+static void linkpair_test_list_len( int *passed, int *failed, plugin_log *log )
+{
+    linkpair_set_right(lp1,lp2);
+    linkpair_set_left(lp2,lp1);
+    linkpair_set_right(lp2,lp3);
+    linkpair_set_left(lp3,lp2);
+    linkpair_set_right(lp3,lp4);
+    linkpair_set_left(lp4,lp3);
+    linkpair_set_right(lp4,NULL);
+    int len = linkpair_list_len( lp1 );
+    if ( len != 4 )
+    {
+        fprintf(stderr,"linkpair: list length failed\n");
+        (*failed)++;
+    }
+    else
+        (*passed)++;
+}
+static void linkpair_test_circular( int *passed, int *failed, plugin_log *log )
+{
+    linkpair_set_right(lp1,lp2);
+    linkpair_set_left(lp2,lp1);
+    linkpair_set_right(lp2,lp3);
+    linkpair_set_left(lp3,lp2);
+    linkpair_set_right(lp3,lp4);
+    linkpair_set_left(lp4,lp3);
+    linkpair_set_right(lp4,lp1);
+    int res = linkpair_list_circular( lp1 );
+    if ( !res )
+    {
+        fprintf(stderr,"linkpair: circular test failed\n");
+        (*failed)++;
+    }
+    else
+        (*passed)++;
+}
+static void linkpair_test_remove( int *passed, int *failed, plugin_log *log )
+{
+    linkpair_set_right(lp1,lp2);
+    linkpair_set_left(lp2,lp1);
+    linkpair_set_right(lp2,lp3);
+    linkpair_set_left(lp3,lp2);
+    linkpair_set_right(lp3,lp4);
+    linkpair_set_left(lp4,lp3);
+    linkpair_set_right(lp4,NULL);
+    int len1 = linkpair_list_len(lp1);
+    linkpair_remove( lp3, 0 );
+    int len2 = linkpair_list_len(lp1 );
+    if ( len1-len2 != 1 )
+    {
+        fprintf(stderr,"linkpair: remove failed\n");
+        (*failed)++;
+    }
+    else
+        (*passed)++;
+}
 void linkpair_test( int *passed, int *failed )
 {
     plugin_log *log = plugin_log_create( buf );
@@ -866,6 +1031,11 @@ void linkpair_test( int *passed, int *failed )
             linkpair_test_node_to_right( passed, failed, log );
             linkpair_test_node_to_left( passed, failed, log );
             linkpair_test_overhang( passed, failed, log );
+            linkpair_test_add_at_node( passed, failed, log );
+            linkpair_test_add_after( passed, failed, log );
+            linkpair_test_list_len( passed, failed, log );
+            linkpair_test_circular( passed, failed, log );
+            linkpair_test_remove( passed, failed, log );
         }
         else
         {

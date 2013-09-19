@@ -14,6 +14,7 @@
       <itemPath>matcher.h</itemPath>
       <itemPath>node.h</itemPath>
       <itemPath>../shared/include/option_keys.h</itemPath>
+      <itemPath>orphanage.h</itemPath>
       <itemPath>path.h</itemPath>
       <itemPath>../../include/plugin.h</itemPath>
       <itemPath>../shared/include/plugin_log.h</itemPath>
@@ -39,6 +40,7 @@
       <itemPath>matcher.c</itemPath>
       <itemPath>mvd_add.c</itemPath>
       <itemPath>node.c</itemPath>
+      <itemPath>orphanage.c</itemPath>
       <itemPath>path.c</itemPath>
       <itemPath>../shared/src/plugin_log.c</itemPath>
       <itemPath>suffixtree.c</itemPath>
@@ -127,6 +129,10 @@
       </item>
       <item path="node.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="orphanage.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="orphanage.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="path.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="path.h" ex="false" tool="3" flavor2="0">
@@ -208,6 +214,10 @@
       <item path="node.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="orphanage.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="orphanage.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="path.c" ex="false" tool="0" flavor2="0">
       </item>
@@ -294,6 +304,10 @@
       <item path="node.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="node.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="orphanage.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="orphanage.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="path.c" ex="false" tool="0" flavor2="0">
       </item>

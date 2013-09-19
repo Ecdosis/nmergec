@@ -31,7 +31,7 @@ bitset *linkpair_node_overhang( linkpair *lp );
 int linkpair_add_at_node( linkpair *lp, linkpair *after );
 int linkpair_add_after( linkpair *lp, linkpair *after );
 int linkpair_list_circular( linkpair *lp );
-void linkpair_remove( linkpair *lp );
+void linkpair_remove( linkpair *lp, int dispose );
 void linkpair_test( int *passed, int *failed );
 
 extern UChar USTR_EMPTY[];
