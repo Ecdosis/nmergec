@@ -389,13 +389,46 @@ bitset *pair_versions( pair *p )
 {
     return p->versions;
 }
-static void pair_print( pair *p )
+static char *pair_cdata( pair *p )
 {
     int i;
     char *buf = calloc( p->len+1, 1 );
-    for ( i=0;i<p->len;i++ )
-        buf[i] = (char)p->data[i];
-    printf("%s\n",buf);
+    if ( buf != NULL )
+    {
+        for ( i=0;i<p->len;i++ )
+            buf[i] = (char)p->data[i];
+        buf[i] = 0;
+    }
+    return buf;
+}
+void pair_print( pair *p )
+{
+    if ( pair_is_parent(p) )
+    {
+        char buf[128];
+        bitset_tostring(pair_versions(p),buf,128 );
+        printf(", versions: %s",buf);
+        char *pdata = pair_cdata(p);
+        if ( pdata != NULL )
+        {
+            printf(", parent: %s, id: %d\n",pdata,pair_id(p));
+            free( pdata );
+        }
+    }
+    else if ( pair_is_child(p) )
+        printf(", child: parent=%d\n",pair_id(pair_parent(p)));
+    else
+    {
+        char buf[128];
+        bitset_tostring(pair_versions(p),buf,128 );
+        printf(", versions: %s ",buf);
+        char *pdata = pair_cdata(p);
+        if ( pdata != NULL )
+        {
+            printf(", data: %s\n",pdata);
+            free( pdata );
+        }
+    };
 }
 /**
  * Split a pair into two before the given offset. Free the original pair.

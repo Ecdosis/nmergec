@@ -47,9 +47,11 @@
 #include "linkpair.h"
 #include "match.h"
 #include "aatree.h"
+#include "orphanage.h"
 #include "alignment.h"
 #include "matcher.h"
 #include "verify.h"
+#include "orphanage.h"
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
@@ -194,7 +196,12 @@ static int add_first_version( MVD *mvd, struct add_struct *add, UChar *text,
                 plugin_log_add(log,
                 "mvd_add: failed to add version\n");
             else
-                plugin_log_add(log,"mvd_add: added version successfully!\n");
+            {
+                char buffer[128];
+                u_print( add->vid, buffer, 128 );
+                plugin_log_add(log,
+                    "mvd_add: added version %s successfully!\n",buffer);
+            }
         }
     }
     return res;
@@ -215,9 +222,10 @@ match *best_of_three( match *a, match *b, match *c )
  * Wrap an array of pairs into a doubly linked list
  * @param pairs a pairs list as a dyn_array
  * @param log the log to add it to
- * @return head of the linkpairs list
+ * @param o the orphanage to register transpositions in
+ * @return head of the linkpairs list or NULL
  */
-static linkpair *link_pairs( dyn_array *pairs, plugin_log *log )
+static linkpair *link_pairs( dyn_array *pairs, plugin_log *log, orphanage *o )
 {
     int len = dyn_array_size( pairs );
     int i;
@@ -237,11 +245,34 @@ static linkpair *link_pairs( dyn_array *pairs, plugin_log *log )
                 linkpair_set_left( lp, current );
                 current = lp;
             }
+            if ( pair_is_parent(p) )
+                orphanage_add_parent(o,lp);
+            else if ( pair_is_child(p) )
+                orphanage_add_child(o,lp);
         }
         else
+        {
+            if ( head != NULL )
+                linkpair_dispose_list( head );
+            head = NULL;
             break;
+        }
     }
     return head;
+}
+/**
+ * Add a new version to the MVD
+ * @param add the configured add setup
+ * @param mvd the MVD to add it to
+ * @return 1 if it worked, else 0
+ */
+static int add_version( struct add_struct *add, MVD *mvd )
+{
+    int res = 0;
+    version *new_v = version_create( add->vid, add->v_description );
+    if ( new_v != NULL )
+        res = mvd_add_version( mvd, new_v );
+    return res;
 }
 /**
  * Add a version to an MVD that already has at least one
@@ -256,64 +287,68 @@ static int add_subsequent_version( MVD *mvd, struct add_struct *add,
     UChar *text, int tlen, plugin_log *log )
 {
     int res = 1;
-    alignment *head = NULL;
-    // create initial alignment
-    alignment *a = alignment_create( text, 0, tlen, mvd_count_versions(mvd)+1, 
-        log );
-    if ( a != NULL )
+    orphanage *o = orphanage_create();
+    if ( o != NULL )
     {
-        head = a;
-        while ( res && head != NULL )
+        // create initial alignment
+        alignment *a = alignment_create( text, 0, tlen, 
+            mvd_count_versions(mvd)+1, o, log );
+        if ( a != NULL )
         {
-            alignment *left,*right;
-            dyn_array *pairs = mvd_get_pairs(mvd);
-            linkpair *pairs_list = link_pairs(pairs,log);
-            // add new pair to the start
-            linkpair *start = alignment_linkpair( a );
-            linkpair_set_right( start, pairs_list );
-            linkpair_set_left( pairs_list, start );
-            pairs_list = start;
-            // add its version to the mvd
-            version *new_v = version_create( add->vid, add->v_description );
-            if ( new_v != NULL )
-                res = mvd_add_version( mvd, new_v );
-            if ( res )
+            // list of current alignments
+            alignment *head = a;
+            dyn_array *pairs = mvd_get_pairs( mvd );
+            linkpair *list = link_pairs( pairs, log, o );
+            // now add its version to the mvd
+            if ( list != NULL )
             {
-                // this does all the work
-                res = alignment_align( head, &pairs_list, &left, &right, log );
-                if ( res )
+                res = add_version( add, mvd );
+                // iterate while there are still valid alignments
+                while ( res && head != NULL )
                 {
-                    // do this now for debug but normally just once at the end
-                    pairs = linkpair_to_pairs( pairs_list );
-                    mvd_set_pairs( mvd, pairs );
-                    verify *v = verify_create( pairs, mvd_count_versions(mvd) );
-                    if ( !verify_check(v) )
-                        fprintf(stderr,"error: unbalanced graph\n");
-                    // temporary
-                    break;
-                    // end debug
-                    head = alignment_pop( head );
-                    // now update the list
-                    if ( head != NULL )
+                    alignment *left,*right;
+                    res = alignment_align( head, &list, &left, &right, 
+                        o, log );
+                    if ( res )
                     {
-                        if ( left != NULL )
-                            alignment_push( head, left );
-                        if ( right != NULL )
-                            alignment_push( head, right );
+                        linkpair_print( list );
+                        // do this now for debug but normally at the end
+/*
+                        pairs = linkpair_to_pairs( list );
+                        mvd_set_pairs( mvd, pairs );
+                        verify *v = verify_create( pairs, 
+                            mvd_count_versions(mvd) );
+                        if ( !verify_check(v) )
+                            fprintf(stderr,"error: unbalanced graph\n");
+*/
+                        // temporary
+                        break;
+                        // end debug
+                        head = alignment_pop( head );
+                        // now update the list
+                        if ( head != NULL )
+                        {
+                            if ( left != NULL )
+                                alignment_push( head, left );
+                            if ( right != NULL )
+                                alignment_push( head, right );
+                        }
+                        else if ( left != NULL )    // head,tail is NULL
+                        {
+                            head = left;
+                            if ( right != NULL )
+                                alignment_push( head, right );
+                        }
+                        else if ( right != NULL )   // left is NULL
+                            head = right;
                     }
-                    else if ( left != NULL )    // head,tail is NULL
-                    {
-                        head = left;
-                        if ( right != NULL )
-                            alignment_push( head, right );
-                    }
-                    else if ( right != NULL )   // left is NULL
-                        head = right;
+                    else    // try again
+                        head = alignment_pop(head);
                 }
-                else
-                    head = alignment_pop(head);
+                linkpair_dispose_list( list );
             }
         }
+        orphanage_dispose( o );
     }
     return res;
 }
@@ -489,6 +524,19 @@ static char *create_path( char *dir, char *file )
     }
     return path;
 }
+static void bare_file_name( char *f_name, int n, char *full_name )
+{
+    char *pos = strrchr( full_name, '.' );
+    int i,len = strlen( full_name );
+    if ( pos != NULL )
+        len -= strlen(pos);
+    int limit = n-1;
+    for ( i=0;i<len&&i<limit;i++ )
+    {
+        f_name[i] = full_name[i];
+    }
+    f_name[i] = 0;
+}
 /**
  * Read a directory
  * @return number of files found or 0 on failure
@@ -520,9 +568,11 @@ static int read_dir( char *folder )
                     else
                     {
                         char options[128];
+                        char f_name[128];
                         options[0] = 0;
+                        bare_file_name( f_name, 128, ent->d_name );
                         strcat( options, "vid=" );
-                        strcat( options, ent->d_name );
+                        strcat( options, f_name );
                         strcat( options, " encoding=utf-8" );
                         strcat( options, " description=test" );
                         res = process( &mvd, options, output, txt, flen );
@@ -544,7 +594,8 @@ static int read_dir( char *folder )
 // arguments: folder of text files
 void test_mvd_add( int *passed, int *failed )
 {
-    int res = read_dir( "tests" );
+    int res = read_dir( "english" );
+    //int res = read_dir( "tests" );
     if ( res )
     {
         (*passed)++;

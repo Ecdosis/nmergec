@@ -46,6 +46,7 @@ int pair_serialise_data( pair *p, unsigned char *data, int len,
 int pair_is_hint( pair *p );
 bitset *pair_versions( pair *p );
 pair *pair_split( pair **p, int at );
+void pair_print( pair *p );
 
 #ifdef MVD_TEST
 void test_pair( int *passed, int *failed );

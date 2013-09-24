@@ -29,6 +29,7 @@
 #include "plugin_log.h"
 #include "dyn_array.h"
 #include "linkpair.h"
+#include "orphanage.h"
 #include "hashmap.h"
 
 #define IMPLICIT_SIZE 12
@@ -67,6 +68,60 @@ linkpair *linkpair_create( pair *p, plugin_log *log )
 void linkpair_dispose( linkpair *lp )
 {
     free( lp );
+}
+/**
+ * Turn a linkpair into a parent pair possibly with no children
+ * @param lp the original linkpair, maybe already a parent
+ * @param log the log to record errors in
+ * @return the parent or NULL if it failed
+ */
+linkpair *linkpair_make_parent( linkpair *lp, plugin_log *log )
+{
+    if ( pair_is_parent(lp->p) )
+        return lp;
+    else if ( pair_is_child(lp->p) )
+        return NULL;
+    else // ordinary linkpair
+    {
+        pair *pp = pair_create_parent( pair_versions(lp->p), 
+            pair_data(lp->p), pair_len(lp->p) );
+        if ( pp != NULL )
+        {
+            linkpair *parent = linkpair_create(pp,log);
+            // creates dangling parent - needs at least one child
+            linkpair_replace( lp, parent );
+            return parent;
+        }
+        return NULL;
+    }
+}
+/**
+ * Create a child from the new version
+ * @param parent the parent we are a child of
+ * @param version the version of the child
+ * @param log record errors here
+ * @return the newborn child
+ */
+linkpair *linkpair_make_child( linkpair *parent, int version, plugin_log *log )
+{
+    bitset *bs = bitset_create();
+    bitset_set( bs, version );
+    pair *child = pair_create_child( bs );
+    pair_add_child(linkpair_pair(parent), child );
+    return linkpair_create( child, log );
+}
+/**
+ * Dispose of an entire list
+ * @param lp the linkpair object to free
+ */
+void linkpair_dispose_list( linkpair *lp )
+{
+    while ( lp != NULL )
+    {
+        linkpair *next = lp->right;
+        free( lp );
+        lp = next;
+    }
 }
 /**
  * Set the left pointer
@@ -378,25 +433,64 @@ bitset *linkpair_node_overhang( linkpair *lp )
     return bs;
 }
 /**
- * Add a linkpair after a node. lp->right will be displaced by one 
+ * Add a linkpair AFTER a node. lp->right will be displaced by one 
  * linkpair. Although this will increase the node's overhang, the increase
  * is exactly that of the displaced linkpair's versions, which will reattach 
  * via the overhang, instead of the forced rule.
  * @param lp the incoming pair of a node
  * @param after the linkpair to add into lp's node. must intersect with lp.
+ * @param verify if 1 then check that the resulting node is OK
  * @return 1 if the new node is a bona fide node
  */
-int linkpair_add_at_node( linkpair *lp, linkpair *after )
+int linkpair_add_at_node( linkpair *lp, linkpair *after, int verify )
 {
+    int res = 0;
+    int dispose = 0;
     bitset *bs1 = pair_versions(lp->p);
     if ( pair_is_hint(linkpair_pair(lp->right)) ) 
-        lp = lp->right;
-    after->right = lp->right;
-    after->left = lp;
-    if ( lp->right != NULL )
-        lp->right->left = after;
-    lp->right = after;
-    return bitset_intersects( bs1, pair_versions(after->p) );
+    {
+        bs1 = bitset_clone(bs1);
+        if ( bs1 != NULL )
+        {
+            lp = lp->right;
+            dispose = 1;
+            // bs1 is the amalgam of leading pair+hint
+            bitset_or( bs1, pair_versions(lp->p) );
+        }
+    }
+    if ( bs1 != NULL )
+    {
+        after->right = lp->right;
+        after->left = lp;
+        if ( lp->right != NULL )
+            lp->right->left = after;
+        lp->right = after;
+        res = (verify)?bitset_intersects(bs1,pair_versions(after->p)):1;
+        if ( dispose )
+            bitset_dispose( bs1 );
+    }
+    return res;
+}
+/**
+ * Add a new linkpair before an existing one
+ * @param lp the existing linkpair
+ * @param lp_new the new one
+ */
+void linkpair_add_before( linkpair *lp, linkpair *lp_new )
+{
+    if ( lp->left == NULL )
+    {
+        lp_new->right = lp->right;
+        lp->left = lp_new;
+    }
+    else
+    {
+        lp_new->right = lp->right;
+        lp_new->left = lp->left;
+        lp->right = lp_new;
+        if ( lp->right != NULL )
+            lp->right->left = lp_new;
+    }
 }
 /**
  * Add a linkpair after a given point, creating a new node.
@@ -493,6 +587,19 @@ void linkpair_remove( linkpair *lp, int dispose )
         lp->right->left = lp->left;
     if ( dispose )
         linkpair_dispose( lp );
+}
+/**
+ * Debug
+ */
+void linkpair_print( linkpair *lp )
+{
+    while ( lp != NULL )
+    {
+        printf("st_off: %d",lp->st_off);
+        pair *p = linkpair_pair(lp);
+        pair_print( p );
+        lp = lp->right;
+    }
 }
 #ifdef MVD_TEST
 static UChar data1[7] = {'b','a','n','a','n','a',0};
@@ -903,7 +1010,7 @@ static void linkpair_test_add_at_node( int *passed, int *failed,
 {
     linkpair_set_right(lpl,lpr);
     linkpair_set_left(lpr,lpl);
-    int res = linkpair_add_at_node( lpl, lpc );
+    int res = linkpair_add_at_node( lpl, lpc, 1 );
     if ( res )
     {
         (*passed)++;

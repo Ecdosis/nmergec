@@ -118,9 +118,11 @@ static void report_test( const char *name, test_function tf, int *p, int *f )
 }
 int main( int argc, char **argv )
 {
+
     int passed=0;
     int failed=0;
-    report_test( "aatree", aatree_test,&passed,&failed);
+    // reinstate this after debugging
+    /*report_test( "aatree", aatree_test,&passed,&failed);
     report_test( "node", node_test,&passed,&failed);
     report_test( "hashtable", hashtable_test,&passed,&failed);
     report_test( "suffixtree", suffixtree_test,&passed,&failed);
@@ -131,5 +133,7 @@ int main( int argc, char **argv )
     
     fprintf( stdout, "total passed %d failed %d tests\n",total_passed,
         total_failed);
+*/
+    test_mvd_add( &passed, &failed );
 }
 #endif

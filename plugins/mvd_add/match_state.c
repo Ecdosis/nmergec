@@ -120,7 +120,6 @@ void match_state_dispose( match_state *ms )
  */
 void match_state_push( match_state *head, match_state *ms )
 {
-    match_state *temp = head;
     while ( head->next != NULL )
         head = head->next;
     head->next = ms;

@@ -487,7 +487,6 @@ int match_single( match *m, UChar *text, plugin_log *log )
             m->len++;
             if ( !match_advance(m,loc,log) )
                 break;
-            
         }
         else
             break;
@@ -621,7 +620,7 @@ int match_st_end( match *m )
     return m->st_off+m->len;
 }
 /** 
- * Create a linkpair that contains a short sequence of the new version
+ * Create a linkpair contianing an empty or short sequence in the new version
  * @param m1 the first match before m2
  * @param m2 the second after m1
  * @param v the id of the new version
@@ -631,33 +630,88 @@ static linkpair *linkpair_between_matches( match *m1, match *m2,
 {
     linkpair *between = NULL;
     int st_len = match_st_off(m2)-match_st_end(m1);
-    UChar *fragment = calloc( st_len+1, sizeof(UChar) );
-    if ( fragment != NULL )
+    UChar *fragment;
+    if ( st_len == 0 )
+        fragment = USTR_EMPTY;
+    else
     {
-        memcpy( fragment, &text[match_st_end(m1)], st_len*sizeof(UChar) );
-        bitset *bs = bitset_create();
-        if ( bs != NULL )
-        {
-            bitset_set( bs, v );
-            pair *frag = pair_create_basic( bs, fragment, st_len );
-            if ( frag != NULL )
-                between = linkpair_create( frag, log );
-        }
-        free( fragment );
+        fragment = calloc( st_len+1, sizeof(UChar) );
+        if ( fragment != NULL )
+            memcpy( fragment, &text[match_st_end(m1)], st_len*sizeof(UChar) );
+        else
+            return NULL;
     }
+    bitset *bs = bitset_create();
+    if ( bs != NULL )
+    {
+        bitset_set( bs, v );
+        pair *frag = pair_create_basic( bs, fragment, st_len );
+        if ( frag != NULL )
+        {
+            between = linkpair_create( frag, log );
+            if ( between != NULL )
+                linkpair_set_st_off( between, match_st_end(m1) );
+        }
+    }
+    if ( fragment != USTR_EMPTY && fragment != NULL )
+        free( fragment );
     return between;
 }
 /**
- * Split the underlying matches of the MVD. NB start_pos/end_pos are inclusive
+ * Split the underlying linkpair at match start
+ * @param m the match in question
+ * @return 1 if it worked
+ */
+int match_split_at_start( match *m )
+{
+    int res = 0;
+    pair *p = linkpair_pair( m->start_p );
+    if ( m->start_pos > 0 && m->start_pos < pair_len(p)-1 )
+    {
+        linkpair *old_start_p = m->start_p;
+        res = linkpair_split( m->start_p, m->start_pos );
+        if ( res )
+        {
+            m->start_p = linkpair_right( m->start_p );
+            // check if start and end were not the same
+            if ( old_start_p == m->end_p )
+            {
+                m->end_p = m->start_p;
+                m->end_pos -= m->start_pos;
+            }
+        }
+    }
+    m->start_pos = 0;
+    return res;
+}
+/**
+ * Split the underlying linkpair at its end-point
+ * @param m the match in question
+ * @return 1 if it worked
+ */
+int match_split_at_end( match *m )
+{
+    int res = 0;
+    pair *p = linkpair_pair(m->end_p);
+    if ( m->end_pos < pair_len(p)-1 && m->end_pos > 0 )
+        res = linkpair_split( m->end_p, m->end_pos+1 );
+    if ( res )
+        m->end_pos = pair_len(linkpair_pair(m->end_p))-1;
+    return res;
+}
+/**
+ * Split the MVD pairs corresponding to the match. start_pos, end_pos are 
+ * both inclusive
  * @param m the match
  * @param text the text the match is aligned with
  * @param v the number of the new version
  * @param log the log to write errors to
+ * @return 1 if successful
  */
-void match_split( match *m, UChar *text, int v, plugin_log *log )
+int match_split( match *m, UChar *text, int v, plugin_log *log )
 {
     match *temp = m;
-    int i;
+    int i,res=1;
     dyn_array *matches = dyn_array_create(5);
     if ( matches != NULL )
     {
@@ -671,46 +725,34 @@ void match_split( match *m, UChar *text, int v, plugin_log *log )
         for ( i=dyn_array_size(matches)-1;i>=0;i-- )
         {
             temp = dyn_array_get( matches, i );
-            if ( temp->end_pos < pair_len(linkpair_pair(temp->end_p))-1
-                && temp->end_pos > 0 )
-                linkpair_split( temp->end_p, temp->end_pos );
-            if ( temp->start_pos > 0 
-                && temp->start_pos < pair_len(linkpair_pair(temp->start_p))-1 )
-            {
-                linkpair *old_start_p = temp->start_p;
-                linkpair_split( temp->start_p, temp->start_pos-1 );
-                temp->start_p = linkpair_right( temp->start_p );
-                if ( old_start_p==temp->end_p )
-                    temp->end_p = temp->start_p;
-            }
-            temp->start_pos = 0;
-            temp->end_pos = pair_len(linkpair_pair(temp->end_p))-1;
+            res = match_split_at_end( temp );
+            if ( res ) 
+                res = match_split_at_start( temp );
+            // special case for last linkpair
             if ( linkpair_right(temp->end_p) == NULL )
                 temp->end_pos++;
             if ( i < dyn_array_size(matches)-1 )
             {
-                // add a short linking segment
+                // add a short segment linking to the following match
                 linkpair *betw = linkpair_between_matches(temp,
                     temp->next, text, v, log );
                 if ( betw != NULL )
                 {
                     if ( linkpair_node_to_right(temp->end_p) )
-                    {
-                        // temporarily invalidates the pairs-list
-                        // but once we add v to temp->end_p
-                        // betw will form a node with temp->end_p 
-                        // and betw->right will also attach to it
-                        linkpair_add_at_node( temp->end_p, betw );
-                    }
+                        res = linkpair_add_at_node( temp->end_p, betw, 0);
                     else
-                        linkpair_add_after( temp->end_p, betw );
+                        res = linkpair_add_after( temp->end_p, betw );
                 }
                 else
                     plugin_log_add(log,"match: failed to join matches\n");
             }
+            if ( !res ) 
+                break;
         }
         dyn_array_dispose( matches );
     }
+//    linkpair_print(m->start_p);
+    return res;
 }
 /**
  * Get the next match in case it has been extended
@@ -762,7 +804,7 @@ int match_transposed( match *m, int new_version, int tlen )
         }
         right = linkpair_right(right);
     }
-    if ( m->st_off > st_left && m->st_off+m->len < st_right )
+    if ( m->st_off >= st_left && match_st_end(m) <= st_right )
         return 0;
     else
         return 1;

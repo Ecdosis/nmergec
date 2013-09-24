@@ -5,4 +5,12 @@
         <activeConfIndexElem>0</activeConfIndexElem>
     </data>
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
+    <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/1">
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/plugins/mvd_export/mvd_export.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/plugins/mvd_export/dom.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/plugins/mvd_export/dom.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/plugins/mvd_export/mvd_json.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/plugins/shared/include/dyn_string.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/plugins/shared/include/option_keys.h</file>
+    </open-files>
 </project-private>

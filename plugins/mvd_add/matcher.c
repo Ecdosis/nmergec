@@ -34,10 +34,13 @@
 #include "dyn_array.h"
 #include "linkpair.h"
 #include "match.h"
+#include "orphanage.h"
 #include "alignment.h"
 #include "matcher.h"
 #include "hashmap.h"
 #include "utils.h"
+
+#define PQUEUE_LIMIT 50
 
 /**
  * A matcher is something that looks for matches by comparing the 
@@ -58,11 +61,10 @@ struct matcher_struct
 /**
  * Create a matcher
  * @param a the alignment object
- * @param pq the priority queue to store the best MUMs
  * @param pairs the list of pairs from the MVD
  * @return a matcher object ready to go
  */
-matcher *matcher_create( alignment *a, aatree *pq, linkpair *pairs )
+matcher *matcher_create( alignment *a, linkpair *pairs )
 {
     matcher *m = calloc( 1, sizeof(matcher) );
     if ( m != NULL )
@@ -72,7 +74,12 @@ matcher *matcher_create( alignment *a, aatree *pq, linkpair *pairs )
         m->text = alignment_text( a, &m->tlen );
         m->version = alignment_version(a);
         m->st = alignment_suffixtree( a );
-        m->pq = pq;
+        m->pq = aatree_create( match_compare, PQUEUE_LIMIT );
+        if ( m->pq == NULL )
+        {
+            matcher_dispose( m );
+            m = NULL;
+        }
     }
     else
         plugin_log_add(m->log, "matcher: failed to allocate object\n");
@@ -84,6 +91,8 @@ matcher *matcher_create( alignment *a, aatree *pq, linkpair *pairs )
  */
 void matcher_dispose( matcher *m )
 {
+    if ( m->pq != NULL )
+        aatree_dispose( m->pq, (aatree_dispose_func)match_dispose );
     free( m );
 }
 /**

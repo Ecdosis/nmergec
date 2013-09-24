@@ -13,7 +13,7 @@ extern "C" {
 #endif
 typedef struct alignment_struct alignment;
 alignment *alignment_create( UChar *text, int statr, int tlen, 
-    int version, plugin_log *log );
+    int version, orphanage *o, plugin_log *log );
 void alignment_dispose( alignment *a );
 UChar *alignment_text( alignment *a, int *tlen );
 void alignment_push( alignment *head, alignment *tail );
@@ -23,8 +23,7 @@ plugin_log *alignment_log( alignment *a );
 suffixtree *alignment_suffixtree( alignment *a );
 int alignment_len( alignment *a );
 int alignment_align( alignment *a, linkpair **pairs, 
-    alignment **left, alignment **right, plugin_log *log );
-linkpair *alignment_linkpair( alignment *a );
+    alignment **left, alignment **right, orphanage *o, plugin_log *log );
 #ifdef	__cplusplus
 }
 #endif
