@@ -22,16 +22,16 @@ static int debug = 0;
  * Do the work of this plugin
  * @param mvd VAR param the mvd to create is stored here
  * @param options a string contianing the plugin's options
- * @param output buffer of length SCRATCH_LEN
+ * @param output buffer VAR param
  * @param data ignored
  * @param data_len ignored
  * @return 1 if the process completed successfully
  */
-int process( MVD **mvd, char *options, unsigned char *scratch, 
-unsigned char *data, size_t data_len )
+int process( MVD **mvd, char *options, char **scratch, 
+    unsigned char *data, size_t data_len )
 {
     int res = 1;
-    plugin_log *log = plugin_log_create( scratch );
+    plugin_log *log = plugin_log_create();
     *mvd = mvd_create( 1 );
     if ( *mvd != NULL )
     {
@@ -57,7 +57,7 @@ unsigned char *data, size_t data_len )
                 int slen = strlen(description);
                 int dlen = measure_from_encoding( description, 
                     slen, encoding );
-                UChar *u_description = malloc ( dlen+sizeof(UChar) );
+                UChar *u_description = malloc( dlen+sizeof(UChar) );
                 if ( u_description != NULL )
                 {
                     int nchars = convert_from_encoding( description, slen, 
@@ -137,10 +137,10 @@ char *name()
 int test(int *p, int *f)
 {
     MVD *mvd;
-    unsigned char *scratch = malloc( SCRATCH_LEN );
-    plugin_log *pl = plugin_log_create( scratch );
+    plugin_log *pl = plugin_log_create();
+    char *scratch = NULL;
     int res = process( &mvd, "encoding=utf-16 description=test", 
-        scratch, NULL, 0 );
+        &scratch, NULL, 0 );
     if ( res )
     {
         *p += 1;

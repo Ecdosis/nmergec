@@ -327,7 +327,6 @@ static UChar data[10][10] = { {'b','a','n','a','n','a',0},
 {'m','a','n','g','o',0},
 {'l','e','m','o','n',0},
 {'m','a','n','d','a','r','i','n',0} };
-static char buf[SCRATCH_LEN];
 static bitset *bs_random( int cardinality )
 {
     bitset *bs = bitset_create();
@@ -476,7 +475,7 @@ void orphanage_test( int *passed, int *failed )
     int res = init_test_data();
     if ( res )
     {
-        plugin_log *log = plugin_log_create(buf);
+        plugin_log *log = plugin_log_create();
         if ( log != NULL )
         {
             int i;

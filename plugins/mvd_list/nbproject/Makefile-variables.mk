@@ -7,13 +7,13 @@ CND_BASEDIR=`pwd`
 CND_BUILDDIR=build
 CND_DISTDIR=dist
 # Debug configuration
-CND_PLATFORM_Debug=GNU-MacOSX
-CND_ARTIFACT_DIR_Debug=dist/Debug/GNU-MacOSX
-CND_ARTIFACT_NAME_Debug=libmvd_list.dylib
-CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-MacOSX/libmvd_list.dylib
-CND_PACKAGE_DIR_Debug=dist/Debug/GNU-MacOSX/package
-CND_PACKAGE_NAME_Debug=libmvdlist.dylib.tar
-CND_PACKAGE_PATH_Debug=dist/Debug/GNU-MacOSX/package/libmvdlist.dylib.tar
+CND_PLATFORM_Debug=GNU-Linux-x86
+CND_ARTIFACT_DIR_Debug=dist/Debug/GNU-Linux-x86
+CND_ARTIFACT_NAME_Debug=libmvd_list.so
+CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-Linux-x86/libmvd_list.so
+CND_PACKAGE_DIR_Debug=dist/Debug/GNU-Linux-x86/package
+CND_PACKAGE_NAME_Debug=libmvdlist.so.tar
+CND_PACKAGE_PATH_Debug=dist/Debug/GNU-Linux-x86/package/libmvdlist.so.tar
 # Release configuration
 CND_PLATFORM_Release=GNU-MacOSX
 CND_ARTIFACT_DIR_Release=dist/Release/GNU-MacOSX

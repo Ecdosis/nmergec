@@ -378,10 +378,10 @@ void *aatree_min( aatree *t )
  */
 int aatree_delete( aatree *t, void *item )
 {
-    t->root = aatree_remove( t, t->root, item );
     if ( t->root != t->null_node )
     {
         t->size--;
+        t->root = aatree_remove( t, t->root, item );
         return 1;
     }
     else

@@ -102,10 +102,9 @@ int path_len( path *p )
 }
 #ifdef MVD_TEST
 static char *cstr = "Lorem ipsum dolor sit amet, consectetur";
-static char buffer[SCRATCH_LEN];
 void path_test( int *passed, int *failed )
 {
-    plugin_log *log = plugin_log_create( buffer );
+    plugin_log *log = plugin_log_create();
     if ( log != NULL )
     {
         path *p = path_create( 23, 5, log );

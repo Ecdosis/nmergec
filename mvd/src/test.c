@@ -23,7 +23,7 @@
 #include "hint.h"
 #include "utils.h"
 #include "serialiser.h"
-#include "util.h"
+#include "utils.h"
 #include "version.h"
 #include "vgnode.h"
 #ifdef MEMWATCH

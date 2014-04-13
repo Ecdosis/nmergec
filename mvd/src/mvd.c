@@ -24,10 +24,10 @@
 #define DEFAULT_ENCODING "utf-8"
 #define DEFAULT_SET_SIZE 32
 #ifdef __LITTLE_ENDIAN__
-#define SLASH (UChar*)"\x2F\x00"
+#define BASE_GROUP (UChar*)"\x42\x00\x61\x00\x73\x00\x65\x00"
+#elif  __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #define BASE_GROUP (UChar*)"\x42\x00\x61\x00\x73\x00\x65\x00"
 #else
-#define SLASH (UChar*)"\x00\x2F"
 #define BASE_GROUP (UChar*)"\x00\x42\x00\x61\x00\x73\x00\x65"
 #endif
 struct MVD_struct

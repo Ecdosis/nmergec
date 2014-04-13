@@ -49,8 +49,10 @@ struct match_struct
     int start_pos;
     // inclusive index into data of last pair of current match/mismatch
     int end_pos;
-    // offset of match in the local suffixtree's string
+    // offset of our new version segment in the overall text
     int st_off;
+    // offset of the match in the overall text
+    int text_off;
     // last matched value of end_p
     linkpair *prev_p;
     // last matched value of end_pos
@@ -79,10 +81,11 @@ struct match_struct
  * @param pairs the overall linked list of pairs
  * @param st the suffix tree of the section of text we are matching against
  * @param log the log to write errors to
+ * @param st_off starting point of the match in the new version
  * @return  a match object
  */
 match *match_create( linkpair *start, int j, linkpair *pairs, suffixtree *st, 
-    plugin_log *log )
+    int st_off, plugin_log *log )
 {
     match *mt = calloc( 1, sizeof(match) );
     if ( mt != NULL )
@@ -91,6 +94,7 @@ match *match_create( linkpair *start, int j, linkpair *pairs, suffixtree *st,
         mt->prev_pos = mt->end_pos = mt->start_pos = j;
         mt->pairs = pairs;
         mt->st = st;
+        mt->st_off = st_off;
     }
     else
         plugin_log_add( log, "match: failed to create match object\n");
@@ -112,6 +116,7 @@ match *match_copy( match *mt, plugin_log *log )
         mt2->start_pos = mt->start_pos;
         mt2->end_pos = mt->end_pos;
         mt2->st_off = mt->st_off;
+        mt2->text_off = 0;
         mt2->prev_p = mt->prev_p;
         mt2->prev_pos = mt->prev_pos;
         mt2->len = mt->len;
@@ -195,7 +200,7 @@ int match_pop( match *m )
         m->end_p = match_state_end_p( ms );
         m->start_pos = match_state_start_pos( ms );
         m->end_pos = match_state_end_pos( ms );
-        m->st_off = match_state_st_off( ms );
+        m->text_off = match_state_text_off( ms );
         m->len = match_state_len( ms );
         m->bs = match_state_bs( ms );
         return 1;
@@ -292,7 +297,7 @@ int match_follows( match *first, match *second )
     else
         pairs_dist = INT_MAX;
     // compute distance between matches in the suffixtree
-    st_dist = second->st_off - (first->st_off+first->len);
+    st_dist = second->text_off - (first->text_off+first->len);
     if ( pairs_dist <= KDIST && st_dist>= 0 && st_dist <= KDIST  )
         res = 1;
     return res;
@@ -305,32 +310,29 @@ int match_follows( match *first, match *second )
  */
 int is_maximal( match *m, UChar *text )
 {
-    if ( m->st_off == 0 )
+    if ( m->text_off == m->st_off )
         return 1;
     else if ( m->start_pos > 0 )
     {
         UChar *data = pair_data( linkpair_pair(m->start_p) );
-        return text[m->st_off-1] != data[m->start_pos-1];
+        return text[m->text_off-1] != data[m->start_pos-1];
     }
-    else if ( m->start_p == 0 )
+    else if ( linkpair_prev(m->start_p,m->bs)==NULL )
     {
         return 1;
     }
     else
     {
-        linkpair *lp = linkpair_left(m->start_p);
+        linkpair *lp = linkpair_prev(m->start_p,m->bs);
         while ( lp != NULL )
         {
             pair *p = linkpair_pair(lp);
-            if ( bitset_intersects( m->bs, pair_versions(p)) )
+            if ( pair_len(p) > 0 )
             {
-                if ( pair_len(p) > 0 )
-                {
-                    UChar *data = pair_data(p);
-                    return text[m->st_off-1] != data[pair_len(p)-1];
-                }
+                UChar *data = pair_data(p);
+                return text[m->text_off-1] != data[pair_len(p)-1];
             }
-            lp = linkpair_left(lp);
+            lp = linkpair_prev(lp,m->bs);
         }
         return 0;
     }
@@ -372,7 +374,7 @@ int match_advance( match *m, pos *loc, plugin_log *log )
                         bitset_and_not( bs2, bs );
                         match_state *ms = match_state_create(
                             m->start_p, m->end_p, 
-                            m->start_pos, m->end_pos, m->st_off, 
+                            m->start_pos, m->end_pos, m->text_off, 
                             m->len, bs2, loc, log );
                         if ( m->queue == NULL )
                             m->queue = ms;
@@ -404,7 +406,7 @@ static int match_extendible( match *m )
 /**
  * Extend a match as far as you can
  * @param mt the match to extend
- * @param text the UTF-16 text of the new version
+ * @param text the entire UTF-16 text of the new version
  * @param log the log to record errors in
  * @return the extended/unextended match
  */
@@ -477,11 +479,14 @@ int match_single( match *m, UChar *text, plugin_log *log )
         {
             if ( !maximal && node_is_leaf(loc->v) )
             {
-                m->st_off = node_start(loc->v)-m->len;
+                // m->st_off
+                m->text_off = m->st_off + node_start(loc->v)-m->len;
                 if ( !is_maximal(m,text) )
                     break;
                 else
+                {
                     maximal = 1;
+                }
             }
             // we are already matched, so increase length
             m->len++;
@@ -611,16 +616,16 @@ bitset *match_versions( match *m )
  * @param m the match in question
  * @return offset into m->text where the match starts
  */
-int match_st_off( match *m )
+int match_text_off( match *m )
 {
-    return m->st_off;
+    return m->text_off;
 }
-int match_st_end( match *m )
+int match_text_end( match *m )
 {
-    return m->st_off+m->len;
+    return m->text_off+m->len;
 }
 /** 
- * Create a linkpair contianing an empty or short sequence in the new version
+ * Create a linkpair containing an empty or short sequence in the new version
  * @param m1 the first match before m2
  * @param m2 the second after m1
  * @param v the id of the new version
@@ -629,30 +634,35 @@ static linkpair *linkpair_between_matches( match *m1, match *m2,
     UChar *text, int v, plugin_log *log )
 {
     linkpair *between = NULL;
-    int st_len = match_st_off(m2)-match_st_end(m1);
+    int text_len = match_text_off(m2)-match_text_end(m1);
     UChar *fragment;
-    if ( st_len == 0 )
+    if ( text_len == 0 )
         fragment = USTR_EMPTY;
     else
     {
-        fragment = calloc( st_len+1, sizeof(UChar) );
+        fragment = calloc( text_len+1, sizeof(UChar) );
         if ( fragment != NULL )
-            memcpy( fragment, &text[match_st_end(m1)], st_len*sizeof(UChar) );
+            memcpy( fragment, &text[match_text_end(m1)], text_len*sizeof(UChar) );
         else
             return NULL;
     }
     bitset *bs = bitset_create();
     if ( bs != NULL )
     {
-        bitset_set( bs, v );
-        pair *frag = pair_create_basic( bs, fragment, st_len );
-        if ( frag != NULL )
+        bs = bitset_set( bs, v );
+        if ( bs != NULL )
         {
-            between = linkpair_create( frag, log );
-            if ( between != NULL )
-                linkpair_set_st_off( between, match_st_end(m1) );
+            pair *frag = pair_create_basic( bs, fragment, text_len );
+            if ( frag != NULL )
+            {
+                between = linkpair_create( frag, log );
+                if ( between != NULL )
+                    linkpair_set_text_off( between, match_text_end(m1) );
+            }
+            bitset_dispose( bs );
         }
     }
+    //linkpair_print(between);
     if ( fragment != USTR_EMPTY && fragment != NULL )
         free( fragment );
     return between;
@@ -664,7 +674,7 @@ static linkpair *linkpair_between_matches( match *m1, match *m2,
  */
 int match_split_at_start( match *m )
 {
-    int res = 0;
+    int res = 1;
     pair *p = linkpair_pair( m->start_p );
     if ( m->start_pos > 0 && m->start_pos < pair_len(p)-1 )
     {
@@ -691,12 +701,15 @@ int match_split_at_start( match *m )
  */
 int match_split_at_end( match *m )
 {
-    int res = 0;
+    int res = 1;
     pair *p = linkpair_pair(m->end_p);
-    if ( m->end_pos < pair_len(p)-1 && m->end_pos > 0 )
+    int plen = pair_len(p);
+    if ( m->end_pos < plen-1 && m->end_pos > 0 )
+    {
         res = linkpair_split( m->end_p, m->end_pos+1 );
-    if ( res )
-        m->end_pos = pair_len(linkpair_pair(m->end_p))-1;
+        if ( res )
+            m->end_pos = pair_len(linkpair_pair(m->end_p))-1;
+    }
     return res;
 }
 /**
@@ -728,6 +741,8 @@ int match_split( match *m, UChar *text, int v, plugin_log *log )
             res = match_split_at_end( temp );
             if ( res ) 
                 res = match_split_at_start( temp );
+            else
+                plugin_log_add(log,"match: failed to split match at end\n");
             // special case for last linkpair
             if ( linkpair_right(temp->end_p) == NULL )
                 temp->end_pos++;
@@ -739,9 +754,14 @@ int match_split( match *m, UChar *text, int v, plugin_log *log )
                 if ( betw != NULL )
                 {
                     if ( linkpair_node_to_right(temp->end_p) )
+                    {
                         res = linkpair_add_at_node( temp->end_p, betw, 0);
+                        if ( !res )
+                            plugin_log_add(log,
+                                "match: failed to add between lp\n");
+                    }
                     else
-                        res = linkpair_add_after( temp->end_p, betw );
+                        linkpair_add_after( temp->end_p, betw );
                 }
                 else
                     plugin_log_add(log,"match: failed to join matches\n");
@@ -770,13 +790,13 @@ match *match_next( match *m )
  * else it is transposed
  * @param m the match to test
  * @param new_version the ID of the new version
- * @param tlen length of new version text
+ * @param tlen the overall length of the new version text
  * @return 1 if it is transposed else 0
  */
 int match_transposed( match *m, int new_version, int tlen )
 {
-    int st_left = 0;
-    int st_right = tlen;
+    int text_left = 0;
+    int text_right = tlen;
     // 1. find left direct align
     linkpair *left = linkpair_left(m->start_p);
     while ( left != NULL )
@@ -786,7 +806,7 @@ int match_transposed( match *m, int new_version, int tlen )
         if ( bitset_next_set_bit(bs,new_version)==new_version 
             && bitset_cardinality(bs)>1 )
         {
-            st_left = pair_len(p)+linkpair_st_off(left);
+            text_left = pair_len(p)+linkpair_text_off(left);
             break;
         }
         left = linkpair_left(left);
@@ -799,12 +819,12 @@ int match_transposed( match *m, int new_version, int tlen )
         if ( bitset_next_set_bit(bs,new_version)==new_version 
             && bitset_cardinality(bs)>1 )
         {
-            st_right = linkpair_st_off(right);
+            text_right = linkpair_text_off(right);
             break;
         }
         right = linkpair_right(right);
     }
-    if ( m->st_off >= st_left && match_st_end(m) <= st_right )
+    if ( m->text_off >= text_left && match_text_end(m) <= text_right )
         return 0;
     else
         return 1;
@@ -835,11 +855,11 @@ void match_print( match *m, UChar *text )
     match *temp = m;
     while ( temp != NULL )
     {
-        print_utf8(&text[temp->st_off],temp->len );
+        print_utf8(&text[temp->text_off],temp->len );
         if ( temp->next != NULL )
         {
-            int end = temp->st_off+temp->len;
-            int diff = temp->next->st_off-end;
+            int end = temp->text_off+temp->len;
+            int diff = temp->next->text_off-end;
             printf("[");
             if ( diff != 0 )
                 print_utf8(&text[end],diff );

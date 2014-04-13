@@ -384,6 +384,48 @@ void bitset_clear_bit( bitset *bs, int i )
     unsigned char mask = bit^(unsigned char)0xff;
     bs->data[index] &= mask;
 }
+/**
+ * Convert a bitset into a string with the correct syntax. We omit 
+ * the first bit as that is handled separately.
+ * @param bs set of versions
+ * @param buf write result here
+ * @param len the number of bytes available in buf
+ */
+void bitset_serialise( bitset *bs, char *buf, int len )
+{
+   int start = bitset_next_set_bit(bs,1);
+   int end = start;
+   int slen = 0;
+   while ( end >= 1 )
+   {
+       int res = bitset_next_set_bit( bs, end+1 );
+       if ( res == -1 || res > end+1 )
+       {
+           if ( slen > 0 && slen < len-1 )
+           {
+               strcat(buf,",");
+               slen++;
+           }
+           if ( end > start )
+           {
+               char temp[64];
+               slen += snprintf(temp,64,"%d-%d",start,end);
+               if ( slen+strlen(temp) < len-1 )
+                   strcat( buf, temp );
+           }
+           else
+           {
+               char temp[64];
+               slen += snprintf(temp,64,"%d",start);
+               if ( slen+strlen(temp) < len-1 )
+                   strcat( buf, temp );
+           }
+           start = end = res;
+       }
+       else
+           end = res;
+   }
+}
 #ifdef MVD_TEST
 /**
  * Print a bitset to stdout

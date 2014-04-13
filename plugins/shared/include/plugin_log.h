@@ -11,7 +11,6 @@
 #ifdef	__cplusplus
 extern "C" {
 #endif
-#define SCRATCH_LEN 1024
 
 typedef struct plugin_log_struct plugin_log;
 plugin_log *plugin_log_create();
@@ -20,8 +19,9 @@ void plugin_log_add( plugin_log *log, char *fmt, ... );
 void plugin_log_clear( plugin_log *log );
 char *plugin_log_buffer( plugin_log *log );
 int plugin_log_pos( plugin_log *log );
+#ifdef MVD_TEST
 void plugin_log_test( int *passed, int *failed );
-
+#endif
 
 #ifdef	__cplusplus
 }

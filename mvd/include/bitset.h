@@ -34,6 +34,8 @@ unsigned char bitset_get_byte( bitset *bs, int index );
 int bitset_measure( bitset *bs );
 void bitset_tostring( bitset *bs, char *dst, int len );
 void bitset_clear_bit( bitset *bs, int i );
+void bitset_serialise( bitset *bs, char *buf, int len );
+
 
 #ifdef	__cplusplus
 }

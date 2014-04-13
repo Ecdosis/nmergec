@@ -25,19 +25,22 @@ void linkpair_set_right( linkpair *lp, linkpair *right );
 linkpair *linkpair_left( linkpair *lp );
 linkpair *linkpair_right( linkpair *lp );
 linkpair *linkpair_next( linkpair *lp, bitset *bs );
-void linkpair_set_st_off( linkpair *lp, int st_off );
-int linkpair_st_off( linkpair *lp );
+linkpair *linkpair_prev( linkpair *lp, bitset *bs );
+void linkpair_set_text_off( linkpair *lp, int text_off );
+int linkpair_text_off( linkpair *lp );
+int linkpair_len( linkpair *lp );
 pair *linkpair_pair( linkpair *lp );
 dyn_array *linkpair_to_pairs( linkpair *lp );
 int linkpair_node_to_right( linkpair *lp );
 int linkpair_node_to_left( linkpair *lp );
 bitset *linkpair_node_overhang( linkpair *lp );
 int linkpair_add_at_node( linkpair *lp, linkpair *after, int verify );
-int linkpair_add_after( linkpair *lp, linkpair *after );
+void linkpair_add_after( linkpair *lp, linkpair *after );
 int linkpair_list_circular( linkpair *lp );
 void linkpair_remove( linkpair *lp, int dispose );
 void linkpair_test( int *passed, int *failed );
 void linkpair_print( linkpair *lp );
+void linkpair_add_at( linkpair **list, linkpair *lp, int text_off, int version );
 extern UChar USTR_EMPTY[];
 
 #ifdef	__cplusplus

@@ -290,54 +290,43 @@ static int add_subsequent_version( MVD *mvd, struct add_struct *add,
     orphanage *o = orphanage_create();
     if ( o != NULL )
     {
-        // create initial alignment
-        alignment *a = alignment_create( text, 0, tlen, 
-            mvd_count_versions(mvd)+1, o, log );
-        if ( a != NULL )
+        dyn_array *pairs = mvd_get_pairs( mvd );
+        linkpair *list = link_pairs( pairs, log, o );
+        // now add its version to the mvd
+        if ( list != NULL )
         {
-            // list of current alignments
-            alignment *head = a;
-            dyn_array *pairs = mvd_get_pairs( mvd );
-            linkpair *list = link_pairs( pairs, log, o );
-            // now add its version to the mvd
-            if ( list != NULL )
+            // create initial alignment
+            alignment *a = alignment_create( text, 0, tlen, tlen,
+                mvd_count_versions(mvd)+1, o, log );
+            if ( a != NULL )
             {
+                // list of current alignments
+                alignment *head = a;
                 res = add_version( add, mvd );
                 // iterate while there are still valid alignments
                 while ( res && head != NULL )
                 {
                     alignment *left,*right;
-                    res = alignment_align( head, &list, &left, &right, 
-                        o, log );
+                    alignment_print(head,"aligning:");
+                    res = alignment_align( head, &list, &left, &right, o );
                     if ( res )
                     {
-                        linkpair_print( list );
-                        // do this now for debug but normally at the end
-/*
-                        pairs = linkpair_to_pairs( list );
-                        mvd_set_pairs( mvd, pairs );
-                        verify *v = verify_create( pairs, 
-                            mvd_count_versions(mvd) );
-                        if ( !verify_check(v) )
-                            fprintf(stderr,"error: unbalanced graph\n");
-*/
-                        // temporary
-                        break;
-                        // end debug
+                        alignment *old = head;
                         head = alignment_pop( head );
+                        alignment_dispose( old );
                         // now update the list
                         if ( head != NULL )
                         {
                             if ( left != NULL )
-                                alignment_push( head, left );
+                                head = alignment_push( head, left );
                             if ( right != NULL )
-                                alignment_push( head, right );
+                                head = alignment_push( head, right );
                         }
                         else if ( left != NULL )    // head,tail is NULL
                         {
                             head = left;
                             if ( right != NULL )
-                                alignment_push( head, right );
+                                head = alignment_push( head, right );
                         }
                         else if ( right != NULL )   // left is NULL
                             head = right;
@@ -345,8 +334,15 @@ static int add_subsequent_version( MVD *mvd, struct add_struct *add,
                     else    // try again
                         head = alignment_pop(head);
                 }
-                linkpair_dispose_list( list );
+                linkpair_print( list );
+                pairs = linkpair_to_pairs( list );
+                mvd_set_pairs( mvd, pairs );
+                verify *v = verify_create( pairs, 
+                    mvd_count_versions(mvd) );
+                if ( !verify_check(v) )
+                    fprintf(stderr,"error: unbalanced graph\n");            
             }
+            linkpair_dispose_list( list );
         }
         orphanage_dispose( o );
     }
@@ -401,20 +397,20 @@ static int add_mvd_text( struct add_struct *add, MVD *mvd,
  * Do the work of this plugin
  * @param mvd the mvd to manipulate or read
  * @param options a string containing the plugin's options
- * @param output buffer of length SCRATCH_LEN
+ * @param output buffer for errors, caller to dispose
  * @param data data passed directly in 
  * @param data_len length of data
  * @return 1 if the process completed successfully
  */
-int process( MVD **mvd, char *options, unsigned char *output, 
-    unsigned char *data, size_t data_len )
+int process( MVD **mvd, char *options, char **output, unsigned char *data, 
+    size_t data_len )
 {
     int res = 1;
     if ( *mvd == NULL )
         *mvd = mvd_create( 1 );
     if ( *mvd != NULL )
     {
-        plugin_log *log = plugin_log_create( output );
+        plugin_log *log = plugin_log_create();
         if ( log != NULL )
         {
             if ( !mvd_is_clean(*mvd) )
@@ -443,7 +439,6 @@ int process( MVD **mvd, char *options, unsigned char *output,
                 else
                     plugin_log_add(log,
                         "mvd_add: failed to create mvd_add object\n");
-                plugin_log_dispose( log );
             }
             else
             {
@@ -455,6 +450,8 @@ int process( MVD **mvd, char *options, unsigned char *output,
             plugin_log_add(log,"mvd_add: failed to create log object\n");
             res = 0;
         }
+        *output = strdup( plugin_log_buffer(log) );
+        plugin_log_dispose( log );
     }
     return res;
 }
@@ -501,6 +498,14 @@ char *description()
 {
     return "adds a new version to an existing mvd\n";
 }
+int test( int *passed, int *failed )
+{
+#ifdef MVD_TEST
+    return test_mvd_add( passed, failed );
+#else
+    return 1;
+#endif
+}
 /**
  * Test the plugin
  * @param p VAR param update number of passed tests
@@ -509,7 +514,6 @@ char *description()
  */
 #ifdef MVD_TEST
 static char *folder;
-static char output[SCRATCH_LEN];
 
 static char *create_path( char *dir, char *file )
 {
@@ -548,6 +552,7 @@ static int read_dir( char *folder )
     int res = 1;
     struct dirent *ent;
     UChar desc[6];
+    char *output;
     MVD *mvd=mvd_create(1);
     mvd_set_encoding(mvd, "utf-8");
     ascii_to_uchar( "test", desc, 6 );
@@ -575,9 +580,9 @@ static int read_dir( char *folder )
                         strcat( options, f_name );
                         strcat( options, " encoding=utf-8" );
                         strcat( options, " description=test" );
-                        res = process( &mvd, options, output, txt, flen );
+                        res = process( &mvd, options, &output, txt, flen );
                         n_files++;
-                        printf("%s",(char*)output);
+                        //printf("%s",(char*)output);
                         free( txt );
                     }
                     free( path );
@@ -592,7 +597,7 @@ static int read_dir( char *folder )
     return n_files;
 }
 // arguments: folder of text files
-void test_mvd_add( int *passed, int *failed )
+int test_mvd_add( int *passed, int *failed )
 {
     int res = read_dir( "english" );
     //int res = read_dir( "tests" );
@@ -604,6 +609,8 @@ void test_mvd_add( int *passed, int *failed )
     {
         (*failed)++;
         fprintf(stderr,"mvd_add: failed to load test directory\n");
+        res = 0;
     }
+    return res;
 }
 #endif

@@ -6,6 +6,10 @@
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
+/*
+ * This module converts string representations of commands into
+ * valuesof the operation enum.
+ */
 static const char *table[] = {"ADD", "EMPTY", "HELP", "LIST", "RUN", "VERSION" };
 /**
  * Convert a string to uppercase

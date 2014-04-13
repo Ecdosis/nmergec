@@ -17,7 +17,7 @@ struct dyn_string_struct
     UChar *data;
 };
 /**
- * Create a dynamic string object
+ * Create a dynamic UTF16 string object
  * @return an allocated basic dynamic string or NULL
  */
 dyn_string *dyn_string_create()

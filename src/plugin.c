@@ -18,7 +18,9 @@
 #include "memwatch.h"
 #endif
 
-
+/*
+ * Handle plugin loading and calling of functions
+ */
 struct plugin_struct
 {
 	void *handle;
@@ -141,7 +143,7 @@ void plugin_dispose( plugin *plug )
  * @return 1 if it worked else 0
  */
 int plugin_process( plugin *plug, MVD **mvd, char *options, 
-    unsigned char *output, unsigned char *data, size_t data_len )
+    char **output, unsigned char *data, size_t data_len )
 {
     return (plug->process)(mvd,options,output,data,data_len);
 }
@@ -171,7 +173,7 @@ char *plugin_version( plugin *plug )
 	return (plug->version)();
 }
 /**
- * Print plugin version and authorship information
+ * Print plugin description
  * @param plug the plugin in question
  */
 char *plugin_description( plugin *plug )

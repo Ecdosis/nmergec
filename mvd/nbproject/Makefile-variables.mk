@@ -7,29 +7,29 @@ CND_BASEDIR=`pwd`
 CND_BUILDDIR=build
 CND_DISTDIR=dist
 # Debug configuration
-CND_PLATFORM_Debug=GNU-MacOSX
-CND_ARTIFACT_DIR_Debug=dist/Debug/GNU-MacOSX
-CND_ARTIFACT_NAME_Debug=mvd
-CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-MacOSX/mvd
-CND_PACKAGE_DIR_Debug=dist/Debug/GNU-MacOSX/package
-CND_PACKAGE_NAME_Debug=mvd.tar
-CND_PACKAGE_PATH_Debug=dist/Debug/GNU-MacOSX/package/mvd.tar
+CND_PLATFORM_Debug=GNU-Linux-x86
+CND_ARTIFACT_DIR_Debug=dist/Debug/GNU-Linux-x86
+CND_ARTIFACT_NAME_Debug=libmvd.so
+CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-Linux-x86/libmvd.so
+CND_PACKAGE_DIR_Debug=dist/Debug/GNU-Linux-x86/package
+CND_PACKAGE_NAME_Debug=libmvd.so.tar
+CND_PACKAGE_PATH_Debug=dist/Debug/GNU-Linux-x86/package/libmvd.so.tar
 # Release configuration
-CND_PLATFORM_Release=GNU-MacOSX
-CND_ARTIFACT_DIR_Release=dist/Release/GNU-MacOSX
-CND_ARTIFACT_NAME_Release=libmvd.dylib
-CND_ARTIFACT_PATH_Release=dist/Release/GNU-MacOSX/libmvd.dylib
-CND_PACKAGE_DIR_Release=dist/Release/GNU-MacOSX/package
-CND_PACKAGE_NAME_Release=libmvd.dylib.tar
-CND_PACKAGE_PATH_Release=dist/Release/GNU-MacOSX/package/libmvd.dylib.tar
+CND_PLATFORM_Release=GNU-Linux-x86
+CND_ARTIFACT_DIR_Release=dist/Release/GNU-Linux-x86
+CND_ARTIFACT_NAME_Release=libmvd.so
+CND_ARTIFACT_PATH_Release=dist/Release/GNU-Linux-x86/libmvd.so
+CND_PACKAGE_DIR_Release=dist/Release/GNU-Linux-x86/package
+CND_PACKAGE_NAME_Release=libmvd.so.tar
+CND_PACKAGE_PATH_Release=dist/Release/GNU-Linux-x86/package/libmvd.so.tar
 # Test configuration
-CND_PLATFORM_Test=GNU-MacOSX
-CND_ARTIFACT_DIR_Test=dist/Test/GNU-MacOSX
+CND_PLATFORM_Test=GNU-Linux-x86
+CND_ARTIFACT_DIR_Test=dist/Test/GNU-Linux-x86
 CND_ARTIFACT_NAME_Test=mvd
-CND_ARTIFACT_PATH_Test=dist/Test/GNU-MacOSX/mvd
-CND_PACKAGE_DIR_Test=dist/Test/GNU-MacOSX/package
-CND_PACKAGE_NAME_Test=mvd.tar
-CND_PACKAGE_PATH_Test=dist/Test/GNU-MacOSX/package/mvd.tar
+CND_ARTIFACT_PATH_Test=dist/Test/GNU-Linux-x86/mvd
+CND_PACKAGE_DIR_Test=dist/Test/GNU-Linux-x86/package
+CND_PACKAGE_NAME_Test=libmvd.so.tar
+CND_PACKAGE_PATH_Test=dist/Test/GNU-Linux-x86/package/libmvd.so.tar
 #
 # include compiler specific variables
 #

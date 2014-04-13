@@ -12,6 +12,7 @@
 #include "mvd.h"
 #include "plugin.h"
 #include "plugin_log.h"
+#include "encoding.h"
 #ifdef MEMWATCH 
 #include "memwatch.h"
 #endif
@@ -185,13 +186,13 @@ static int write_line( dyn_array *da, UChar *vid, char *data, int *data_len,
  * @param data_len of data (0 if data is NULL)
  * @return 1 if the process completed successfully
  */
-int process( MVD **mvd, char *options, unsigned char *output, 
+int process( MVD **mvd, char *options, char **output, 
     unsigned char *data, size_t data_len )
 {
     int res = 1;
     if ( mvd != NULL )
     {
-        plugin_log *log = plugin_log_create( output );
+        plugin_log *log = plugin_log_create();
         if ( log != NULL )
         {
             int n_versions = mvd_count_versions( *mvd );
@@ -201,21 +202,21 @@ int process( MVD **mvd, char *options, unsigned char *output,
                 res = mvd_get_versions( *mvd, versions, n_versions );
                 if ( res )
                 {
-                    int i,o_len = SCRATCH_LEN;
+                    int i,o_len = plugin_log_pos(log);
                     dyn_array *da = dyn_array_create( 5 );
                     if ( da != NULL )
                     {
                         UChar *desc = mvd_description( *mvd );
                         sort_versions( versions, n_versions );
-                        output[0] = 0;
-                        res = write_utf8_string( desc, output, &o_len );
+                        *output = plugin_log_buffer(log);
+                        res = write_utf8_string( desc, *output, &o_len );
                         if ( !res )
                             plugin_log_add(log,
                                 "mvd_list: write_utf8_string failed\n");
                         for ( i=0;i<n_versions;i++ )
                         {
                             version *v = versions[i];
-                            res = write_line( da, version_id(v), output, 
+                            res = write_line( da, version_id(v), *output, 
                                 &o_len, log );
                             if ( !res )
                             {

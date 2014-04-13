@@ -42,7 +42,7 @@ struct match_state_struct
     linkpair *end_p;
     int start_pos;
     int end_pos;
-    int st_off;
+    int text_off;
     int len;
     bitset *bs;
     pos *loc;
@@ -61,7 +61,7 @@ struct match_state_struct
  * @return a match state object
  */
 match_state *match_state_create( linkpair *start_p, linkpair *end_p, 
-    int start_pos, int end_pos, int st_off, int len, bitset *bs, pos *loc,
+    int start_pos, int end_pos, int text_off, int len, bitset *bs, pos *loc,
     plugin_log *log )
 {
     match_state *ms = calloc( 1, sizeof(match_state) );
@@ -71,7 +71,7 @@ match_state *match_state_create( linkpair *start_p, linkpair *end_p,
         ms->end_p = end_p;
         ms->start_pos = start_pos;
         ms->end_pos = end_pos;
-        ms->st_off = st_off;
+        ms->text_off = text_off;
         ms->len = len;
         ms->bs = bs;
         ms->loc = calloc( 1, sizeof(pos) );
@@ -94,7 +94,7 @@ match_state *match_state_create( linkpair *start_p, linkpair *end_p,
 match_state *match_state_copy( match_state *ms, plugin_log *log )
 {
     match_state *ms_copy = match_state_create( ms->start_p, ms->end_p, 
-        ms->start_pos, ms->end_pos, ms->st_off, ms->len, ms->bs, ms->loc,
+        ms->start_pos, ms->end_pos, ms->text_off, ms->len, ms->bs, ms->loc,
         log );
     if ( ms_copy != NULL )
     {
@@ -154,9 +154,9 @@ int match_state_end_pos( match_state *ms )
 {
     return ms->end_pos;
 }
-int match_state_st_off( match_state *ms )
+int match_state_text_off( match_state *ms )
 {
-    return ms->st_off;
+    return ms->text_off;
 }
 int match_state_len( match_state *ms )
 {

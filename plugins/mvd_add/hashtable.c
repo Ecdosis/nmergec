@@ -290,7 +290,6 @@ int hashtable_size( hashtable *ht )
 }
 #ifdef MVD_TEST
 static UChar ustr[42];
-static char buffer[SCRATCH_LEN];
 static char *cstr = "Lorem ipsum dolor sit amet, consectetur";
 
 void hashtable_test( int *passed, int *failed )
@@ -303,7 +302,7 @@ void hashtable_test( int *passed, int *failed )
             "skipping other tests...\n");
         return;
     }
-    plugin_log *log = plugin_log_create( buffer );
+    plugin_log *log = plugin_log_create();
     if ( log != NULL )
     {    
         node *root = node_create(0,0,log);

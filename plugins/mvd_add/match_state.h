@@ -25,7 +25,7 @@ linkpair *match_state_start_p( match_state *ms );
 linkpair *match_state_end_p( match_state *ms );
 int match_state_start_pos( match_state *ms );
 int match_state_end_pos( match_state *ms );
-int match_state_st_off( match_state *ms );
+int match_state_text_off( match_state *ms );
 int match_state_len( match_state *ms );
 bitset *match_state_bs( match_state *ms );
 

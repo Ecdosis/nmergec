@@ -29,7 +29,7 @@
 #include "pair.h"
 #include "dyn_array.h"
 #include "version.h"
-#include "MVD.h"
+#include "mvd.h"
 #include "dom.h"
 #include "mvd_json.h"
 #include "link_node.h"

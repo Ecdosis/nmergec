@@ -57,10 +57,11 @@ plugin_list *plugin_list_create()
  * Add a new plugin to the list
  * @param list the list object to add it to
  * @param handle handle to a loaded dll
+ * @return 1 if it worked else 0
  */
-void plugin_list_add( plugin_list *list, void *handle )
+int plugin_list_add( plugin_list *list, void *handle )
 {
-    int i;
+    int res = 1;
     if ( list->num_plugins == list->block_size )
     {
         int new_size = list->block_size+8;
@@ -69,9 +70,11 @@ void plugin_list_add( plugin_list *list, void *handle )
         {
             fprintf(stderr,
                 "plugin_list: failed to reallocate list of plugins\n");
+            res = 0;
         }
         else
         {
+            int i;
             list->block_size = new_size;
             for ( i=0;i<list->num_plugins;i++ )
             {
@@ -82,6 +85,7 @@ void plugin_list_add( plugin_list *list, void *handle )
         }
     }
 	list->plugins[list->num_plugins++] = plugin_create( handle );
+    return res;
 }
 /**
  * Close all plugin connections and dispose of ourselves

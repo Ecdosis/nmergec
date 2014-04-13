@@ -27,25 +27,38 @@
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
+#define SCRATCH_LEN 1024
+
 struct plugin_log_struct
 {
-    // we don't own this
+    // buffer to write messages in
     char *scratch;
     // message buffer len
     int pos;
+    int allocated;
 };
 /**
  * Create a plugin log object
- * @param buffer a buffer of length SCRATCH_LEN - we don't own this
+ * @param buffer a buffer initially of length SCRATCH_LEN
  * @return the log
  */
-plugin_log *plugin_log_create( char *buffer )
+plugin_log *plugin_log_create()
 {
     plugin_log *log = calloc( sizeof(plugin_log), 1 );
     if ( log == NULL )
         fprintf(stderr,"plugin_log: failed to create log\n");
     else
-        log->scratch = buffer;
+    {
+        log->scratch = calloc( 1, SCRATCH_LEN );
+        if ( log->scratch == NULL )
+        {
+            fprintf(stderr,"plugin_log: failed to create buffer\n");
+            plugin_log_dispose(log);
+            log = NULL;
+        }
+        else
+            log->allocated = SCRATCH_LEN;
+    }
     return log;
 }
 /**
@@ -55,12 +68,40 @@ plugin_log *plugin_log_create( char *buffer )
 void plugin_log_dispose( plugin_log *log )
 {
     if ( log != NULL )
+    {
+        if ( log->scratch != NULL )
+            free( log->scratch );
         free( log );
-    // leave the buffer: caller must dispose
+    }
 }
+/**
+ * Get the current write position (or length) of the log
+ * @param log the log to query
+ * @return the length of its text
+ */
 int plugin_log_pos( plugin_log *log )
 {
     return log->pos;
+}
+/**
+ * Resize the log
+ * @param log the log in question
+ * @param slen the number of bytes required
+ * @return 1 if it worked else 0
+ */
+static int plugin_log_resize( plugin_log *log, int slen )
+{
+    int res = 0;
+    int new_len = slen+SCRATCH_LEN+log->allocated;
+    char *new_buf = calloc( new_len, 1 );
+    if ( new_buf != NULL )
+    {
+        strncpy( new_buf, log->scratch, log->pos );
+        free( log->scratch );
+        log->scratch = new_buf;
+        res = 1;
+    }
+    return res;
 }
 /**
  * Add to the plugin log
@@ -81,7 +122,8 @@ void plugin_log_add( plugin_log *log, char *fmt, ... )
     if ( nconvs > 0 )
     {
         vsnprintf( str, 128, fmt, ap );
-        if ( strlen(str)+log->pos < SCRATCH_LEN )
+        int slen = strlen(str);
+        if ( slen+log->pos < log->allocated || plugin_log_resize(log,slen) )  
         {
             memcpy( &log->scratch[log->pos], str, strlen(str) );
             log->pos += strlen(str);
@@ -110,7 +152,6 @@ char *plugin_log_buffer( plugin_log *log )
 }
 #ifdef MVD_TEST
 #include <math.h>
-static char buf[SCRATCH_LEN];
 void plugin_log_test( int *passed, int *failed )
 {
     const char *lorem_ipsum = "At vero eos et accusamus et iusto odio "
@@ -126,7 +167,7 @@ void plugin_log_test( int *passed, int *failed )
     "molestiae non recusandae. Itaque earum rerum hic tenetur a sapiente "
     "delectus, ut aut reiciendis voluptatibus maiores alias consequatur "
     "aut perferendis doloribus asperiores repellat.";
-    plugin_log *log = plugin_log_create( buf );
+    plugin_log *log = plugin_log_create();
     if ( log != NULL )
     {
         int n = 42;

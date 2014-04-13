@@ -406,7 +406,7 @@ void pair_print( pair *p )
     if ( pair_is_parent(p) )
     {
         char buf[128];
-        bitset_tostring(pair_versions(p),buf,128 );
+        bitset_serialise(pair_versions(p),buf,128 );
         printf(", versions: %s",buf);
         char *pdata = pair_cdata(p);
         if ( pdata != NULL )
@@ -420,8 +420,8 @@ void pair_print( pair *p )
     else
     {
         char buf[128];
-        bitset_tostring(pair_versions(p),buf,128 );
-        printf(", versions: %s ",buf);
+        bitset_serialise(pair_versions(p),buf,128 );
+        printf(", versions: %s",buf);
         char *pdata = pair_cdata(p);
         if ( pdata != NULL )
         {

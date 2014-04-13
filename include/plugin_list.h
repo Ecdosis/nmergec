@@ -15,7 +15,7 @@ extern "C" {
 typedef struct plugin_list_struct plugin_list;
 
 plugin_list *plugin_list_create();
-void plugin_list_add( plugin_list *list, void *handle );
+int plugin_list_add( plugin_list *list, void *handle );
 void plugin_list_dispose( plugin_list *list );
 plugin *plugin_list_get( plugin_list *list, char *name );
 void plugin_list_all( plugin_list *list );

@@ -56,6 +56,7 @@ struct matcher_struct
     int tlen;
     aatree *pq;
     int version;
+    int st_off;
     plugin_log *log;
 };
 /**
@@ -74,6 +75,7 @@ matcher *matcher_create( alignment *a, linkpair *pairs )
         m->text = alignment_text( a, &m->tlen );
         m->version = alignment_version(a);
         m->st = alignment_suffixtree( a );
+        m->st_off = alignment_start(a);
         m->pq = aatree_create( match_compare, PQUEUE_LIMIT );
         if ( m->pq == NULL )
         {
@@ -114,7 +116,8 @@ int matcher_align( matcher *m )
             for ( j=0;j<length;j++ )
             {
                 // start a match at each character position
-                match *mt = match_create( lp, j, m->pairs, m->st, m->log );
+                match *mt = match_create( lp, j, m->pairs, m->st, 
+                    m->st_off, m->log );
                 if ( mt != NULL )
                 {
                     match_set_versions( mt, bitset_clone(bs) );

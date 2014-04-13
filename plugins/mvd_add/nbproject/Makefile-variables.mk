@@ -23,13 +23,13 @@ CND_PACKAGE_DIR_Release=dist/Release/GNU-MacOSX/package
 CND_PACKAGE_NAME_Release=libmvdadd.dylib.tar
 CND_PACKAGE_PATH_Release=dist/Release/GNU-MacOSX/package/libmvdadd.dylib.tar
 # Test configuration
-CND_PLATFORM_Test=GNU-MacOSX
-CND_ARTIFACT_DIR_Test=dist/Test/GNU-MacOSX
-CND_ARTIFACT_NAME_Test=mvd_add
-CND_ARTIFACT_PATH_Test=dist/Test/GNU-MacOSX/mvd_add
-CND_PACKAGE_DIR_Test=dist/Test/GNU-MacOSX/package
-CND_PACKAGE_NAME_Test=mvdadd.tar
-CND_PACKAGE_PATH_Test=dist/Test/GNU-MacOSX/package/mvdadd.tar
+CND_PLATFORM_Test=GNU-Linux-x86
+CND_ARTIFACT_DIR_Test=dist/Test/GNU-Linux-x86
+CND_ARTIFACT_NAME_Test=libmvd_add.so
+CND_ARTIFACT_PATH_Test=dist/Test/GNU-Linux-x86/libmvd_add.so
+CND_PACKAGE_DIR_Test=dist/Test/GNU-Linux-x86/package
+CND_PACKAGE_NAME_Test=libmvdadd.so.tar
+CND_PACKAGE_PATH_Test=dist/Test/GNU-Linux-x86/package/libmvdadd.so.tar
 #
 # include compiler specific variables
 #

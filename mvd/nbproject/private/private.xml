@@ -1,8 +1,42 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project-private xmlns="http://www.netbeans.org/ns/project-private/1">
     <data xmlns="http://www.netbeans.org/ns/make-project-private/1">
-        <activeConfTypeElem>1</activeConfTypeElem>
-        <activeConfIndexElem>2</activeConfIndexElem>
+        <activeConfTypeElem>2</activeConfTypeElem>
+        <activeConfIndexElem>0</activeConfIndexElem>
     </data>
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
+    <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/1">
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/include/utils.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/src/utils.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/src/mvd.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/src/pair.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/src/benchmark.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/src/version.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/src/group.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/src/bitset.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/src/dyn_array.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/src/hint.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/src/vgnode.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/src/verify.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/src/encoding.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/src/hashmap.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/src/hsieh.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/src/link_node.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/src/serialiser.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/src/test.c</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/include/hashmap.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/include/mvd.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/include/bitset.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/include/hint.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/include/pair.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/include/verify.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/include/version.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/include/vgnode.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/include/benchmark.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/include/dyn_array.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/include/encoding.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/include/group.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/include/hsieh.h</file>
+        <file>file:/Users/desmond/NetBeansProjects/NMergeC/mvd/include/serialiser.h</file>
+    </open-files>
 </project-private>

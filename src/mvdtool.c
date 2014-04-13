@@ -150,32 +150,38 @@ static int read_args( int argc, char **argv )
  * @param path the path to the plugin
  * @return the result of loading it: 1 if success, 0 otherwise
  */
-static void open_plugin( char *path )
+static int open_plugin( char *path )
 {
-	void *handle = dlopen( path, RTLD_LOCAL|RTLD_LAZY );
+	int res = 1;
+    void *handle = dlopen( path, RTLD_LOCAL|RTLD_LAZY );
     if ( handle != NULL )
 	{
 		if ( plugins == NULL )
 			plugins = plugin_list_create();
-		plugin_list_add( plugins, handle );
+		res = plugin_list_add( plugins, handle );
 	}
 	else
+    {
 		fprintf(stderr, 
             "mvdtool: failed to read plugin path %s. error: %s\n",
 			path,dlerror() );
+        res = 0;
+    }
+    return res;
 }
 /**
  * Look for plugins to open. PLUGIN_DIR is supplied
  * during compilation via -D
  */
-static void do_open_plugins()
+static int do_open_plugins()
 {
 	struct dirent *dp;
 	DIR *dir = opendir(PLUGIN_DIR);
     int suffix_len = strlen(LIB_SUFFIX);
     // without this it won't find any plugins
 	setenv("LD_LIBRARY_PATH",PLUGIN_DIR,1);
-	while ((dp=readdir(dir)) != NULL)
+    int res = 1;
+	while (res && (dp=readdir(dir)) != NULL)
 	{
 		char path[PATH_LEN];
 		char suffix[32];
@@ -188,10 +194,11 @@ static void do_open_plugins()
             char *dot_pos = strrchr(dp->d_name,'.');
 			strncpy( suffix, dot_pos, 32 );
 			if ( strcmp(suffix,LIB_SUFFIX)==0 )
-				open_plugin( path );
+				res = open_plugin( path );
 		}
 	}
 	closedir(dir);
+    return res;
 }
 /**
  * Print the specified plugin's help message
@@ -202,10 +209,10 @@ void do_help()
     {
         plugin *plug = plugin_list_get( plugins, command );
         if ( plug != NULL )
-            
             printf("%s%s",plugin_description(plug),plugin_help(plug) );
     }
-}/**
+}
+/**
  * Display the specified plugin version
  */
 void do_version()
@@ -249,23 +256,22 @@ void do_command()
                 if ( mvd == NULL )
                     remove( mvdFile );
             }
-            unsigned char *output = malloc( SCRATCH_LEN );
+            char *output = NULL;
+            int res = plugin_process( plug, &mvd, options, &output, 
+                user_data, user_data_len );
             if ( output != NULL )
             {
-                output[0] = 0;
-                int res = plugin_process( plug, &mvd, options, output, 
-                    user_data, user_data_len );
                 fprintf(stderr, "%s", output );
-                if ( mvd != NULL )
-                {
-                    if ( plugin_changes(plug) )
-                        res = mvdfile_save( mvd, mvdFile, 0 );
-                    mvd_dispose( mvd );
-                }
                 free( output );
-                if ( user_data != NULL )
-                    free( user_data );
             }
+            if ( mvd != NULL )
+            {
+                if ( plugin_changes(plug) )
+                    res = mvdfile_save( mvd, mvdFile, 0 );
+                mvd_dispose( mvd );
+            }
+            if ( user_data != NULL )
+                free( user_data );
         } 
     }
 }
@@ -442,15 +448,23 @@ void test_mvdtool( int *passed, int *failed )
     }
     else
     {
-        do_open_plugins();
-        plugin *p = plugin_list_get( plugins, command );
-        if ( p == NULL )
+        int res = do_open_plugins();
+        if ( res )
         {
-            fprintf(stderr,"mvdtool: plugin %s not found\n",command);
-            *failed += 1 ;
+            plugin *p = plugin_list_get( plugins, command );
+            if ( p == NULL )
+            {
+                fprintf(stderr,"mvdtool: plugin %s not found\n",command);
+                *failed += 1 ;
+            }
+            else
+                *passed += 1;
         }
         else
-            *passed += 1;
+        {
+            *failed += 1;
+            fprintf(stderr,"mvdtool: failed to open all plugins\n");
+        }
         plugin_list_dispose( plugins );
     }
     if ( read_args(sizeof(args3)/sizeof(char*),args3) )

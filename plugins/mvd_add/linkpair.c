@@ -50,7 +50,7 @@ struct linkpair_struct
     linkpair *left;
     linkpair *right;
     // absolute offset in suffixtree text if aligned to new version
-    int st_off;
+    int text_off;
 };
 linkpair *linkpair_create( pair *p, plugin_log *log )
 {
@@ -104,11 +104,20 @@ linkpair *linkpair_make_parent( linkpair *lp, plugin_log *log )
  */
 linkpair *linkpair_make_child( linkpair *parent, int version, plugin_log *log )
 {
+    linkpair *lpc = NULL;
     bitset *bs = bitset_create();
-    bitset_set( bs, version );
-    pair *child = pair_create_child( bs );
-    pair_add_child(linkpair_pair(parent), child );
-    return linkpair_create( child, log );
+    if ( bs != NULL )
+    {
+        bs = bitset_set( bs, version );
+        if ( bs != NULL )
+        {
+            pair *child = pair_create_child( bs );
+            pair_add_child(linkpair_pair(parent), child );
+            bitset_dispose( bs );
+            lpc = linkpair_create( child, log );
+        }
+    }
+    return lpc;
 }
 /**
  * Dispose of an entire list
@@ -151,6 +160,15 @@ linkpair *linkpair_left( linkpair *lp )
     return lp->left;
 }
 /**
+ * Get the length of the underlying pair
+ * @param lp the linkpair
+ * @return the length of the data
+ */
+int linkpair_len( linkpair *lp )
+{
+    return pair_len(lp->p);
+}
+/**
  * Get the right pointer
  * @param lp the linkpair in question
  * @return the next pair on the right
@@ -177,20 +195,20 @@ void linkpair_replace( linkpair *old_lp, linkpair *new_lp )
 /**
  * Set the index into the suffixtree text
  * @param lp the linkpair to set it for
- * @param st_off the index
+ * @param text_off the index
  */
-void linkpair_set_st_off( linkpair *lp, int st_off )
+void linkpair_set_text_off( linkpair *lp, int text_off )
 {
-    lp->st_off = st_off;
+    lp->text_off = text_off;
 }
 /**
  * Get the index into the suffixtree text
  * @param lp the linkpair to set it for
  * @return the index
  */
-int linkpair_st_off( linkpair *lp )
+int linkpair_text_off( linkpair *lp )
 {
-    return lp->st_off;
+    return lp->text_off;
 }
 /**
  * Get the pair associated with this linkpair
@@ -218,7 +236,7 @@ int linkpair_trailing_node( linkpair *lp )
     return 0;
 }
 /**
- * Get the next pair in an array
+ * Get the next pair in a list
  * @param pairs a list of linkpairs
  * @param lp the first linkpair to look at
  * @param bs the bitset of versions to follow
@@ -230,6 +248,21 @@ linkpair *linkpair_next( linkpair *lp, bitset *bs )
     while ( lp != NULL 
         && !bitset_intersects(bs,pair_versions(linkpair_pair(lp))) )
         lp = linkpair_right(lp);
+    return lp;
+}
+/**
+ * Get the previous pair in a list
+ * @param pairs a list of linkpairs
+ * @param lp the first linkpair to look at
+ * @param bs the bitset of versions to follow
+ * @return NULL on failure else the the previous relevant linkpair
+ */
+linkpair *linkpair_prev( linkpair *lp, bitset *bs )
+{
+    lp = lp->left;
+    while ( lp != NULL 
+        && !bitset_intersects(bs,pair_versions(linkpair_pair(lp))) )
+        lp = linkpair_left(lp);
     return lp;
 }
 /**
@@ -266,18 +299,30 @@ int linkpair_free( linkpair *lp )
 void linkpair_add_hint( linkpair *lp, int version, plugin_log *log )
 {
     pair *p = lp->left->p;
+    bitset *pv = pair_versions(p);
     if ( pair_is_hint(p) )
-        bitset_set(pair_versions(p),version);
+    {
+        bitset *bs = bitset_set(pv,version);
+        if ( bs != pv && bs != NULL )
+            pair_set_versions(p,bs);
+    }
     else if ( bitset_next_set_bit(pair_versions(p),version)!=version )
     {
         bitset *bs = bitset_create();
-        bitset_set( bs, version );
-        pair *hint = pair_create_hint( bs );
-        linkpair *hint_lp = linkpair_create( hint, log );
-        hint_lp->left = lp->left;
-        hint_lp->right = lp;
-        lp->left->right = hint_lp;
-        lp->left = hint_lp;
+        if ( bs != NULL )
+        {
+            bs = bitset_set( bs, version );
+            if ( bs != NULL )
+            {
+                pair *hint = pair_create_hint( bs );
+                linkpair *hint_lp = linkpair_create( hint, log );
+                hint_lp->left = lp->left;
+                hint_lp->right = lp;
+                lp->left->right = hint_lp;
+                lp->left = hint_lp;
+                bitset_dispose( bs );
+            }
+        }
     }
 }
 /**
@@ -296,13 +341,7 @@ static int linkpair_split_data_pair( linkpair *lp, int at, plugin_log *log )
     {
         linkpair *lp2 = linkpair_create( q, log );
         if ( lp2 != NULL )
-        {
-            lp2->right = lp->right;
-            if ( lp2->right != NULL )
-                lp2->right->left = lp2;
-            lp->right = lp2;
-            lp2->left = lp;
-        }
+            linkpair_add_after(lp,lp2);
     }
     else
     {
@@ -493,24 +532,59 @@ void linkpair_add_before( linkpair *lp, linkpair *lp_new )
     }
 }
 /**
+ * Add a new linkpair
+ * @param list the list of linkpairs to add it to
+ * @param lp the linkpair to add
+ * @param text_off the offset in version for lp
+ * @param version the version to follow
+ */
+void linkpair_add_at( linkpair **list, linkpair *lp, int text_off, int version )
+{
+    linkpair *temp = *list;
+    bitset *bs = bitset_create();
+    if ( bs != NULL )
+        bs = bitset_set( bs, version );
+    if ( bs != NULL )
+    {
+        linkpair *last = NULL;
+        while ( temp != NULL )
+        {
+            pair *p = linkpair_pair(temp);
+            if ( bitset_next_set_bit(pair_versions(p),version)== version )
+            {
+                int off = linkpair_text_off(temp);
+                if ( off < text_off )
+                    last = temp;
+                else
+                {
+                    if ( last != NULL )
+                        linkpair_add_after( last, lp );
+                    else
+                    {
+                        lp->right = *list;
+                        *list = lp;
+                    }
+                    break;
+                }
+            }
+            temp = linkpair_next( temp, bs );
+        }
+        bitset_dispose( bs );
+    }
+}
+/**
  * Add a linkpair after a given point, creating a new node.
  * @param lp the point to add it after
  * @param after the linkpair to become the one after lp
  * @return 1 if successful else 0
  */
-int linkpair_add_after( linkpair *lp, linkpair *after )
+void linkpair_add_after( linkpair *lp, linkpair *after )
 {
-    if ( !linkpair_node_to_right(lp) )
-    {
-        after->right = lp->right;
-        after->left = lp;
-        if ( lp->right != NULL )
-            lp->right->left = after;
-        lp->right = after;
-        return 1;
-    }
-    else
-        return 0;
+    after->right = lp->right;
+    after->left = lp;
+    if ( lp->right != NULL )
+        lp->right->left = after;
+    lp->right = after;
 }
 /**
  * Measure the length of a list
@@ -595,8 +669,14 @@ void linkpair_print( linkpair *lp )
 {
     while ( lp != NULL )
     {
-        printf("st_off: %d",lp->st_off);
+        printf("text_off: %d len: %d",lp->text_off,linkpair_len(lp));
         pair *p = linkpair_pair(lp);
+        if ( linkpair_len(lp)==1 )
+        {
+            UChar *data = pair_data(p);
+            int i = (int)(*data);
+            printf("[%d]",i);
+        }
         pair_print( p );
         lp = lp->right;
     }
@@ -608,7 +688,6 @@ static UChar data3[5] = {'p','e','a','r',0};
 static UChar data4[7] = {'o','r','a','n','g','e',0};
 static UChar data5[6] = {'g','u','a','v','a',0};
 static UChar data6[8] = {'c','u','m','q','u','a','t',0};
-static char buf[SCRATCH_LEN];
 static bitset *bs1,*bs2,*bs3,*bs4,*bs5,*bsr,*bsl,*bsm;
 static linkpair *lp1,*lp2,*lp3,*lp4,*lpl,*lpr,*lpc;
 static pair *p1,*p2,*p3,*p4,*pl,*pr,*pc;
@@ -770,12 +849,12 @@ static void linkpair_test_replace( int *passed, int *failed, plugin_log *log )
     else
         (*passed)++;
 }
-static void linkpair_test_st_off( int *passed, int *failed, plugin_log *log )
+static void linkpair_test_text_off( int *passed, int *failed, plugin_log *log )
 {
-    linkpair_set_st_off( lp2, 123 );
-    if ( linkpair_st_off(lp2) != 123 )
+    linkpair_set_text_off( lp2, 123 );
+    if ( linkpair_text_off(lp2) != 123 )
     {
-        fprintf(stderr,"linkpair: linkpair_set_st_off failed\n");
+        fprintf(stderr,"linkpair: linkpair_set_text_off failed\n");
         (*failed)++;
     }
     else
@@ -974,8 +1053,8 @@ static void linkpair_test_overhang( int *passed, int *failed, plugin_log *log )
         bitset *bsc = bitset_create();
         if ( bsc != NULL )
         {
-            bitset_or( bsc, bsl );
-            bitset_set( bsc, 7 );
+            bsc = bitset_or( bsc, bsl );
+            bsc = bitset_set( bsc, 7 );
             bitset_and_not( bsc, pair_versions(pr) );
             if ( !bitset_equals(bsc,bs) )
             {
@@ -1042,19 +1121,17 @@ static void linkpair_test_add_after( int *passed, int *failed, plugin_log *log )
     lpr->right = lpr->left = NULL;
     lpl->left = lpl->right = NULL;
     lpc->left = lpc->right = NULL;
-    int res = linkpair_add_after( lpl, lpr );
-    if ( !res )
+    linkpair_add_after( lpl, lpr );
+    if ( linkpair_right(lpl)!=lpr )
     {
         fprintf(stderr,"linkpair: failed to add after\n");
         (*failed)++;
-        
     }
     else
-        (*passed)++;
-    if ( res )
     {
-        res = linkpair_add_after(lpl,lpc);
-        if ( res )
+        (*passed)++;
+        linkpair_add_after(lpl,lpc);
+        if ( linkpair_right(lpl)!=lpc )
         {
             fprintf(stderr,"linkpair: add_after should have failed\n");
             (*failed)++;
@@ -1121,7 +1198,7 @@ static void linkpair_test_remove( int *passed, int *failed, plugin_log *log )
 }
 void linkpair_test( int *passed, int *failed )
 {
-    plugin_log *log = plugin_log_create( buf );
+    plugin_log *log = plugin_log_create();
     if ( log != NULL )
     {
         int res = make_test_data(log);
@@ -1129,7 +1206,7 @@ void linkpair_test( int *passed, int *failed )
         {
             linkpair_test_links( passed, failed, log );
             linkpair_test_replace( passed, failed, log );
-            linkpair_test_st_off( passed, failed, log );    
+            linkpair_test_text_off( passed, failed, log );    
             linkpair_test_trailing( passed, failed, log );
             linkpair_test_next( passed, failed, log );
             linkpair_test_hint( passed, failed, log );

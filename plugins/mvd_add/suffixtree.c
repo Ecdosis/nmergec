@@ -420,7 +420,6 @@ UChar *suffixtree_text( suffixtree *st )
 #ifdef MVD_TEST
 static char *folder;
 typedef struct entry_struct entry;
-static char buffer[SCRATCH_LEN];
 struct entry_struct
 {
     char *file;
@@ -557,7 +556,7 @@ static int read_dir( char *folder, int *passed, int *failed, plugin_log *log )
 // arguments: folder of text files
 void suffixtree_test( int *passed, int *failed )
 {
-    plugin_log *log = plugin_log_create( buffer );
+    plugin_log *log = plugin_log_create();
     if ( log != NULL )
     {
         int res = read_dir( "tests", passed, failed, log );

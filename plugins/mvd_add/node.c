@@ -487,7 +487,6 @@ void node_print_children( UChar *str, node *v, plugin_log *log )
     printf("\n");
 }
 #ifdef MVD_TEST
-static char buffer[SCRATCH_LEN];
 static UChar ustr[42];
 static char *cstr = "Lorem ipsum dolor sit amet, consectetur";
 /**
@@ -505,7 +504,7 @@ void node_test( int *passed, int *failed )
             "skipping other tests...\n");
         return;
     }
-    plugin_log *log = plugin_log_create( buffer );
+    plugin_log *log = plugin_log_create();
     if ( log != NULL )
     {
         node *n = node_create( 0, 20, log );
