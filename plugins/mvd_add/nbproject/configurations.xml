@@ -5,10 +5,10 @@
                    displayName="Header Files"
                    projectFiles="true">
       <itemPath>aatree.h</itemPath>
-      <itemPath>alignment.h</itemPath>
       <itemPath>benchmark.h</itemPath>
+      <itemPath>card.h</itemPath>
+      <itemPath>deck.h</itemPath>
       <itemPath>hashtable.h</itemPath>
-      <itemPath>linkpair.h</itemPath>
       <itemPath>match.h</itemPath>
       <itemPath>match_state.h</itemPath>
       <itemPath>matcher.h</itemPath>
@@ -31,10 +31,10 @@
                    displayName="Source Files"
                    projectFiles="true">
       <itemPath>aatree.c</itemPath>
-      <itemPath>alignment.c</itemPath>
       <itemPath>benchmark.c</itemPath>
+      <itemPath>card.c</itemPath>
+      <itemPath>deck.c</itemPath>
       <itemPath>hashtable.c</itemPath>
-      <itemPath>linkpair.c</itemPath>
       <itemPath>match.c</itemPath>
       <itemPath>match_state.c</itemPath>
       <itemPath>matcher.c</itemPath>
@@ -96,21 +96,21 @@
       </item>
       <item path="aatree.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="alignment.c" ex="false" tool="0" flavor2="0">
-      </item>
-      <item path="alignment.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="benchmark.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="benchmark.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="card.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="card.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="deck.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="deck.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="hashtable.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="hashtable.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="linkpair.c" ex="false" tool="0" flavor2="0">
-      </item>
-      <item path="linkpair.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="match.c" ex="false" tool="0" flavor2="0">
       </item>
@@ -183,21 +183,21 @@
       </item>
       <item path="aatree.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="alignment.c" ex="false" tool="0" flavor2="0">
-      </item>
-      <item path="alignment.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="benchmark.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="benchmark.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="card.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="card.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="deck.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="deck.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="hashtable.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="hashtable.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="linkpair.c" ex="false" tool="0" flavor2="0">
-      </item>
-      <item path="linkpair.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="match.c" ex="false" tool="0" flavor2="0">
       </item>
@@ -236,7 +236,7 @@
       <item path="test.c" ex="false" tool="0" flavor2="0">
       </item>
     </conf>
-    <conf name="Test" type="2">
+    <conf name="Test" type="1">
       <toolsSet>
         <compilerSet>default</compilerSet>
         <dependencyChecking>true</dependencyChecking>
@@ -286,21 +286,21 @@
       </item>
       <item path="aatree.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="alignment.c" ex="false" tool="0" flavor2="0">
-      </item>
-      <item path="alignment.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="benchmark.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="benchmark.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="card.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="card.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="deck.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="deck.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="hashtable.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="hashtable.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="linkpair.c" ex="false" tool="0" flavor2="0">
-      </item>
-      <item path="linkpair.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="match.c" ex="false" tool="0" flavor2="0">
       </item>

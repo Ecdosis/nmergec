@@ -44,11 +44,11 @@
 #include "hashmap.h"
 #include "utils.h"
 #include "option_keys.h"
-#include "linkpair.h"
+#include "card.h"
 #include "match.h"
 #include "aatree.h"
 #include "orphanage.h"
-#include "alignment.h"
+#include "deck.h"
 #include "matcher.h"
 #include "verify.h"
 #include "orphanage.h"
@@ -75,15 +75,15 @@ struct add_struct
 };
 
 /**
- * Convert an ascii string to unicode using the given encoding
+ * Convert a string to UTF-16 from its own encoding
  * @param src an 8-bit plain string
  * @param src_len the length of src in BYTES
- * @param encoding the encoding's canonical name
+ * @param encoding the src encoding's canonical name
  * @param dst_len VAR param to whole number of UChars converted into
  * @param log a plugin log to record errors
  * @return an allocated UChar string or NULL
  */
-static UChar *ascii_to_unicode( char *src, int src_len, char *encoding, 
+static UChar *convert_to_unicode( char *src, int src_len, char *encoding, 
     int *dst_len, plugin_log *log )
 {
     int u_len = measure_from_encoding( src, src_len, encoding );
@@ -123,7 +123,7 @@ static int set_options( struct add_struct *add, hashmap *map, plugin_log *log )
     {
         int tlen;
         value = hashmap_get(map,VID_KEY);
-        add->vid = ascii_to_unicode( value, strlen(value), add->encoding, 
+        add->vid = convert_to_unicode( value, strlen(value), add->encoding, 
             &tlen, log );
         if ( add->vid == NULL )
             sane = 0;
@@ -137,7 +137,7 @@ static int set_options( struct add_struct *add, hashmap *map, plugin_log *log )
     {
         value = hashmap_get(map,LONG_NAME_KEY);
         int tlen;
-        add->v_description = ascii_to_unicode(value,strlen(value),
+        add->v_description = convert_to_unicode(value,strlen(value),
             add->encoding,&tlen,log );
         if ( add->v_description == NULL )
         {
@@ -153,7 +153,7 @@ static int set_options( struct add_struct *add, hashmap *map, plugin_log *log )
     {
         value = hashmap_get(map,DESCRIPTION_KEY);
         int tlen;
-        add->mvd_description = ascii_to_unicode(value,strlen(value),
+        add->mvd_description = convert_to_unicode(value,strlen(value),
             add->encoding,&tlen,log );
         if ( add->mvd_description == NULL )
         {
@@ -223,26 +223,26 @@ match *best_of_three( match *a, match *b, match *c )
  * @param pairs a pairs list as a dyn_array
  * @param log the log to add it to
  * @param o the orphanage to register transpositions in
- * @return head of the linkpairs list or NULL
+ * @return head of the cards list or NULL
  */
-static linkpair *link_pairs( dyn_array *pairs, plugin_log *log, orphanage *o )
+static card *link_pairs( dyn_array *pairs, plugin_log *log, orphanage *o )
 {
     int len = dyn_array_size( pairs );
     int i;
-    linkpair *head = NULL;
-    linkpair *current;
+    card *head = NULL;
+    card *current;
     for ( i=0;i<len;i++ )
     {
         pair *p = (pair*)dyn_array_get( pairs, i );
-        linkpair *lp = linkpair_create( p, log );
+        card *lp = card_create( p, log );
         if ( lp != NULL )
         {
             if ( head == NULL )
                 current = head = lp;
             else
             {
-                linkpair_set_right( current, lp );
-                linkpair_set_left( lp, current );
+                card_set_right( current, lp );
+                card_set_left( lp, current );
                 current = lp;
             }
             if ( pair_is_parent(p) )
@@ -253,7 +253,7 @@ static linkpair *link_pairs( dyn_array *pairs, plugin_log *log, orphanage *o )
         else
         {
             if ( head != NULL )
-                linkpair_dispose_list( head );
+                card_dispose_list( head );
             head = NULL;
             break;
         }
@@ -291,58 +291,58 @@ static int add_subsequent_version( MVD *mvd, struct add_struct *add,
     if ( o != NULL )
     {
         dyn_array *pairs = mvd_get_pairs( mvd );
-        linkpair *list = link_pairs( pairs, log, o );
+        card *list = link_pairs( pairs, log, o );
         // now add its version to the mvd
         if ( list != NULL )
         {
-            // create initial alignment
-            alignment *a = alignment_create( text, 0, tlen, tlen,
+            // create initial deck
+            deck *a = deck_create( text, 0, tlen, tlen,
                 mvd_count_versions(mvd)+1, o, log );
             if ( a != NULL )
             {
-                // list of current alignments
-                alignment *head = a;
+                // list of current decks
+                deck *head = a;
                 res = add_version( add, mvd );
-                // iterate while there are still valid alignments
+                // iterate while there are still valid decks
                 while ( res && head != NULL )
                 {
-                    alignment *left,*right;
-                    alignment_print(head,"aligning:");
-                    res = alignment_align( head, &list, &left, &right, o );
+                    deck *left,*right;
+                    deck_print(head,"aligning:");
+                    res = deck_align( head, &list, &left, &right, o );
                     if ( res )
                     {
-                        alignment *old = head;
-                        head = alignment_pop( head );
-                        alignment_dispose( old );
+                        deck *old = head;
+                        head = deck_pop( head );
+                        deck_dispose( old );
                         // now update the list
                         if ( head != NULL )
                         {
                             if ( left != NULL )
-                                head = alignment_push( head, left );
+                                head = deck_push( head, left );
                             if ( right != NULL )
-                                head = alignment_push( head, right );
+                                head = deck_push( head, right );
                         }
                         else if ( left != NULL )    // head,tail is NULL
                         {
                             head = left;
                             if ( right != NULL )
-                                head = alignment_push( head, right );
+                                head = deck_push( head, right );
                         }
                         else if ( right != NULL )   // left is NULL
                             head = right;
                     }
                     else    // try again
-                        head = alignment_pop(head);
+                        head = deck_pop(head);
                 }
-                linkpair_print( list );
-                pairs = linkpair_to_pairs( list );
+                card_print( list );
+                pairs = card_to_pairs( list );
                 mvd_set_pairs( mvd, pairs );
                 verify *v = verify_create( pairs, 
                     mvd_count_versions(mvd) );
                 if ( !verify_check(v) )
                     fprintf(stderr,"error: unbalanced graph\n");            
             }
-            linkpair_dispose_list( list );
+            card_dispose_list( list );
         }
         orphanage_dispose( o );
     }
@@ -362,20 +362,20 @@ static int add_mvd_text( struct add_struct *add, MVD *mvd,
     char *mvd_encoding = mvd_get_encoding(mvd);
     if ( add->encoding != NULL )
     {
+        // set the mvd encoding to add->encoding if it is empty
         if ( mvd_count_versions(mvd)==0 )
             mvd_set_encoding(mvd,add->encoding);
         else if ( strcmp(mvd_encoding,add->encoding)!=0 )
         {
+            // just a warning, we'll continue
             plugin_log_add(log,
                 "file's encoding %s does not match mvd's (%s):"
                 " assimilating...\n",add->encoding,mvd_encoding);
-            mvd_encoding = add->encoding;
         }
     }
-    // else use the mvd's current encoding
-    // convert from the external encoding to UTF-16 
-    UChar *text = ascii_to_unicode( data, data_len, 
-        mvd_encoding, &tlen, log );
+    // convert from the external add->encoding to UTF-16 
+    UChar *text = convert_to_unicode( data, data_len, 
+        add->encoding, &tlen, log );
     if ( tlen > 0 )
     {
         if ( mvd_count_versions(mvd)==0 )

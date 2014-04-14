@@ -76,7 +76,7 @@
         </environment>
       </runprofile>
     </conf>
-    <conf name="Test" type="2">
+    <conf name="Test" type="1">
       <toolsSet>
         <developmentServer>localhost</developmentServer>
         <platform>2</platform>

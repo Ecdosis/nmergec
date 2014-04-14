@@ -32,10 +32,10 @@
 #include "state.h"
 #include "aatree.h"
 #include "dyn_array.h"
-#include "linkpair.h"
+#include "card.h"
 #include "match.h"
 #include "orphanage.h"
-#include "alignment.h"
+#include "deck.h"
 #include "matcher.h"
 #include "hashmap.h"
 #include "utils.h"
@@ -51,7 +51,7 @@
 struct matcher_struct
 {
     suffixtree *st;
-    linkpair *pairs;
+    card *pairs;
     UChar *text;
     int tlen;
     aatree *pq;
@@ -61,21 +61,21 @@ struct matcher_struct
 };
 /**
  * Create a matcher
- * @param a the alignment object
+ * @param a the deck object
  * @param pairs the list of pairs from the MVD
  * @return a matcher object ready to go
  */
-matcher *matcher_create( alignment *a, linkpair *pairs )
+matcher *matcher_create( deck *a, card *pairs )
 {
     matcher *m = calloc( 1, sizeof(matcher) );
     if ( m != NULL )
     {
-        m->log = alignment_log( a );
+        m->log = deck_log( a );
         m->pairs = pairs;
-        m->text = alignment_text( a, &m->tlen );
-        m->version = alignment_version(a);
-        m->st = alignment_suffixtree( a );
-        m->st_off = alignment_start(a);
+        m->text = deck_text( a, &m->tlen );
+        m->version = deck_version(a);
+        m->st = deck_suffixtree( a );
+        m->st_off = deck_start(a);
         m->pq = aatree_create( match_compare, PQUEUE_LIMIT );
         if ( m->pq == NULL )
         {
@@ -104,10 +104,10 @@ void matcher_dispose( matcher *m )
  */
 int matcher_align( matcher *m )
 {
-    linkpair *lp = m->pairs;
+    card *lp = m->pairs;
     while ( lp != NULL )
     {
-        pair *p = linkpair_pair( lp );
+        pair *p = card_pair( lp );
         bitset *bs = pair_versions(p);
         // ignore pairs already aligned with the new version
         if ( bitset_next_set_bit(bs,m->version)!=m->version )
@@ -146,7 +146,7 @@ int matcher_align( matcher *m )
                     break;
             }
         }
-        lp = linkpair_right( lp );
+        lp = card_right( lp );
     }
     return !aatree_empty(m->pq);
 }

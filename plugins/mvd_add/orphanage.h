@@ -16,13 +16,13 @@ typedef struct orphanage_struct orphanage;
 orphanage *orphanage_create();
 void orphanage_dispose();
 int orphanage_next_id( orphanage *o );
-int orphanage_add_parent( orphanage *o, linkpair *parent );
-int orphanage_add_child( orphanage *o, linkpair *child );
-linkpair *orphanage_get_parent( orphanage *o, linkpair *child );
-void orphanage_get_children( orphanage *o, linkpair *parent, 
-    linkpair **children, int size );
-int orphanage_count_children( orphanage *o, linkpair *parent );
-int orphanage_remove_parent( orphanage *o, linkpair *parent );
+int orphanage_add_parent( orphanage *o, card *parent );
+int orphanage_add_child( orphanage *o, card *child );
+card *orphanage_get_parent( orphanage *o, card *child );
+void orphanage_get_children( orphanage *o, card *parent, 
+    card **children, int size );
+int orphanage_count_children( orphanage *o, card *parent );
+int orphanage_remove_parent( orphanage *o, card *parent );
 #ifdef MVD_TEST
 void orphanage_test( int *passed, int *failed );
 #endif

@@ -28,70 +28,77 @@
 #include "pair.h"
 #include "plugin_log.h"
 #include "dyn_array.h"
-#include "linkpair.h"
+#include "card.h"
 #include "orphanage.h"
 #include "hashmap.h"
 
 #define IMPLICIT_SIZE 12
 /**
- * A linkpair is necessary because when creating an MVD by using
- * only a list of fragments we need to insert new pairs We can't
+ * A card is necessary because when creating an MVD by using
+ * only a list of fragments we need to insert new pairs. We can't
  * do this using an array without introducing inefficiencies and 
  * greatly complicating references to existing pairs by indices 
  * which may change all the time. So we wrap each pair in a 
- * 'linkpair', which increases memory usage but solves the problem.
- * A linkpair implements a doubly-linked list of pairs.
+ * 'card', which increases memory usage but solves the problem.
+ * A card implements a doubly-linked list of pairs.
  */
-struct linkpair_struct
+struct card_struct
 {
     // the original pair from the mvd pairs array
     pair *p;
     // doubly-linked list
-    linkpair *left;
-    linkpair *right;
+    card *left;
+    card *right;
     // absolute offset in suffixtree text if aligned to new version
     int text_off;
 };
-linkpair *linkpair_create( pair *p, plugin_log *log )
+/*
+ * Create a new card
+ * @param p the pair to create
+ * @param log the log to write errors to
+ */
+card *card_create( pair *p, plugin_log *log )
 {
-    linkpair *lp = calloc( 1, sizeof(linkpair) );
+    card *lp = calloc( 1, sizeof(card) );
     if ( lp != NULL )
         lp->p = p;
     else
-        plugin_log_add( log, "linkpair: failed to create object\n");
+        plugin_log_add( log, "card: failed to create object\n");
     return lp;
 }
 /**
  * Just dispose of us
- * @param lp the linkpair object to free
+ * @param lp the card object to free
  */
-void linkpair_dispose( linkpair *lp )
+void card_dispose( card *lp )
 {
     free( lp );
 }
 /**
- * Turn a linkpair into a parent pair possibly with no children
- * @param lp the original linkpair, maybe already a parent
+ * Turn a card into a parent pair possibly with no children
+ * @param lp the original card, maybe already a parent
  * @param log the log to record errors in
  * @return the parent or NULL if it failed
  */
-linkpair *linkpair_make_parent( linkpair *lp, plugin_log *log )
+card *card_make_parent( card *lp, plugin_log *log )
 {
     if ( pair_is_parent(lp->p) )
         return lp;
     else if ( pair_is_child(lp->p) )
         return NULL;
-    else // ordinary linkpair
+    else // ordinary card
     {
         pair *pp = pair_create_parent( pair_versions(lp->p), 
             pair_data(lp->p), pair_len(lp->p) );
         if ( pp != NULL )
         {
-            linkpair *parent = linkpair_create(pp,log);
+            card *parent = card_create(pp,log);
             // creates dangling parent - needs at least one child
-            linkpair_replace( lp, parent );
+            card_replace( lp, parent );
             return parent;
         }
+        else
+            plugin_log_add(log,"card: failed to create parent pair\n");
         return NULL;
     }
 }
@@ -102,9 +109,9 @@ linkpair *linkpair_make_parent( linkpair *lp, plugin_log *log )
  * @param log record errors here
  * @return the newborn child
  */
-linkpair *linkpair_make_child( linkpair *parent, int version, plugin_log *log )
+card *card_make_child( card *parent, int version, plugin_log *log )
 {
-    linkpair *lpc = NULL;
+    card *lpc = NULL;
     bitset *bs = bitset_create();
     if ( bs != NULL )
     {
@@ -112,77 +119,79 @@ linkpair *linkpair_make_child( linkpair *parent, int version, plugin_log *log )
         if ( bs != NULL )
         {
             pair *child = pair_create_child( bs );
-            pair_add_child(linkpair_pair(parent), child );
+            pair_add_child(card_pair(parent), child );
             bitset_dispose( bs );
-            lpc = linkpair_create( child, log );
+            lpc = card_create( child, log );
         }
+        else
+            plugin_log_add(log,"card: failed to create bitset\n");
     }
     return lpc;
 }
 /**
  * Dispose of an entire list
- * @param lp the linkpair object to free
+ * @param lp the card object to free
  */
-void linkpair_dispose_list( linkpair *lp )
+void card_dispose_list( card *lp )
 {
     while ( lp != NULL )
     {
-        linkpair *next = lp->right;
+        card *next = lp->right;
         free( lp );
         lp = next;
     }
 }
 /**
  * Set the left pointer
- * @param lp the linkpair to set it for
+ * @param lp the card to set it for
  * @param left the next pair on the left
  */
-void linkpair_set_left( linkpair *lp, linkpair *left )
+void card_set_left( card *lp, card *left )
 {
     lp->left = left;
 }
 /**
  * Set the right pointer
- * @param lp the linkpair to set it for
+ * @param lp the card to set it for
  * @param right the next pair on the right
  */
-void linkpair_set_right( linkpair *lp, linkpair *right )
+void card_set_right( card *lp, card *right )
 {
     lp->right = right;
 }
 /**
  * Get the left pointer
- * @param lp the linkpair in question
+ * @param lp the card in question
  * @return the next pair on the left
  */
-linkpair *linkpair_left( linkpair *lp )
+card *card_left( card *lp )
 {
     return lp->left;
 }
 /**
  * Get the length of the underlying pair
- * @param lp the linkpair
+ * @param lp the card
  * @return the length of the data
  */
-int linkpair_len( linkpair *lp )
+int card_len( card *lp )
 {
     return pair_len(lp->p);
 }
 /**
  * Get the right pointer
- * @param lp the linkpair in question
+ * @param lp the card in question
  * @return the next pair on the right
  */
-linkpair *linkpair_right( linkpair *lp )
+card *card_right( card *lp )
 {
     return lp->right;
 }
 /**
- * Replace one linkpair with another in the list
- * @param old_lp the old linkpair in a list
- * @param new_lp the new linkpair to add to the same list
+ * Replace one card with another in the list
+ * @param old_lp the old card in a list
+ * @param new_lp the new card to add to the same list
  */
-void linkpair_replace( linkpair *old_lp, linkpair *new_lp )
+void card_replace( card *old_lp, card *new_lp )
 {
     if ( old_lp->left != NULL )
         old_lp->left->right = new_lp;
@@ -194,37 +203,37 @@ void linkpair_replace( linkpair *old_lp, linkpair *new_lp )
 }
 /**
  * Set the index into the suffixtree text
- * @param lp the linkpair to set it for
+ * @param lp the card to set it for
  * @param text_off the index
  */
-void linkpair_set_text_off( linkpair *lp, int text_off )
+void card_set_text_off( card *lp, int text_off )
 {
     lp->text_off = text_off;
 }
 /**
  * Get the index into the suffixtree text
- * @param lp the linkpair to set it for
+ * @param lp the card to set it for
  * @return the index
  */
-int linkpair_text_off( linkpair *lp )
+int card_text_off( card *lp )
 {
     return lp->text_off;
 }
 /**
- * Get the pair associated with this linkpair
- * @param lp the linkpair
+ * Get the pair associated with this card
+ * @param lp the card
  * @return its pair
  */
-pair *linkpair_pair( linkpair *lp )
+pair *card_pair( card *lp )
 {
     return lp->p;
 }
 /**
- * Is a linkpair the trailing arc of a node (or a hint)?
- * @param lp the linkpair to test
+ * Is a card the trailing arc of a node (or a hint)?
+ * @param lp the card to test
  * @return 1 if it is, else 0
  */
-int linkpair_trailing_node( linkpair *lp )
+int card_trailing_node( card *lp )
 {
     if ( lp->left != NULL )
     {
@@ -237,54 +246,54 @@ int linkpair_trailing_node( linkpair *lp )
 }
 /**
  * Get the next pair in a list
- * @param pairs a list of linkpairs
- * @param lp the first linkpair to look at
+ * @param pairs a list of cards
+ * @param lp the first card to look at
  * @param bs the bitset of versions to follow
- * @return NULL on failure else the the next relevant linkpair
+ * @return NULL on failure else the the next relevant card
  */
-linkpair *linkpair_next( linkpair *lp, bitset *bs )
+card *card_next( card *lp, bitset *bs )
 {
     lp = lp->right;
     while ( lp != NULL 
-        && !bitset_intersects(bs,pair_versions(linkpair_pair(lp))) )
-        lp = linkpair_right(lp);
+        && !bitset_intersects(bs,pair_versions(card_pair(lp))) )
+        lp = card_right(lp);
     return lp;
 }
 /**
  * Get the previous pair in a list
- * @param pairs a list of linkpairs
- * @param lp the first linkpair to look at
+ * @param pairs a list of cards
+ * @param lp the first card to look at
  * @param bs the bitset of versions to follow
- * @return NULL on failure else the the previous relevant linkpair
+ * @return NULL on failure else the the previous relevant card
  */
-linkpair *linkpair_prev( linkpair *lp, bitset *bs )
+card *card_prev( card *lp, bitset *bs )
 {
     lp = lp->left;
     while ( lp != NULL 
-        && !bitset_intersects(bs,pair_versions(linkpair_pair(lp))) )
-        lp = linkpair_left(lp);
+        && !bitset_intersects(bs,pair_versions(card_pair(lp))) )
+        lp = card_left(lp);
     return lp;
 }
 /**
- * Is this linkpair free? i.e. is it not the trailing pair of a node?
- * @param lp the linkpair to test
+ * Is this card free? i.e. is it not the trailing pair of a node?
+ * @param lp the card to test
  * @return 1 if it is free else 0
  */
-int linkpair_free( linkpair *lp )
+int card_free( card *lp )
 {
     int res = 1;
     if ( lp->left != NULL )
     {
-        pair *p = linkpair_pair(lp->left);
+        pair *p = card_pair(lp->left);
         if ( !pair_is_hint(p) )
         {
-            pair *q = linkpair_pair(lp);
-            char str1[34];
-            char str2[34];
-            bitset *bs1 = pair_versions(p);
-            bitset *bs2 = pair_versions(q);
-            bitset_tostring(bs1,str1,34);
-            bitset_tostring(bs2,str2,34);
+            pair *q = card_pair(lp);
+            //char str1[34];
+            //char str2[34];
+            //bitset *bs1 = pair_versions(p);
+            //bitset *bs2 = pair_versions(q);
+            //bitset_tostring(bs1,str1,34);
+            //bitset_tostring(bs2,str2,34);
             res = !bitset_intersects(pair_versions(p),pair_versions(q));
         }
     }
@@ -292,11 +301,11 @@ int linkpair_free( linkpair *lp )
 }
 /**
  * Add a hint to the node immediately BEFORE the given pair
- * @param lp the linkpair trailing pair of the node
+ * @param lp the card trailing pair of the node
  * @param version the version of the hint
  * @param log the lg to record errors in
  */
-void linkpair_add_hint( linkpair *lp, int version, plugin_log *log )
+void card_add_hint( card *lp, int version, plugin_log *log )
 {
     pair *p = lp->left->p;
     bitset *pv = pair_versions(p);
@@ -315,7 +324,7 @@ void linkpair_add_hint( linkpair *lp, int version, plugin_log *log )
             if ( bs != NULL )
             {
                 pair *hint = pair_create_hint( bs );
-                linkpair *hint_lp = linkpair_create( hint, log );
+                card *hint_lp = card_create( hint, log );
                 hint_lp->left = lp->left;
                 hint_lp->right = lp;
                 lp->left->right = hint_lp;
@@ -327,21 +336,21 @@ void linkpair_add_hint( linkpair *lp, int version, plugin_log *log )
 }
 /**
  * Split a simple data pair. It doesn't matter if it is part of a node.
- * @param lp the linkpair to split.
+ * @param lp the card to split.
  * @param at point before which to split
  * @param log record failures in the log
  * @return 1 if it worked else 0
  */
-static int linkpair_split_data_pair( linkpair *lp, int at, plugin_log *log )
+static int card_split_data_pair( card *lp, int at, plugin_log *log )
 {
     int res = 1;
     // q is the new trailing pair
     pair *q = pair_split( &lp->p, at );
     if ( q != NULL )
     {
-        linkpair *lp2 = linkpair_create( q, log );
+        card *lp2 = card_create( q, log );
         if ( lp2 != NULL )
-            linkpair_add_after(lp,lp2);
+            card_add_after(lp,lp2);
     }
     else
     {
@@ -351,53 +360,53 @@ static int linkpair_split_data_pair( linkpair *lp, int at, plugin_log *log )
     return res;
 }
 /**
- * Split a parent linkpair and all its children
- * @param lp the linkpair to split
+ * Split a parent card and all its children
+ * @param lp the card to split
  * @param at the position before which to split it
  * @param log
  * @return 
  */
-static int linkpair_split_parent_pair( linkpair *lp, int at, plugin_log *log )
+static int card_split_parent_pair( card *lp, int at, plugin_log *log )
 {
     
 }
 /**
- * Split a linkpair and adjust parent/child if not a basic pair
- * @param lp the linkpair to split
+ * Split a card and adjust parent/child if not a basic pair
+ * @param lp the card to split
  * @param at the offset in the pair data BEFORE which to split
  * @param log the log to record errors in
  * @return 1 if it split successfully
  */
-int linkpair_split( linkpair *lp, int at, plugin_log *log )
+int card_split( card *lp, int at, plugin_log *log )
 {
     int res = 0;
     if ( at > 0 && at < pair_len(lp->p) )
     {
         if ( pair_is_ordinary(lp->p) )
         {
-            res = linkpair_split_data_pair(lp,at,log);
+            res = card_split_data_pair(lp,at,log);
         }
         else if ( pair_is_child(lp->p) )
         {
             pair *parent = pair_parent(lp->p);
-            res = linkpair_split_parent_pair(lp,at,log);
+            res = card_split_parent_pair(lp,at,log);
             //split the parent, then all its children
         }
         else if ( pair_is_parent(lp->p) )
         {
-            res = linkpair_split_parent_pair(lp,at,log);
+            res = card_split_parent_pair(lp,at,log);
         }
     }
     return res;
 }
 /**
- * Convert a list of linkpairs to a standard pair array
- * @param lp the head of the linkpair list
+ * Convert a list of cards to a standard pair array
+ * @param lp the head of the card list
  * @return an allocated dynamic array of pairs or NULL
  */
-dyn_array *linkpair_to_pairs( linkpair *lp )
+dyn_array *card_to_pairs( card *lp )
 {
-    int npairs = linkpair_list_len(lp);
+    int npairs = card_list_len(lp);
     dyn_array *da = dyn_array_create( npairs );
     if ( da != NULL )
     {
@@ -411,10 +420,10 @@ dyn_array *linkpair_to_pairs( linkpair *lp )
 }
 /**
  * Do we define a node immediately on our right?
- * @param lp the linkpair in question
+ * @param lp the card in question
  * @return 1 if we do else 0
  */
-int linkpair_node_to_right( linkpair *lp )
+int card_node_to_right( card *lp )
 {
     int res = 0;
     if ( lp->right != NULL )
@@ -432,10 +441,10 @@ int linkpair_node_to_right( linkpair *lp )
 }
 /**
  * Do we define a node immediately on our left?
- * @param lp the linkpair in question
+ * @param lp the card in question
  * @return 1 if we do else 0
  */
-int linkpair_node_to_left( linkpair *lp )
+int card_node_to_left( card *lp )
 {
     int res = 0;
     if ( lp->left != NULL )
@@ -452,11 +461,11 @@ int linkpair_node_to_left( linkpair *lp )
     return res;
 }
 /**
- * Compute the overhang for a linkpair node
+ * Compute the overhang for a card node
  * @param lp the leading pair of a node
  * @return the bitset of the overhang or NULL (user to free)
  */
-bitset *linkpair_node_overhang( linkpair *lp )
+bitset *card_node_overhang( card *lp )
 {
     bitset *bs = bitset_create();
     bs = bitset_or( bs, pair_versions(lp->p) );
@@ -472,21 +481,21 @@ bitset *linkpair_node_overhang( linkpair *lp )
     return bs;
 }
 /**
- * Add a linkpair AFTER a node. lp->right will be displaced by one 
- * linkpair. Although this will increase the node's overhang, the increase
- * is exactly that of the displaced linkpair's versions, which will reattach 
+ * Add a card AFTER a node. lp->right will be displaced by one 
+ * card. Although this will increase the node's overhang, the increase
+ * is exactly that of the displaced card's versions, which will reattach 
  * via the overhang, instead of the forced rule.
  * @param lp the incoming pair of a node
- * @param after the linkpair to add into lp's node. must intersect with lp.
+ * @param after the card to add into lp's node. must intersect with lp.
  * @param verify if 1 then check that the resulting node is OK
  * @return 1 if the new node is a bona fide node
  */
-int linkpair_add_at_node( linkpair *lp, linkpair *after, int verify )
+int card_add_at_node( card *lp, card *after, int verify )
 {
     int res = 0;
     int dispose = 0;
     bitset *bs1 = pair_versions(lp->p);
-    if ( pair_is_hint(linkpair_pair(lp->right)) ) 
+    if ( pair_is_hint(card_pair(lp->right)) ) 
     {
         bs1 = bitset_clone(bs1);
         if ( bs1 != NULL )
@@ -511,11 +520,11 @@ int linkpair_add_at_node( linkpair *lp, linkpair *after, int verify )
     return res;
 }
 /**
- * Add a new linkpair before an existing one
- * @param lp the existing linkpair
+ * Add a new card before an existing one
+ * @param lp the existing card
  * @param lp_new the new one
  */
-void linkpair_add_before( linkpair *lp, linkpair *lp_new )
+void card_add_before( card *lp, card *lp_new )
 {
     if ( lp->left == NULL )
     {
@@ -532,33 +541,33 @@ void linkpair_add_before( linkpair *lp, linkpair *lp_new )
     }
 }
 /**
- * Add a new linkpair
- * @param list the list of linkpairs to add it to
- * @param lp the linkpair to add
+ * Add a new card
+ * @param list the list of cards to add it to
+ * @param lp the card to add
  * @param text_off the offset in version for lp
  * @param version the version to follow
  */
-void linkpair_add_at( linkpair **list, linkpair *lp, int text_off, int version )
+void card_add_at( card **list, card *lp, int text_off, int version )
 {
-    linkpair *temp = *list;
+    card *temp = *list;
     bitset *bs = bitset_create();
     if ( bs != NULL )
         bs = bitset_set( bs, version );
     if ( bs != NULL )
     {
-        linkpair *last = NULL;
+        card *last = NULL;
         while ( temp != NULL )
         {
-            pair *p = linkpair_pair(temp);
+            pair *p = card_pair(temp);
             if ( bitset_next_set_bit(pair_versions(p),version)== version )
             {
-                int off = linkpair_text_off(temp);
+                int off = card_text_off(temp);
                 if ( off < text_off )
                     last = temp;
                 else
                 {
                     if ( last != NULL )
-                        linkpair_add_after( last, lp );
+                        card_add_after( last, lp );
                     else
                     {
                         lp->right = *list;
@@ -567,18 +576,18 @@ void linkpair_add_at( linkpair **list, linkpair *lp, int text_off, int version )
                     break;
                 }
             }
-            temp = linkpair_next( temp, bs );
+            temp = card_next( temp, bs );
         }
         bitset_dispose( bs );
     }
 }
 /**
- * Add a linkpair after a given point, creating a new node.
+ * Add a card after a given point, creating a new node.
  * @param lp the point to add it after
- * @param after the linkpair to become the one after lp
+ * @param after the card to become the one after lp
  * @return 1 if successful else 0
  */
-void linkpair_add_after( linkpair *lp, linkpair *after )
+void card_add_after( card *lp, card *after )
 {
     after->right = lp->right;
     after->left = lp;
@@ -589,9 +598,9 @@ void linkpair_add_after( linkpair *lp, linkpair *after )
 /**
  * Measure the length of a list
  * @param lp the list to measure
- * @return its length in linkpairs
+ * @return its length in cards
  */
-int linkpair_list_len( linkpair *lp )
+int card_list_len( card *lp )
 {
     int len = 0;
     while ( lp != NULL )
@@ -603,14 +612,14 @@ int linkpair_list_len( linkpair *lp )
 }
 /**
  * Check if a list is broken by being circular
- * @param lp a linkpair pointer somewhere in the list
+ * @param lp a card pointer somewhere in the list
  * @return 1 if it has two ends else 0
  */
-int linkpair_list_circular( linkpair *lp )
+int card_list_circular( card *lp )
 {
     int res = 0;
     hashmap *hm = hashmap_create( 12, 0 );
-    linkpair *right = lp->right;
+    card *right = lp->right;
     char junk[16];
     UChar key[32];
     char ckey[32];
@@ -631,7 +640,7 @@ int linkpair_list_circular( linkpair *lp )
             right = right->right;
         }
     }
-    linkpair *left = lp->left;
+    card *left = lp->left;
     while ( !res && left != NULL )
     {
         snprintf(ckey,32,"%lx",(long)left);
@@ -649,29 +658,29 @@ int linkpair_list_circular( linkpair *lp )
     return res;
 }
 /**
- * Remove a linkpair, disposing of it and delinking it from the list
- * @param lp the linkpair to remove
- * @param dispose if 1 dispose of the removed linkpair
+ * Remove a card, disposing of it and delinking it from the list
+ * @param lp the card to remove
+ * @param dispose if 1 dispose of the removed card
  */
-void linkpair_remove( linkpair *lp, int dispose )
+void card_remove( card *lp, int dispose )
 {
     if ( lp->left != NULL )
         lp->left->right = lp->right;
     if ( lp->right != NULL )
         lp->right->left = lp->left;
     if ( dispose )
-        linkpair_dispose( lp );
+        card_dispose( lp );
 }
 /**
  * Debug
  */
-void linkpair_print( linkpair *lp )
+void card_print( card *lp )
 {
     while ( lp != NULL )
     {
-        printf("text_off: %d len: %d",lp->text_off,linkpair_len(lp));
-        pair *p = linkpair_pair(lp);
-        if ( linkpair_len(lp)==1 )
+        printf("text_off: %d len: %d",lp->text_off,card_len(lp));
+        pair *p = card_pair(lp);
+        if ( card_len(lp)==1 )
         {
             UChar *data = pair_data(p);
             int i = (int)(*data);
@@ -689,7 +698,7 @@ static UChar data4[7] = {'o','r','a','n','g','e',0};
 static UChar data5[6] = {'g','u','a','v','a',0};
 static UChar data6[8] = {'c','u','m','q','u','a','t',0};
 static bitset *bs1,*bs2,*bs3,*bs4,*bs5,*bsr,*bsl,*bsm;
-static linkpair *lp1,*lp2,*lp3,*lp4,*lpl,*lpr,*lpc;
+static card *lp1,*lp2,*lp3,*lp4,*lpl,*lpr,*lpc;
 static pair *p1,*p2,*p3,*p4,*pl,*pr,*pc;
 static int make_test_data( plugin_log *log )
 {
@@ -737,13 +746,13 @@ static int make_test_data( plugin_log *log )
         if ( p1 != NULL && p2 != NULL && p3 != NULL && p4 != NULL 
             && pl != NULL && pr != NULL && pc != NULL )
         {
-            lp1 = linkpair_create( p1, log );
-            lp2 = linkpair_create( p2, log );
-            lp3 = linkpair_create( p3, log );
-            lp4 = linkpair_create( p4, log );
-            lpl = linkpair_create( pl, log );
-            lpr = linkpair_create( pr, log );
-            lpc = linkpair_create( pc, log );
+            lp1 = card_create( p1, log );
+            lp2 = card_create( p2, log );
+            lp3 = card_create( p3, log );
+            lp4 = card_create( p4, log );
+            lpl = card_create( pl, log );
+            lpr = card_create( pr, log );
+            lpc = card_create( pc, log );
             if ( lp1 != NULL && lp2 != NULL && lp3 != NULL && lp4 != NULL 
                 && lpl != NULL && lpr != NULL && lpc != NULL )
                 return 1;
@@ -754,19 +763,19 @@ static int make_test_data( plugin_log *log )
 static void free_test_data( plugin_log *log )
 {
     if ( lp1 != NULL )
-        linkpair_dispose( lp1 );
+        card_dispose( lp1 );
     if ( lp2 != NULL )
-        linkpair_dispose( lp2 );
+        card_dispose( lp2 );
     if ( lp3 != NULL )
-        linkpair_dispose( lp3 );
+        card_dispose( lp3 );
     if ( lp4 != NULL )
-        linkpair_dispose( lp4 );
+        card_dispose( lp4 );
     if ( lpl != NULL )
-        linkpair_dispose( lpl );
+        card_dispose( lpl );
     if ( lpr != NULL )
-        linkpair_dispose( lpr );
+        card_dispose( lpr );
     if ( lpc != NULL )
-        linkpair_dispose( lpc );
+        card_dispose( lpc );
     if ( p1 != NULL )
         pair_dispose( p1 );
     if ( p2 != NULL )
@@ -800,254 +809,254 @@ static void free_test_data( plugin_log *log )
     if ( log != NULL )
         plugin_log_dispose( log );
 }
-static void linkpair_test_links( int *passed, int *failed, plugin_log *log )
+static void card_test_links( int *passed, int *failed, plugin_log *log )
 {
-    linkpair_set_left( lp2, lp1 );
-    linkpair_set_right( lp1, lp2 );
-    linkpair_set_right( lp2, lp3 );
-    linkpair_set_left( lp3, lp2 );
-    if ( linkpair_right(lp2) != lp3 && linkpair_left(lp3) != lp2 )
+    card_set_left( lp2, lp1 );
+    card_set_right( lp1, lp2 );
+    card_set_right( lp2, lp3 );
+    card_set_left( lp3, lp2 );
+    if ( card_right(lp2) != lp3 && card_left(lp3) != lp2 )
     {
-        fprintf(stderr,"linkpair: linkpair_right failed\n");
+        fprintf(stderr,"card: card_right failed\n");
         (*failed)++;
     }
     else
         (*passed)++;
-    if ( linkpair_left(lp2) != lp1 && linkpair_right(lp1) != lp2 )
+    if ( card_left(lp2) != lp1 && card_right(lp1) != lp2 )
     {
-        fprintf(stderr,"linkpair: linkpair_left failed\n");
+        fprintf(stderr,"card: card_left failed\n");
         (*failed)++;
     }
     else
         (*passed)++;
 }
-static void linkpair_test_replace( int *passed, int *failed, plugin_log *log )
+static void card_test_replace( int *passed, int *failed, plugin_log *log )
 {
-    int len1 = linkpair_list_len(lp1);
-    linkpair_replace( lp2, lp4 );
-    if ( linkpair_right(lp4) != lp3 || linkpair_left(lp4) != lp1 )
+    int len1 = card_list_len(lp1);
+    card_replace( lp2, lp4 );
+    if ( card_right(lp4) != lp3 || card_left(lp4) != lp1 )
     {
         (*failed)++;
-        fprintf(stderr,"linkpair: linkpair_replace failed\n");
+        fprintf(stderr,"card: card_replace failed\n");
     }
     else
         (*passed)++;
-    if ( linkpair_pair(lp1)!=p1 || linkpair_pair(lp2)!=p2
-        || linkpair_pair(lp3)!=p3 || linkpair_pair(lp4)!=p4 )
+    if ( card_pair(lp1)!=p1 || card_pair(lp2)!=p2
+        || card_pair(lp3)!=p3 || card_pair(lp4)!=p4 )
     {
-        fprintf(stderr,"linkpair: pair not set correctly\n");
+        fprintf(stderr,"card: pair not set correctly\n");
         (*failed)++;
     }
     else
         (*passed)++;
-    int len2 = linkpair_list_len(lp1);
+    int len2 = card_list_len(lp1);
     if ( len1 != len2 )
     {
-        fprintf(stderr,"linkpair: replace failed\n");
+        fprintf(stderr,"card: replace failed\n");
         (*failed)++;
     }
     else
         (*passed)++;
 }
-static void linkpair_test_text_off( int *passed, int *failed, plugin_log *log )
+static void card_test_text_off( int *passed, int *failed, plugin_log *log )
 {
-    linkpair_set_text_off( lp2, 123 );
-    if ( linkpair_text_off(lp2) != 123 )
+    card_set_text_off( lp2, 123 );
+    if ( card_text_off(lp2) != 123 )
     {
-        fprintf(stderr,"linkpair: linkpair_set_text_off failed\n");
+        fprintf(stderr,"card: card_set_text_off failed\n");
         (*failed)++;
     }
     else
         (*passed)++;
 }
-static void linkpair_test_trailing( int *passed, int *failed, plugin_log *log )
+static void card_test_trailing( int *passed, int *failed, plugin_log *log )
 {
-    if ( !linkpair_trailing_node(lp3) )
+    if ( !card_trailing_node(lp3) )
     {
-        fprintf(stderr,"linkpair: not a trailing node\n");
+        fprintf(stderr,"card: not a trailing node\n");
         (*failed)++;
     }
     else
         (*passed)++;
 }
-static void linkpair_test_next( int *passed, int *failed, plugin_log *log )
+static void card_test_next( int *passed, int *failed, plugin_log *log )
 {
-    linkpair *next = linkpair_next(lp1,bs5);
+    card *next = card_next(lp1,bs5);
     if ( next != lp4 )
     {
-        fprintf(stderr,"linkpair: linkpair_next failed\n");
+        fprintf(stderr,"card: card_next failed\n");
         (*failed)++;
     }
     else
         (*passed)++;
 }
-static void linkpair_test_free( int *passed, int *failed, plugin_log *log )
+static void card_test_free( int *passed, int *failed, plugin_log *log )
 {
-    if ( !linkpair_free(lp4) )
+    if ( !card_free(lp4) )
     {
-        fprintf(stderr,"linkpair: linkpair_free failed\n");
+        fprintf(stderr,"card: card_free failed\n");
         (*failed)++;
     }
     else
         (*passed)++;
 }
-static void linkpair_test_hint( int *passed, int *failed, plugin_log *log )
+static void card_test_hint( int *passed, int *failed, plugin_log *log )
 {
-    int len1 = linkpair_list_len(lp1);
-    linkpair_add_hint( lp4, 2, log );
-    linkpair *left = linkpair_left( lp4 );
-    pair *hp = linkpair_pair(left);
+    int len1 = card_list_len(lp1);
+    card_add_hint( lp4, 2, log );
+    card *left = card_left( lp4 );
+    pair *hp = card_pair(left);
     bitset *bss = pair_versions(hp);
     int res2 = pair_is_hint(hp);
     int res3 = bitset_next_set_bit(bss,2);
     if ( !res2 || res3!=2 )
     {
-        fprintf(stderr,"linkpair: failed to create hint\n");
+        fprintf(stderr,"card: failed to create hint\n");
         (*failed)++;
     }
     else
     {
-        linkpair_remove(left,1);
+        card_remove(left,1);
         (*passed)++;
     }
-    int len2 = linkpair_list_len(lp1);
+    int len2 = card_list_len(lp1);
     if ( len2 != len1 )
     {
-        fprintf(stderr,"linkpair: add_hint failed\n");
+        fprintf(stderr,"card: add_hint failed\n");
         (*failed)++;
     }
     else
         (*passed)++;
 }
-static void linkpair_test_split( int *passed, int *failed, plugin_log *log )
+static void card_test_split( int *passed, int *failed, plugin_log *log )
 {
-    linkpair_split( lp2, 2, log );
-    linkpair *right = linkpair_right(lp2);
+    card_split( lp2, 2, log );
+    card *right = card_right(lp2);
     if ( right != NULL )
     {
-        int len1 = pair_len(linkpair_pair(lp2));
-        int len2 = pair_len(linkpair_pair(right));
+        int len1 = pair_len(card_pair(lp2));
+        int len2 = pair_len(card_pair(right));
         if ( len1!=2 ||len2 !=3 )
         {
-            fprintf(stderr,"linkpair: split failed\n");
+            fprintf(stderr,"card: split failed\n");
             (*failed)++;
         }
         else
             (*passed)++;
-        pair_dispose( linkpair_pair(right) );
-        linkpair_dispose( right );
+        pair_dispose( card_pair(right) );
+        card_dispose( right );
         lp2->right = NULL;
     }
     else
     {
-        fprintf(stderr,"linkpair: split failed\n");
+        fprintf(stderr,"card: split failed\n");
         (*failed)++;
     }
 }
-static void linkpair_test_array( int *passed, int *failed, plugin_log *log )
+static void card_test_array( int *passed, int *failed, plugin_log *log )
 {
-    dyn_array *array = linkpair_to_pairs( lp1 );
+    dyn_array *array = card_to_pairs( lp1 );
     if ( array != NULL )
     {
         int i;
-        linkpair *lp = lp1;
+        card *lp = lp1;
         for ( i=0;i<dyn_array_size(array);i++,
-            lp=linkpair_right(lp) )
+            lp=card_right(lp) )
         {
             pair *p = dyn_array_get(array,i);
-            if ( p != linkpair_pair(lp) )
+            if ( p != card_pair(lp) )
             {
                 (*failed)++;
                 fprintf(stderr,
-                    "linkpair: list to array failed 1\n");
+                    "card: list to array failed 1\n");
                 break;
             }
         }
         if ( lp != NULL )
         {
             (*failed)++;
-            fprintf(stderr,"linkpair: list to array failed 2\n");
+            fprintf(stderr,"card: list to array failed 2\n");
         }
         dyn_array_dispose( array );
     }
     else
     {
-        fprintf(stderr,"linkpair: list to array failed 3\n");
+        fprintf(stderr,"card: list to array failed 3\n");
         (*failed)++;
     }
 }
-static void linkpair_test_node_to_right( int *passed, int *failed, plugin_log *log )
+static void card_test_node_to_right( int *passed, int *failed, plugin_log *log )
 {
-    linkpair_set_right(lpl,lpr);
-    linkpair_set_left(lpr,lpl);
-    if ( !linkpair_node_to_right(lpl) )
+    card_set_right(lpl,lpr);
+    card_set_left(lpr,lpl);
+    if ( !card_node_to_right(lpl) )
     {
-        fprintf(stderr,"linkpair: failed test node to right 1\n");
-        (*failed)++;
-    }
-    else
-    {
-        (*passed)++;
-        linkpair_add_hint(lpr,7,log);
-        if ( !linkpair_node_to_right(lpl) )
-        {
-            fprintf(stderr,"linkpair: failed test node to right 2\n");
-            (*failed)++;
-        }
-        else
-            (*passed)++;
-        linkpair *h = linkpair_right(lpl);
-        if ( !pair_is_hint(linkpair_pair(h)) )
-        {
-            fprintf(stderr,"linkpair: failed to create hint\n");
-            (*failed)++;
-        }
-        else
-        {
-            (*passed)++;
-            linkpair_dispose(linkpair_right(lpl));
-        }
-    }
-}
-static void linkpair_test_node_to_left( int *passed, int *failed, plugin_log *log )
-{
-    linkpair_set_right(lpl,lpr);
-    linkpair_set_left(lpr,lpl);
-    if ( !linkpair_node_to_left(lpr) )
-    {
-        fprintf(stderr,"linkpair: failed test node to left 1\n");
+        fprintf(stderr,"card: failed test node to right 1\n");
         (*failed)++;
     }
     else
     {
         (*passed)++;
-        linkpair_add_hint(lpr,7,log);
-        if ( !linkpair_node_to_left(lpr) )
+        card_add_hint(lpr,7,log);
+        if ( !card_node_to_right(lpl) )
         {
-            fprintf(stderr,"linkpair: failed test node to left 2\n");
+            fprintf(stderr,"card: failed test node to right 2\n");
             (*failed)++;
         }
         else
             (*passed)++;
-        linkpair *h = linkpair_right(lpl);
-        if ( !pair_is_hint(linkpair_pair(h)) )
+        card *h = card_right(lpl);
+        if ( !pair_is_hint(card_pair(h)) )
         {
-            fprintf(stderr,"linkpair: failed to create hint 2\n");
+            fprintf(stderr,"card: failed to create hint\n");
             (*failed)++;
         }
         else
         {
             (*passed)++;
-            linkpair_dispose(linkpair_right(lpl));
+            card_dispose(card_right(lpl));
         }
     }
 }
-static void linkpair_test_overhang( int *passed, int *failed, plugin_log *log )
+static void card_test_node_to_left( int *passed, int *failed, plugin_log *log )
 {
-    linkpair_set_right(lpl,lpr);
-    linkpair_set_left(lpr,lpl);
-    linkpair_add_hint(lpr,7,log);
-    bitset *bs = linkpair_node_overhang( lpl );
+    card_set_right(lpl,lpr);
+    card_set_left(lpr,lpl);
+    if ( !card_node_to_left(lpr) )
+    {
+        fprintf(stderr,"card: failed test node to left 1\n");
+        (*failed)++;
+    }
+    else
+    {
+        (*passed)++;
+        card_add_hint(lpr,7,log);
+        if ( !card_node_to_left(lpr) )
+        {
+            fprintf(stderr,"card: failed test node to left 2\n");
+            (*failed)++;
+        }
+        else
+            (*passed)++;
+        card *h = card_right(lpl);
+        if ( !pair_is_hint(card_pair(h)) )
+        {
+            fprintf(stderr,"card: failed to create hint 2\n");
+            (*failed)++;
+        }
+        else
+        {
+            (*passed)++;
+            card_dispose(card_right(lpl));
+        }
+    }
+}
+static void card_test_overhang( int *passed, int *failed, plugin_log *log )
+{
+    card_set_right(lpl,lpr);
+    card_set_left(lpr,lpl);
+    card_add_hint(lpr,7,log);
+    bitset *bs = card_node_overhang( lpl );
     if ( bs != NULL )
     {
         bitset *bsc = bitset_create();
@@ -1058,7 +1067,7 @@ static void linkpair_test_overhang( int *passed, int *failed, plugin_log *log )
             bitset_and_not( bsc, pair_versions(pr) );
             if ( !bitset_equals(bsc,bs) )
             {
-                fprintf(stderr,"linkpair: overhang text failed\n");
+                fprintf(stderr,"card: overhang text failed\n");
                 (*failed)++;
             }
             else
@@ -1071,40 +1080,40 @@ static void linkpair_test_overhang( int *passed, int *failed, plugin_log *log )
     }
     else
     {
-        fprintf(stderr,"linkpair: failed to compute overhang\n");
+        fprintf(stderr,"card: failed to compute overhang\n");
         (*failed)++;
     }
     if ( bs != NULL )
         bitset_dispose( bs );
-    linkpair *r = linkpair_right(lpl);
-    pair *ph = linkpair_pair(r);
+    card *r = card_right(lpl);
+    pair *ph = card_pair(r);
     if ( r != lpr && pair_is_hint(ph) )
     {
-        linkpair_dispose( r );
+        card_dispose( r );
         pair_dispose( ph );
     }
 }
-static void linkpair_test_add_at_node( int *passed, int *failed, 
+static void card_test_add_at_node( int *passed, int *failed, 
     plugin_log *log )
 {
-    linkpair_set_right(lpl,lpr);
-    linkpair_set_left(lpr,lpl);
-    int res = linkpair_add_at_node( lpl, lpc, 1 );
+    card_set_right(lpl,lpr);
+    card_set_left(lpr,lpl);
+    int res = card_add_at_node( lpl, lpc, 1 );
     if ( res )
     {
         (*passed)++;
-        if ( !linkpair_node_to_right(lpl) || !linkpair_node_to_left(lpc) 
-            || linkpair_node_to_left(lpr) )
+        if ( !card_node_to_right(lpl) || !card_node_to_left(lpc) 
+            || card_node_to_left(lpr) )
         {
-            fprintf(stderr,"linkpair: add_at_node failed 1\n");
+            fprintf(stderr,"card: add_at_node failed 1\n");
             (*failed)++;
         }
         else
             (*passed)++;
-        int len = linkpair_list_len(lpl);
+        int len = card_list_len(lpl);
         if ( len != 3 )
         {
-            fprintf(stderr,"linkpair: length of add_at_node list wrong\n");
+            fprintf(stderr,"card: length of add_at_node list wrong\n");
             (*failed)++;
         }
         else
@@ -1113,90 +1122,90 @@ static void linkpair_test_add_at_node( int *passed, int *failed,
     else
     {
         (*failed)++;
-        fprintf(stderr,"linkpair: add_at_node failed 2\n");
+        fprintf(stderr,"card: add_at_node failed 2\n");
     }
 }
-static void linkpair_test_add_after( int *passed, int *failed, plugin_log *log )
+static void card_test_add_after( int *passed, int *failed, plugin_log *log )
 {
     lpr->right = lpr->left = NULL;
     lpl->left = lpl->right = NULL;
     lpc->left = lpc->right = NULL;
-    linkpair_add_after( lpl, lpr );
-    if ( linkpair_right(lpl)!=lpr )
+    card_add_after( lpl, lpr );
+    if ( card_right(lpl)!=lpr )
     {
-        fprintf(stderr,"linkpair: failed to add after\n");
+        fprintf(stderr,"card: failed to add after\n");
         (*failed)++;
     }
     else
     {
         (*passed)++;
-        linkpair_add_after(lpl,lpc);
-        if ( linkpair_right(lpl)!=lpc )
+        card_add_after(lpl,lpc);
+        if ( card_right(lpl)!=lpc )
         {
-            fprintf(stderr,"linkpair: add_after should have failed\n");
+            fprintf(stderr,"card: add_after should have failed\n");
             (*failed)++;
         }
         else
             (*passed)++;
     }
 }
-static void linkpair_test_list_len( int *passed, int *failed, plugin_log *log )
+static void card_test_list_len( int *passed, int *failed, plugin_log *log )
 {
-    linkpair_set_right(lp1,lp2);
-    linkpair_set_left(lp2,lp1);
-    linkpair_set_right(lp2,lp3);
-    linkpair_set_left(lp3,lp2);
-    linkpair_set_right(lp3,lp4);
-    linkpair_set_left(lp4,lp3);
-    linkpair_set_right(lp4,NULL);
-    int len = linkpair_list_len( lp1 );
+    card_set_right(lp1,lp2);
+    card_set_left(lp2,lp1);
+    card_set_right(lp2,lp3);
+    card_set_left(lp3,lp2);
+    card_set_right(lp3,lp4);
+    card_set_left(lp4,lp3);
+    card_set_right(lp4,NULL);
+    int len = card_list_len( lp1 );
     if ( len != 4 )
     {
-        fprintf(stderr,"linkpair: list length failed\n");
+        fprintf(stderr,"card: list length failed\n");
         (*failed)++;
     }
     else
         (*passed)++;
 }
-static void linkpair_test_circular( int *passed, int *failed, plugin_log *log )
+static void card_test_circular( int *passed, int *failed, plugin_log *log )
 {
-    linkpair_set_right(lp1,lp2);
-    linkpair_set_left(lp2,lp1);
-    linkpair_set_right(lp2,lp3);
-    linkpair_set_left(lp3,lp2);
-    linkpair_set_right(lp3,lp4);
-    linkpair_set_left(lp4,lp3);
-    linkpair_set_right(lp4,lp1);
-    int res = linkpair_list_circular( lp1 );
+    card_set_right(lp1,lp2);
+    card_set_left(lp2,lp1);
+    card_set_right(lp2,lp3);
+    card_set_left(lp3,lp2);
+    card_set_right(lp3,lp4);
+    card_set_left(lp4,lp3);
+    card_set_right(lp4,lp1);
+    int res = card_list_circular( lp1 );
     if ( !res )
     {
-        fprintf(stderr,"linkpair: circular test failed\n");
+        fprintf(stderr,"card: circular test failed\n");
         (*failed)++;
     }
     else
         (*passed)++;
 }
-static void linkpair_test_remove( int *passed, int *failed, plugin_log *log )
+static void card_test_remove( int *passed, int *failed, plugin_log *log )
 {
-    linkpair_set_right(lp1,lp2);
-    linkpair_set_left(lp2,lp1);
-    linkpair_set_right(lp2,lp3);
-    linkpair_set_left(lp3,lp2);
-    linkpair_set_right(lp3,lp4);
-    linkpair_set_left(lp4,lp3);
-    linkpair_set_right(lp4,NULL);
-    int len1 = linkpair_list_len(lp1);
-    linkpair_remove( lp3, 0 );
-    int len2 = linkpair_list_len(lp1 );
+    card_set_right(lp1,lp2);
+    card_set_left(lp2,lp1);
+    card_set_right(lp2,lp3);
+    card_set_left(lp3,lp2);
+    card_set_right(lp3,lp4);
+    card_set_left(lp4,lp3);
+    card_set_right(lp4,NULL);
+    int len1 = card_list_len(lp1);
+    card_remove( lp3, 0 );
+    int len2 = card_list_len(lp1 );
     if ( len1-len2 != 1 )
     {
-        fprintf(stderr,"linkpair: remove failed\n");
+        fprintf(stderr,"card: remove failed\n");
         (*failed)++;
     }
     else
         (*passed)++;
 }
-void linkpair_test( int *passed, int *failed )
+void card_test( int *passed, int *failed )
 {
     plugin_log *log = plugin_log_create();
     if ( log != NULL )
@@ -1204,26 +1213,26 @@ void linkpair_test( int *passed, int *failed )
         int res = make_test_data(log);
         if ( res )
         {
-            linkpair_test_links( passed, failed, log );
-            linkpair_test_replace( passed, failed, log );
-            linkpair_test_text_off( passed, failed, log );    
-            linkpair_test_trailing( passed, failed, log );
-            linkpair_test_next( passed, failed, log );
-            linkpair_test_hint( passed, failed, log );
-            linkpair_test_split( passed, failed, log ); 
-            linkpair_test_array( passed, failed, log );
-            linkpair_test_node_to_right( passed, failed, log );
-            linkpair_test_node_to_left( passed, failed, log );
-            linkpair_test_overhang( passed, failed, log );
-            linkpair_test_add_at_node( passed, failed, log );
-            linkpair_test_add_after( passed, failed, log );
-            linkpair_test_list_len( passed, failed, log );
-            linkpair_test_circular( passed, failed, log );
-            linkpair_test_remove( passed, failed, log );
+            card_test_links( passed, failed, log );
+            card_test_replace( passed, failed, log );
+            card_test_text_off( passed, failed, log );    
+            card_test_trailing( passed, failed, log );
+            card_test_next( passed, failed, log );
+            card_test_hint( passed, failed, log );
+            card_test_split( passed, failed, log ); 
+            card_test_array( passed, failed, log );
+            card_test_node_to_right( passed, failed, log );
+            card_test_node_to_left( passed, failed, log );
+            card_test_overhang( passed, failed, log );
+            card_test_add_at_node( passed, failed, log );
+            card_test_add_after( passed, failed, log );
+            card_test_list_len( passed, failed, log );
+            card_test_circular( passed, failed, log );
+            card_test_remove( passed, failed, log );
         }
         else
         {
-            fprintf(stderr,"linkpair: failed to initialise test data\n");
+            fprintf(stderr,"card: failed to initialise test data\n");
             (*failed)++;
         }
     }

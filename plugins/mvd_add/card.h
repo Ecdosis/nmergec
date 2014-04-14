@@ -1,0 +1,51 @@
+/* 
+ * File:   card.h
+ * Author: desmond
+ *
+ * Created on March 21, 2013, 6:20 AM
+ */
+
+#ifndef CARD_H
+#define	CARD_H
+
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
+typedef struct card_struct card;
+card *card_create( pair *p, plugin_log *log );
+void card_add_hint( card *lp, int version, plugin_log *log );
+card *card_make_parent( card *p, plugin_log *log );
+card *card_make_child( card *parent, int version, plugin_log *log );
+void card_replace( card *old_lp, card *new_lp );
+void card_dispose( card *lp );
+void card_dispose_list( card *lp );
+void card_set_left( card *lp, card *left );
+void card_set_right( card *lp, card *right );
+card *card_left( card *lp );
+card *card_right( card *lp );
+card *card_next( card *lp, bitset *bs );
+card *card_prev( card *lp, bitset *bs );
+void card_set_text_off( card *lp, int text_off );
+int card_text_off( card *lp );
+int card_len( card *lp );
+pair *card_pair( card *lp );
+dyn_array *card_to_pairs( card *lp );
+int card_node_to_right( card *lp );
+int card_node_to_left( card *lp );
+bitset *card_node_overhang( card *lp );
+int card_add_at_node( card *lp, card *after, int verify );
+void card_add_after( card *lp, card *after );
+int card_list_circular( card *lp );
+void card_remove( card *lp, int dispose );
+void card_test( int *passed, int *failed );
+void card_print( card *lp );
+void card_add_at( card **list, card *lp, int text_off, int version );
+extern UChar USTR_EMPTY[];
+
+#ifdef	__cplusplus
+}
+#endif
+
+#endif	/* CARD_H */
+

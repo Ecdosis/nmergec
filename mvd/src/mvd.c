@@ -958,7 +958,7 @@ int mvd_is_clean( MVD *mvd )
     return mvd->clean;
 }
 /**
- * "Clean" an MVD by replacing all implicit pair attachments with hints. 
+ * "Clean" an MVD by replacing all *implicit* pair attachments with hints. 
  * Doesn't harm already cleaned mvds.
  * @param mvd the mvd to clean
  * @return 1 if it worked else 0

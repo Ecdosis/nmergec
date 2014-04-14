@@ -8,14 +8,14 @@
 #include "link_node.h"
 #include "pair.h"
 #include "dyn_array.h"
-#include "linkpair.h"
+#include "card.h"
 #include "orphanage.h"
 #include "hashmap.h"
 #include "utils.h"
 #define KEYLEN 32
 /**
  * An orphanage is a collection of parents and their (initially) 
- * lost children. As we read through a list of linkpairs we store 
+ * lost children. As we read through a list of cards we store 
  * the parents and children here and it is the job of this class 
  * to match children to their parents by ID (stored in the pair).
  */
@@ -83,7 +83,7 @@ int orphanage_next_id( orphanage *o )
  * @param parent the parent desiring orphans to adopt
  * @return 1 if successful
  */
-int orphanage_add_parent( orphanage *o, linkpair *parent )
+int orphanage_add_parent( orphanage *o, card *parent )
 {
     int res = 0;
     // look in orphans for children with this parent
@@ -92,7 +92,7 @@ int orphanage_add_parent( orphanage *o, linkpair *parent )
     if ( keys != NULL )
     {
         hashmap_to_array( o->orphans, keys );
-        pair *pp = linkpair_pair(parent);
+        pair *pp = card_pair(parent);
         int pid = pair_id( pp );
         dyn_array *da = dyn_array_create( 20 );
         if ( da != NULL )
@@ -100,22 +100,22 @@ int orphanage_add_parent( orphanage *o, linkpair *parent )
             // look for orphans
             for ( i=0;i<n_orphans;i++ )
             {
-                linkpair *child = hashmap_get( o->orphans, keys[i] );
-                pair *cp = linkpair_pair( child );
+                card *child = hashmap_get( o->orphans, keys[i] );
+                pair *cp = card_pair( child );
                 pair *cp_p = pair_parent( cp );
                 int pp_id = pair_id( cp_p );
                 if ( pp_id == pid )
                     dyn_array_add( da, child );
             }
-            linkpair **children = calloc( dyn_array_size(da)+1, 
-                sizeof(linkpair*) );
+            card **children = calloc( dyn_array_size(da)+1, 
+                sizeof(card*) );
             if ( children != NULL )
             {
                 UChar u_key[KEYLEN];
                 for ( i=0;i<dyn_array_size(da);i++ )
                 {
                     children[i] = dyn_array_get(da,i);
-                    int cid = pair_id(linkpair_pair(children[i]));
+                    int cid = pair_id(card_pair(children[i]));
                     calc_ukey( u_key, cid, KEYLEN );
                     hashmap_remove( o->orphans, u_key, NULL );
                     res = hashmap_put( o->children, u_key, parent );
@@ -140,11 +140,11 @@ int orphanage_add_parent( orphanage *o, linkpair *parent )
  * @param child the child looking for a parent
  * @return 1 if successful else 0 if it was already there or an error
  */
-int orphanage_add_child( orphanage *o, linkpair *child )
+int orphanage_add_child( orphanage *o, card *child )
 {
     int res = 0;
     // first look in parents for this child's parent ID
-    pair *p = linkpair_pair(child);
+    pair *p = card_pair(child);
     int cid = pair_id(p);
     if ( cid > o->currentID )
         o->currentID = cid;
@@ -160,7 +160,7 @@ int orphanage_add_child( orphanage *o, linkpair *child )
                 o->currentID = pid;
             if ( hashmap_contains(o->parents,u_key) )
             {
-                linkpair **kids = hashmap_get(o->parents,u_key);
+                card **kids = hashmap_get(o->parents,u_key);
                 if ( kids != NULL )
                 {
                     int i = 0;
@@ -173,7 +173,7 @@ int orphanage_add_child( orphanage *o, linkpair *child )
                     if ( kids[i] == NULL )
                     {
                         // one for new kid, one for terminating NULL
-                        linkpair **new_kids = calloc( i+2, sizeof(linkpair*));
+                        card **new_kids = calloc( i+2, sizeof(card*));
                         if ( new_kids != NULL )
                         {
                             i = 0;
@@ -228,9 +228,9 @@ int orphanage_is_empty( orphanage *o )
  * @param child the child looking for a Mummy or a Daddy
  * @return the adoptive parent or NULL if not found
  */
-linkpair *orphanage_get_parent( orphanage *o, linkpair *child )
+card *orphanage_get_parent( orphanage *o, card *child )
 {
-    pair *p = linkpair_pair(child);
+    pair *p = card_pair(child);
     if ( pair_is_child(p) )
     {
         UChar u_key[KEYLEN];
@@ -244,16 +244,16 @@ linkpair *orphanage_get_parent( orphanage *o, linkpair *child )
  * Get a complete set of a parent's children
  * @param o the orphanage instance
  * @param parent the parent whose children are desired
- * @param children an array of linkpairs
+ * @param children an array of cards
  * @param size the number of slots in children-1 (last one is NULL)
  */
-void orphanage_get_children( orphanage *o, linkpair *parent, 
-    linkpair **children, int size )
+void orphanage_get_children( orphanage *o, card *parent, 
+    card **children, int size )
 {
-    pair *p = linkpair_pair(parent);
+    pair *p = card_pair(parent);
     UChar u_key[KEYLEN];
     calc_ukey( u_key, pair_id(p), KEYLEN );
-    linkpair **kids = hashmap_get( o->parents, u_key );
+    card **kids = hashmap_get( o->parents, u_key );
     int i = 0;
     if ( children != NULL )
     {
@@ -267,12 +267,12 @@ void orphanage_get_children( orphanage *o, linkpair *parent,
  * @param parent the parent whose children are sought
  * @return the number of children he/she has
  */
-int orphanage_count_children( orphanage *o, linkpair *parent )
+int orphanage_count_children( orphanage *o, card *parent )
 {
-    pair *p = linkpair_pair(parent);
+    pair *p = card_pair(parent);
     UChar u_key[KEYLEN];
     calc_ukey( u_key, pair_id(p), KEYLEN );
-    linkpair **children = hashmap_get( o->parents, u_key );
+    card **children = hashmap_get( o->parents, u_key );
     int num_children = 0;
     if ( children != NULL )
     {
@@ -287,20 +287,20 @@ int orphanage_count_children( orphanage *o, linkpair *parent )
   * @param parent the parent and children to remove
   * @return 1 on success
   */
-int orphanage_remove_parent( orphanage *o, linkpair *parent )
+int orphanage_remove_parent( orphanage *o, card *parent )
 {
     int res = 0;
-    pair *p = linkpair_pair(parent);
+    pair *p = card_pair(parent);
     UChar u_key[KEYLEN];
     calc_ukey( u_key, pair_id(p), KEYLEN );
-    linkpair **children = hashmap_get( o->parents, u_key );
+    card **children = hashmap_get( o->parents, u_key );
     if ( children != NULL )
     {
         int i = 0;
         while ( children[i] != NULL )
         {
             UChar c_key[KEYLEN];
-            pair *c = linkpair_pair(children[i]);
+            pair *c = card_pair(children[i]);
             calc_ukey( c_key, pair_id(c), KEYLEN );
             res = hashmap_remove( o->children, c_key, NULL );
             if ( !res )
@@ -452,7 +452,7 @@ static void test_one_orphanage(int *passed, int *failed, plugin_log *log )
         for ( i=0;i<n;i++ )
         {
             pair *p = pairs[i];
-            linkpair *lp = linkpair_create( p, log );
+            card *lp = card_create( p, log );
             if ( pair_is_parent(p) )
                 orphanage_add_parent(o,lp);
             else if ( pair_is_child(p) )

@@ -13,7 +13,7 @@ extern "C" {
 #endif
 
 typedef struct match_struct match;
-match *match_create( linkpair *start, int j, linkpair *pairs, suffixtree *st, 
+match *match_create( card *start, int j, card *cards, suffixtree *st, 
     int st_off, plugin_log *log );
 match *match_copy( match *m, plugin_log *log );
 match *match_clone( match *mt, plugin_log *log );
@@ -32,9 +32,9 @@ suffixtree *match_suffixtree( match *m );
 int match_single( match *m, UChar *text, plugin_log *log );
 int match_pop( match *m );
 void match_set_versions( match *m, bitset *bs );
-linkpair *match_start_link( match *m );
+card *match_start_link( match *m );
 int match_start_pos( match *m );
-linkpair *match_end_link( match *m );
+card *match_end_link( match *m );
 int match_end_pos( match *m );
 int match_len( match *m );
 int match_total_len( match *m );

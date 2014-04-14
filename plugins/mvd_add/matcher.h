@@ -13,7 +13,7 @@ extern "C" {
 #endif
 
 typedef struct matcher_struct matcher;
-matcher *matcher_create( alignment *a, linkpair *pairs );
+matcher *matcher_create( deck *a, card *cards );
 void matcher_dispose( matcher *m );
 int matcher_align( matcher *m );
 match *matcher_get_mum( matcher *m );

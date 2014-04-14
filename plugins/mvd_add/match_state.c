@@ -29,7 +29,7 @@
 #include "link_node.h"
 #include "pair.h"
 #include "dyn_array.h"
-#include "linkpair.h"
+#include "card.h"
 #include "match_state.h"
 /**
  * Store the state of a match while matching. This is done whenever there 
@@ -38,8 +38,8 @@
  */
 struct match_state_struct
 {
-    linkpair *start_p;
-    linkpair *end_p;
+    card *start_p;
+    card *end_p;
     int start_pos;
     int end_pos;
     int text_off;
@@ -51,8 +51,8 @@ struct match_state_struct
 
 /**
  * Create a match state at a branch point in the variant graph
- * @param start_p the start linkpair for the match to resume from
- * @param end_p the end linkpair that has already been matched
+ * @param start_p the start card for the match to resume from
+ * @param end_p the end card that has already been matched
  * @param start_pos the start position in start_p
  * @param end_pos the end position match in end_p
  * @param st_off the offset in the suffix tree if set
@@ -60,7 +60,7 @@ struct match_state_struct
  * @param loc the position in the suffix tree to which we have matched
  * @return a match state object
  */
-match_state *match_state_create( linkpair *start_p, linkpair *end_p, 
+match_state *match_state_create( card *start_p, card *end_p, 
     int start_pos, int end_pos, int text_off, int len, bitset *bs, pos *loc,
     plugin_log *log )
 {
@@ -138,11 +138,11 @@ void match_state_loc( match_state *ms, pos *loc )
 {
     *loc = *(ms->loc);
 }
-linkpair *match_state_start_p( match_state *ms )
+card *match_state_start_p( match_state *ms )
 {
     return ms->start_p;
 }
-linkpair *match_state_end_p( match_state *ms )
+card *match_state_end_p( match_state *ms )
 {
     return ms->end_p;
 }
