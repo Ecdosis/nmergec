@@ -163,9 +163,11 @@ alignment *alignment_push( alignment *head, alignment *next )
 {
     alignment *prev = NULL;
     alignment *temp = head;
+/*
     printf("pushing %d to %d\n",mum_text_off(next->best),
         mum_text_off(next->best)+mum_len(next->best) );
-    while ( temp != NULL && mum_len(temp->best) > mum_len(next->best) )
+*/
+    while ( temp != NULL && mum_total_len(temp->best) > mum_total_len(next->best) )
     {
         prev = temp;
         temp = temp->next;
@@ -230,7 +232,9 @@ static int alignment_transpose_merge( alignment *a, dyn_array *discards )
         int text_off = mum_text_off( best );
         do
         {
+/*
             printf("transpose merging %d to %d\n",mum_text_off(best),mum_len(best)+mum_text_off(best));
+*/
             // make every pair in the match a parent:
             // either already a parent, or an ordinary pair or a child
             // this may free temp
@@ -300,7 +304,9 @@ static int alignment_direct_merge( alignment *a )
         {
             pair *p = card_pair(temp);
             bitset *bs = pair_versions(p);
+/*
             printf("directly merging %d to %d\n",mum_text_off(best),mum_len(best)+mum_text_off(best));
+*/
             bitset_set( bs, v );
             card_set_text_off( temp, text_off );
             text_off += pair_len(p);

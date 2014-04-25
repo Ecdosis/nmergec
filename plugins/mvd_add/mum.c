@@ -104,6 +104,22 @@ int mum_len( mum *m )
 {
     return m->len;
 }
+/**
+ * Get the total length of the mum including additional sections
+ * @param m the mum to measure
+ * @return the total length of all segments
+ */
+int mum_total_len( mum *m )
+{
+    int len = 0;
+    mum *temp = m;
+    while ( temp != NULL )
+    {
+        len += temp->len;
+        temp = temp->next;
+    }
+    return len;
+}
 card *mum_start_card( mum *m )
 {
     return m->start.current;

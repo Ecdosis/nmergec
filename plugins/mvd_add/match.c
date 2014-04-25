@@ -547,18 +547,8 @@ int match_compare( void *a, void *b )
 {
     match *one = (match*)a;
     match *two = (match*)b;
-    int len1 = one->len;
-    int len2 = two->len;
-    while ( one->next != NULL )
-    {
-        one = one->next;
-        len1 += one->len;
-    }
-    while ( two->next != NULL )
-    {
-        two = two->next;
-        len2 += two->len;
-    }
+    int len1 = match_total_len(one);
+    int len2 = match_total_len(two);
     if ( len1>len2 )
         return 1;
     else if ( len2>len1 )

@@ -18,6 +18,7 @@ void mum_dispose( mum *m );
 int mum_set( mum *m, card *cards );
 int mum_update( mum *m, card *cards );
 int mum_len( mum *m );
+int mum_total_len( mum *m );
 card *mum_start_card( mum *m );
 card *mum_end_card( mum *m );
 bitset *mum_versions( mum *m );

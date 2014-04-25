@@ -291,7 +291,7 @@ static int add_subsequent_version( MVD *mvd, adder *add,
                             if ( head != NULL )
                                 alignment_update( head, list );
                             // print current cards
-                            //card_print_list( list );
+                            card_print_list( list );
                             alignment_dispose( old );
                         }
                         else
