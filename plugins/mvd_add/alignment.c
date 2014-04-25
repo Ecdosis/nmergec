@@ -76,7 +76,7 @@ struct alignment_struct
     alignment *next;
     // best match found
     mum *best;
-    // set to 1 if other mums have been mergedthat might affect us
+    // set to 1 if other mums have been merged that might affect us
     int stale;
 };
 /**
@@ -124,9 +124,14 @@ void alignment_dispose( alignment *a )
     // text and orphanage belongs to the caller
     free( a );
 }
+/**
+ * Set the stale flag: update at next opportunity
+ * @param a the alignment to make stale
+ * @param stale the new value of stale flag
+ */
 void alignment_set_stale( alignment *a, int stale )
 {
-    a->stale;
+    a->stale = stale;
 }
 /**
  * Get the textual component of this alignment
@@ -396,7 +401,10 @@ int alignment_update( alignment *a, card *list )
     if ( !a->stale )
         res = 1;
     else if ( a->best != NULL )
+    {
         res = mum_update( a->best, list );
+        a->stale = 0;
+    }
     else
         res = 0;
     return res;
