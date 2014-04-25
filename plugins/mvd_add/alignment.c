@@ -76,6 +76,8 @@ struct alignment_struct
     alignment *next;
     // best match found
     mum *best;
+    // set to 1 if other mums have been mergedthat might affect us
+    int stale;
 };
 /**
  * Create an alignment between a bit of text and the MVD.
@@ -122,6 +124,10 @@ void alignment_dispose( alignment *a )
     // text and orphanage belongs to the caller
     free( a );
 }
+void alignment_set_stale( alignment *a, int stale )
+{
+    a->stale;
+}
 /**
  * Get the textual component of this alignment
  * @param a the alignment object
@@ -152,6 +158,8 @@ alignment *alignment_push( alignment *head, alignment *next )
 {
     alignment *prev = NULL;
     alignment *temp = head;
+    printf("pushing %d to %d\n",mum_text_off(next->best),
+        mum_text_off(next->best)+mum_len(next->best) );
     while ( temp != NULL && mum_len(temp->best) > mum_len(next->best) )
     {
         prev = temp;
@@ -217,6 +225,7 @@ static int alignment_transpose_merge( alignment *a, dyn_array *discards )
         int text_off = mum_text_off( best );
         do
         {
+            printf("transpose merging %d to %d\n",mum_text_off(best),mum_len(best)+mum_text_off(best));
             // make every pair in the match a parent:
             // either already a parent, or an ordinary pair or a child
             // this may free temp
@@ -286,6 +295,7 @@ static int alignment_direct_merge( alignment *a )
         {
             pair *p = card_pair(temp);
             bitset *bs = pair_versions(p);
+            printf("directly merging %d to %d\n",mum_text_off(best),mum_len(best)+mum_text_off(best));
             bitset_set( bs, v );
             card_set_text_off( temp, text_off );
             text_off += pair_len(p);
@@ -383,7 +393,9 @@ int alignment_align( alignment *a, card *list )
 int alignment_update( alignment *a, card *list )
 {
     int res = 1;
-    if ( a->best != NULL )
+    if ( !a->stale )
+        res = 1;
+    else if ( a->best != NULL )
         res = mum_update( a->best, list );
     else
         res = 0;

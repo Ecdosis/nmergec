@@ -563,6 +563,15 @@ int match_compare( void *a, void *b )
         return 1;
     else if ( len2>len1 )
         return -1;
+    else if ( one != two )
+    {
+        if ( one->text_off > two->text_off )
+            return 1;
+        else if ( two->text_off > one->text_off )
+            return -1;
+        else
+            return 0;
+    }
     else
         return 0;
 }

@@ -263,7 +263,6 @@ static int add_subsequent_version( MVD *mvd, adder *add,
                 {
                     // maintain list of current alignments
                     alignment *head = a;
-                    int first = 1;
                     res = add_version( add, mvd );
                     // align first time
                     if ( res ) 
@@ -272,22 +271,27 @@ static int add_subsequent_version( MVD *mvd, adder *add,
                     while ( res && head != NULL )
                     {
                         alignment *left,*right;
-                        if ( !first )
-                            alignment_update( head, list );
-                        else
-                            first = 0;
                         res = alignment_merge( head, &left, &right, discards );
                         if ( res )
                         {
                             alignment *old = head;
+                            head = alignment_pop( head );
+                            // mark remaining entries as stale
+                            alignment *temp = head;
+                            while ( temp != NULL )
+                            {
+                                alignment_set_stale(temp, 1);
+                                temp = alignment_pop(temp);
+                            }
                             // now update the list
                             if ( left != NULL && alignment_align(left,list) )
                                 head = alignment_push( head, left );
                             if ( right != NULL && alignment_align(right,list) )
                                 head = alignment_push( head, right );
+                            if ( head != NULL )
+                                alignment_update( head, list );
                             // print current cards
                             //card_print_list( list );
-                            head = alignment_pop( head );
                             alignment_dispose( old );
                         }
                         else

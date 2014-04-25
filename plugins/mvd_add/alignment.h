@@ -14,6 +14,7 @@ extern "C" {
 typedef struct alignment_struct alignment;
 alignment *alignment_create( UChar *text, int start, int len, int tlen, 
     int version, orphanage *o, plugin_log *log );
+void alignment_set_stale( alignment *a, int stale );
 void alignment_print( alignment *a, const char *prompt );
 void alignment_dispose( alignment *a );
 UChar *alignment_text( alignment *a, int *tlen );
