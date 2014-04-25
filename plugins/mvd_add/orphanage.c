@@ -85,7 +85,7 @@ int orphanage_next_id( orphanage *o )
  */
 int orphanage_add_parent( orphanage *o, card *parent )
 {
-    int res = 0;
+    int res = 1;
     // look in orphans for children with this parent
     int i,n_orphans = hashmap_size( o->orphans );
     UChar **keys = calloc( n_orphans, sizeof(UChar*) );
@@ -128,7 +128,10 @@ int orphanage_add_parent( orphanage *o, card *parent )
                     calc_ukey( u_key, pid, KEYLEN );
                     res = hashmap_put( o->parents, u_key, children );
                 }
+                else
+                    free( children );
             }
+            dyn_array_dispose( da );
         }
         free( keys );
     }
@@ -257,7 +260,7 @@ void orphanage_get_children( orphanage *o, card *parent,
     int i = 0;
     if ( children != NULL )
     {
-        while ( children[i] != NULL && i < size )
+        while ( kids[i] != NULL && i < size )
             children[i] = kids[i++];
     }
 }
@@ -311,6 +314,40 @@ int orphanage_remove_parent( orphanage *o, card *parent )
     if ( res )
         res = hashmap_remove( o->parents, u_key, NULL );
     return res;
+}
+/**
+ * Get a simple array of all the children in the orphanage
+ * @param o the orphanage to collect them from
+ * @param num VAR param update with number of children found (may be 0)
+ * @param success VAR param set to 1 if it worked els set to 0
+ * @return all the children as an allocated array of cards or NULL if none
+ */
+card **orphanage_all_children( orphanage *o, int *num, int *success )
+{
+    card **children = NULL;
+    *success = 0;
+    *num = hashmap_size( o->children );
+    if ( *num > 0 )
+    {
+        UChar **keys = calloc( *num, sizeof(UChar*) );
+        if ( keys != NULL )
+        {
+            int i;
+            hashmap_to_array( o->children, keys );
+            children = calloc( *num, sizeof(char*) );
+            if ( children != NULL )
+            {
+                for ( i=0;i<*num;i++ )
+                {
+                    children[i] = hashmap_get(o->children, keys[i] );
+                }
+                *success = 1;
+            }
+        }
+        else
+            *num = 0;
+    }
+    return children;
 }
 #ifdef MVD_TEST
 #define NUM_CHILDREN 3

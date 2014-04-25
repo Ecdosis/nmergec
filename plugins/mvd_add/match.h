@@ -11,17 +11,25 @@
 #ifdef	__cplusplus
 extern "C" {
 #endif
-
+#define MATCH_BASE \
+    location start; \
+    location end; \
+    int text_off; \
+    int len; \
+    bitset *bs
+    
 typedef struct match_struct match;
 match *match_create( card *start, int j, card *cards, suffixtree *st, 
     int st_off, plugin_log *log );
 match *match_copy( match *m, plugin_log *log );
 match *match_clone( match *mt, plugin_log *log );
-int match_restart( match *m );
+int match_restart( match *m, plugin_log *log );
 void match_dispose( match *m );
 void match_append( match *m1, match *m2 );
 int match_advance( match *m, pos *loc, plugin_log *log );
 bitset *match_versions( match *m );
+int match_update( match *m, card *cards );
+int match_set( match *m, card *cards );
 match *match_extend( match *mt, UChar *text, 
     plugin_log *log );
 int match_follows( match *first, match *second );
@@ -32,21 +40,18 @@ suffixtree *match_suffixtree( match *m );
 int match_single( match *m, UChar *text, plugin_log *log );
 int match_pop( match *m );
 void match_set_versions( match *m, bitset *bs );
-card *match_start_link( match *m );
-int match_start_pos( match *m );
-card *match_end_link( match *m );
-int match_end_pos( match *m );
+location match_start( match *m );
+location match_end( match *m );
 int match_len( match *m );
 int match_total_len( match *m );
 int match_compare( void *a, void *b );
-int match_transposed( match *m, int new_version, int tlen );
 int is_maximal( match *m, UChar *text );
 void match_inc_freq( match *m );
 int match_freq( match *m );
 match *match_next( match *m );
 void match_print( match *m, UChar *text );
 int match_text_end( match *m );
-int match_split( match *m, UChar *text, int v, plugin_log *log );
+int match_within_threshold( int distance, int length );
 
 #ifdef	__cplusplus
 }

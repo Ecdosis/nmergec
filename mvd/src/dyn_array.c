@@ -12,7 +12,7 @@ struct dyn_array_struct
 };
 
 /**
- * Create  adynamic array
+ * Create a dynamic array
  * @param initial_size the number of elements to start with
  * @return the allocated dynamic array
  */
@@ -189,6 +189,34 @@ void test_dyn_array( int *passed, int *failed )
     {
         fprintf(stderr,"dyn_array: failed to allocate object\n");
         *failed += 1;
+    }
+}
+/**
+ * Sort an array using a custom comparison routine
+ * @param da the dynamic array to sort
+ * @param c the comparator
+ */
+void dyn_array_sort( dyn_array *da, comparator c )
+{
+    int i, j, k, h; 
+    void *v;
+    int incs[16] = { 1391376, 463792, 198768, 86961, 33936,
+        13776, 4592, 1968, 861, 336, 
+        112, 48, 21, 7, 3, 1 };
+    for ( k = 0; k<16; k++)
+    {
+        for ( h=incs[k],i=h;i<=da->pos-1;i++ )
+        { 
+            v = da->items[i]; 
+            j = i;
+            void *v = da->items[i];
+            while ( j >= h && (c)(da->items[j-h],v)>0 )
+            { 
+                da->items[j] = da->items[j-h]; 
+                j -= h; 
+            }
+            da->items[j] = v; 
+        }
     }
 }
 #endif

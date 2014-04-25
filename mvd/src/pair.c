@@ -204,6 +204,7 @@ pair *pair_add_child( pair *p, pair *child )
                 p->children = ln;
             else
                 link_node_append( p->children, ln );
+            pair_set_parent( child, p );
         }
         else
         {
@@ -438,11 +439,18 @@ void pair_print( pair *p )
  */
 pair *pair_split( pair **p, int at )
 {
+    int old_type = (*p)->type;
+    if ( old_type == PARENT_PAIR )
+        printf("PARENT\n");
     pair *first = pair_create_basic( (*p)->versions, (*p)->data, at );
     pair *second = pair_create_basic( (*p)->versions, &(*p)->data[at], 
         (*p)->len-at );
+    pair_dispose( *p );
     if ( first != NULL && second != NULL )
+    {
         *p = first;
+        first->type = second->type = old_type;
+    }
     else
     {
         if ( first != NULL )
@@ -450,6 +458,7 @@ pair *pair_split( pair **p, int at )
         if ( second != NULL )
             pair_dispose( second );
         second = NULL;
+        *p = NULL;
     }
     return second;
 }

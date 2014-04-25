@@ -14,8 +14,9 @@ extern "C" {
 
 typedef struct card_struct card;
 card *card_create( pair *p, plugin_log *log );
+card *card_create_blank( int version, plugin_log *log );
 void card_add_hint( card *lp, int version, plugin_log *log );
-card *card_make_parent( card *p, plugin_log *log );
+card *card_make_parent( card **p, plugin_log *log );
 card *card_make_child( card *parent, int version, plugin_log *log );
 void card_replace( card *old_lp, card *new_lp );
 void card_dispose( card *lp );
@@ -25,9 +26,13 @@ void card_set_right( card *lp, card *right );
 card *card_left( card *lp );
 card *card_right( card *lp );
 card *card_next( card *lp, bitset *bs );
+card *card_first( card *list, bitset *bs );
+card *card_next_nonempty( card *c, bitset *bs );
+bitset *card_overlap( card *c, bitset *bs );
 card *card_prev( card *lp, bitset *bs );
 void card_set_text_off( card *lp, int text_off );
 int card_text_off( card *lp );
+int card_end( card *c );
 int card_len( card *lp );
 pair *card_pair( card *lp );
 dyn_array *card_to_pairs( card *lp );
@@ -40,7 +45,13 @@ int card_list_circular( card *lp );
 void card_remove( card *lp, int dispose );
 void card_test( int *passed, int *failed );
 void card_print( card *lp );
+void card_print_list( card *list );
 void card_add_at( card **list, card *lp, int text_off, int version );
+char *card_tostring( card *c );
+int card_compare( void *c1, void *c2 );
+card *card_merged_right( card *c, int version );
+card *card_merged_left( card *c, int version );
+
 extern UChar USTR_EMPTY[];
 
 #ifdef	__cplusplus

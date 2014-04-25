@@ -11,6 +11,8 @@
 #ifdef	__cplusplus
 extern "C" {
 #endif
+    
+typedef int (*comparator)(void *o1, void *o2);
 
 typedef struct dyn_array_struct dyn_array;
 dyn_array *dyn_array_create( int initial_size );
@@ -21,7 +23,7 @@ int dyn_array_add( dyn_array *da, void *obj );
 int dyn_array_insert( dyn_array *da, void *obj, int i );
 void **dyn_array_data( dyn_array *da );
 void dyn_array_remove( dyn_array *da, int i );
-
+void dyn_array_sort( dyn_array *da, comparator c );
 #ifdef MVD_TEST
 void test_dyn_array( int *passed, int *failed );
 #endif

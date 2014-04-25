@@ -23,9 +23,10 @@
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
-#include "bitset.h"
+#include <math.h>
 #include <unicode/uchar.h>
 #include <unicode/ustring.h>
+#include "bitset.h"
 #include "link_node.h"
 #include "pair.h"
 #include "plugin_log.h"
@@ -35,41 +36,29 @@
 #include "hashmap.h"
 #include "dyn_array.h"
 #include "card.h"
+#include "orphanage.h"
+#include "location.h"
 #include "match.h"
 #include "match_state.h"
 #define KDIST 2
+#define PHI 1.61803399
 /*
  * Match represents a sequence of matching charactes in teh pairs list 
  * and in the new text version.
  */
 struct match_struct
 {
-    // index of first matched/unmatched pair
-    card *start_p;
-    // index of last matched/unmatched pair
-    card *end_p;
-    // index into data of first pair where we started this match
-    int start_pos;
-    // inclusive index into data of last pair of current match/mismatch
-    int end_pos;
+    MATCH_BASE;
+    // last matched position in graph
+    location prev;
     // offset of our new version segment in the overall text
     int st_off;
-    // offset of the match in the overall text
-    int text_off;
-    // last matched value of end_p
-    card *prev_p;
-    // last matched value of end_pos
-    int prev_pos;
-    // length of match
-    int len;
     // number of times this match has been found
     int freq;
-    // pairs array - read only
-    card *pairs;
+    // cards list - read only
+    card *cards;
     // suffix tree of new version to match pairs against - read only
     suffixtree *st;
-    // cumulative ANDed versions of current matched path
-    bitset *bs;
     // next match in this sequence satisfying certain rigid criteria
     match *next;
     // queue of match branches not yet followed
@@ -80,22 +69,26 @@ struct match_struct
 /**
  * Create a match
  * @param start the card to start matching from
- * @param j the start position within start to start from
- * @param pairs the overall linked list of pairs
+ * @param pos the start position within start to start from
+ * @param cards the overall linked list of pairs
  * @param st the suffix tree of the section of text we are matching against
  * @param st_off starting point of the match in the new version
  * @param log the log to write errors to
  * @return  a match object
  */
-match *match_create( card *start, int j, card *pairs, suffixtree *st, 
+match *match_create( card *start, int pos, card *cards, suffixtree *st, 
     int st_off, plugin_log *log )
 {
     match *mt = calloc( 1, sizeof(match) );
     if ( mt != NULL )
     {
-        mt->prev_p = mt->end_p = mt->start_p = start;
-        mt->prev_pos = mt->end_pos = mt->start_pos = j;
-        mt->pairs = pairs;
+        mt->start.current = start;
+        mt->prev.current = start;
+        mt->end.current = start;
+        mt->prev.pos = pos;
+        mt->start.pos = pos;
+        mt->end.pos = pos;
+        mt->cards = cards;
         mt->st = st;
         mt->st_off = st_off;
     }
@@ -114,17 +107,14 @@ match *match_copy( match *mt, plugin_log *log )
     match *mt2 = calloc( 1, sizeof(match) );
     if ( mt2 != NULL )
     {
-        mt2->start_p = mt->start_p;
-        mt2->end_p = mt->end_p;
-        mt2->start_pos = mt->start_pos;
-        mt2->end_pos = mt->end_pos;
+        mt2->start = mt->start;
+        mt2->end = mt->end;
+        mt2->prev = mt->prev;
         mt2->st_off = mt->st_off;
         mt2->text_off = 0;
-        mt2->prev_p = mt->prev_p;
-        mt2->prev_pos = mt->prev_pos;
         mt2->len = mt->len;
         mt2->freq = mt->freq;
-        mt2->pairs = mt->pairs;
+        mt2->cards = mt->cards;
         mt2->st = mt->st;
         mt2->bs = bitset_clone(mt->bs);
         if ( mt->next != NULL )
@@ -146,17 +136,15 @@ match *match_copy( match *mt, plugin_log *log )
 match *match_clone( match *mt, plugin_log *log )
 {
     match *mt2 = NULL;
-    if ( mt->end_p != NULL )
+    if ( mt->end.current != NULL )
     {
         mt2 = match_copy( mt, log );
         if ( mt2 != NULL )
         {
             // pick up where our parent left off
-            mt2->start_p = mt->end_p;
-            mt2->start_pos = mt->end_pos;
+            mt2->start = mt->end;
             mt2->len = 0;
-            mt->end_p = mt->prev_p;
-            mt->end_pos = mt->prev_pos; 
+            mt->end = mt->prev; 
         }
     }
     return mt2;
@@ -196,11 +184,10 @@ int match_pop( match *m )
     {
         match_state *ms = m->queue;
         m->queue = match_state_next( ms );
-        m->start_p = match_state_start_p(ms);
-        m->end_p = match_state_end_p(ms);
+        match_state_dispose( ms );
+        m->start = match_state_start(ms);
+        m->end = match_state_end(ms);
         match_state_loc( ms, &m->loc );
-        m->start_pos = match_state_start_pos( ms );
-        m->end_pos = match_state_end_pos( ms );
         m->text_off = match_state_text_off( ms );
         m->len = match_state_len( ms );
         m->bs = match_state_bs( ms );
@@ -220,40 +207,6 @@ void match_append( match *m1, match *m2 )
     temp->next = m2;
 }
 /**
- * Restart a match by restarting it one character further on
- * @param m the match to restart
- * @return 1 if it worked else 0 (ran out of text)
- */
-int match_restart( match *m )
-{
-    card *old_p = m->start_p;
-    pair *sp = card_pair(m->start_p);
-    if ( m->start_pos == pair_len(sp) )
-    {
-        do
-        {
-            m->start_p = card_next( m->start_p, m->bs );
-            if ( m->start_p != NULL )
-                sp = card_pair(m->start_p);
-        }
-        while (m->start_p != NULL && pair_len(sp)==0 );
-        if ( m->start_p != NULL )
-            m->start_pos = 0;
-        else
-            return 0;
-    }
-    else
-        m->start_pos++;
-    if ( old_p != m->start_p )
-        bitset_and( m->bs, pair_versions(sp) );
-    m->end_pos = m->start_pos;
-    m->end_p = m->start_p;
-    m->prev_p = m->end_p;
-    m->prev_pos = m->end_pos;
-    m->len = 0;
-    return 1;
-}
-/**
  * Does one match follow another within a certain edit distance (KDIST)
  * @param first the first match
  * @param second the second, which should follow it closely
@@ -266,23 +219,23 @@ int match_follows( match *first, match *second )
     int st_dist = 0;
     // compute proximity in pairs list 
     // 1. simplest case: same pair
-    if ( second->start_p == first->end_p )
-        pairs_dist = (second->start_pos-first->end_pos)-1;
+    if ( second->start.current == first->end.current )
+        pairs_dist = (second->start.pos-first->end.pos)-1;
     // 2. compute distance between pairs
     else 
     {
-        pairs_dist = pair_len(card_pair(first->end_p))-(first->end_pos+1);
-        card *lp = first->end_p;
+        pairs_dist = pair_len(card_pair(first->end.current))-(first->end.pos+1);
+        card *lp = first->end.current;
         while ( pairs_dist <= KDIST )
         {
             card *next = card_next( lp, first->bs );
             if ( next != NULL )
             {
-                int p_len = pair_len(card_pair(first->start_p));
-                if ( lp != second->start_p )
+                int p_len = pair_len(card_pair(first->start.current));
+                if ( lp != second->start.current )
                     pairs_dist += p_len;
                 else 
-                    pairs_dist += second->start_pos;
+                    pairs_dist += second->start.pos;
             }
             else
                 break;
@@ -304,18 +257,18 @@ int is_maximal( match *m, UChar *text )
 {
     if ( m->text_off == m->st_off )
         return 1;
-    else if ( card_prev(m->start_p,m->bs)==NULL )
+    else if ( card_prev(m->start.current,m->bs)==NULL )
     {
         return 1;
     }
-    else if ( m->start_pos > 0 )
+    else if ( m->start.pos > 0 )
     {
-        UChar *data = pair_data( card_pair(m->start_p) );
-        return text[m->text_off-1] != data[m->start_pos-1];
+        UChar *data = pair_data( card_pair(m->start.current) );
+        return text[m->text_off-1] != data[m->start.pos-1];
     }
     else
     {
-        card *lp = card_prev(m->start_p,m->bs);
+        card *lp = card_prev(m->start.current,m->bs);
         while ( lp != NULL )
         {
             pair *p = card_pair(lp);
@@ -330,6 +283,56 @@ int is_maximal( match *m, UChar *text )
     }
 }
 /**
+ * Restart a match by restarting it one character further on
+ * @param m the match to restart
+ * @param log the log to record errors in
+ * @return 1 if it worked else 0 (ran out of text)
+ */
+int match_restart( match *m, plugin_log *log )
+{
+    card *old = m->start.current;
+    pair *sp = card_pair(m->start.current);
+    if ( m->start.pos == pair_len(sp) )
+    {
+        card *c = card_next_nonempty(m->start.current,m->bs);
+        if ( c != NULL )
+        {
+            bitset *overlap = card_overlap(c,m->bs);
+            if ( overlap != NULL )
+            {
+                pos loc;
+                location pos;
+                memset( &pos, 0, sizeof(location) );
+                pos.current = c;
+                pos.pos = 0;
+                loc.loc = 0;
+                loc.v = suffixtree_root(m->st);
+                match_state *ms = match_state_create(
+                    &pos, &pos, m->text_off, 
+                    m->len, overlap, &loc, log );
+                if ( m->queue == NULL )
+                    m->queue = ms;
+                else
+                    match_state_push( m->queue, ms );
+                // restrict the current match to ANDed versions
+                bitset_and( m->bs, pair_versions(card_pair(c)) );
+            }
+            m->start.pos = 0;
+            m->start.current = c;
+        }
+        else
+            return 0;
+    }
+    else
+        m->start.pos++;
+    if ( old != m->start.current )
+        bitset_and( m->bs, pair_versions(card_pair(m->start.current)) );
+    m->end = m->start;
+    m->prev = m->end;
+    m->len = 0;
+    return 1;
+}
+/**
  * Advance the match position - we have already matched the character
  * @param m the match object
  * @param loc the location in the suffix tree matched to so far
@@ -339,47 +342,42 @@ int is_maximal( match *m, UChar *text )
 int match_advance( match *m, pos *loc, plugin_log *log )
 {
     int res = 0;
-    if ( m->end_p != NULL )
+    if ( m->end.current != NULL )
     {
-        card *lp = m->end_p;
-        m->prev_p = m->end_p;
-        m->prev_pos = m->end_pos;
-        if ( pair_len(card_pair(lp))-1==m->end_pos )
+        card *c = m->end.current;
+        m->prev = m->end;
+        if ( pair_len(card_pair(c))-1==m->end.pos )
         {
-            while ( lp != NULL )
+            while ( c != NULL )
             {
-                lp = card_next( lp, m->bs );
-                if ( lp != NULL && pair_len(card_pair(lp))!=0  )
+                c = card_next_nonempty( c, m->bs );
+                if ( c != NULL )
                 {
-                    pair *p = card_pair(lp);
-                    bitset *bs = pair_versions(p);
-                    if ( !bitset_equals(m->bs,bs) )
+                    bitset *overlap = card_overlap(c,m->bs);
+                    if ( overlap != NULL )
                     {
-                        bitset *bs2 = bitset_clone( m->bs );
-                        bitset_and_not( bs2, bs );
                         match_state *ms = match_state_create(
-                            m->start_p, m->end_p, 
-                            m->start_pos, m->end_pos, m->text_off, 
-                            m->len, bs2, loc, log );
+                            &m->start, &m->end, m->text_off, 
+                            m->len, overlap, loc, log );
                         if ( m->queue == NULL )
                             m->queue = ms;
                         else
                             match_state_push( m->queue, ms );
-                        // restrict this match to ANDed versions
-                        bitset_and( m->bs, bs );
+                        // restrict the current match to ANDed versions
+                        bitset_and( m->bs, pair_versions(card_pair(c)) );
                     }
-                    m->end_pos = 0;
-                    m->end_p = lp;
+                    m->end.pos = 0;
+                    m->end.current = c;
                     res = 1;
                     break;
                 }
             }
-            if ( lp == NULL )
-                m->end_pos = pair_len( card_pair(m->end_p) );
+            if ( c == NULL )
+                m->end.pos = pair_len( card_pair(m->end.current) );
         }
         else
         {
-            m->end_pos++;
+            m->end.pos++;
             res = 1;
         }
     }
@@ -392,7 +390,7 @@ int match_advance( match *m, pos *loc, plugin_log *log )
  */
 static int match_extendible( match *m )
 {
-    return m->end_pos!=pair_len(card_pair(m->end_p));
+    return m->end.pos!=pair_len(card_pair(m->end.current));
 }
 /**
  * Extend a match as far as you can
@@ -411,6 +409,7 @@ match *match_extend( match *mt, UChar *text, plugin_log *log )
         if ( mt2 != NULL )
         {
             int distance = 1;
+            match_restart( mt2, log );
             do  
             {
                 if ( match_single(mt2,text,log) && match_follows(last,mt2) )
@@ -423,7 +422,7 @@ match *match_extend( match *mt, UChar *text, plugin_log *log )
                 {// failure: reset and move to next position
                     if ( distance < KDIST )
                     {
-                        if ( match_restart(mt2) )
+                        if ( match_restart(mt2,log) )
                         {
                             distance++;
                         }
@@ -464,8 +463,8 @@ int match_single( match *m, UChar *text, plugin_log *log )
     loc->loc = node_start(loc->v)-1;
     do 
     {
-        UChar *data = pair_data(card_pair(m->end_p));
-        c = data[m->end_pos];
+        UChar *data = pair_data(card_pair(m->end.current));
+        c = data[m->end.pos];
         if ( suffixtree_advance_pos(m->st,loc,c) )
         {
             if ( !maximal && node_is_leaf(loc->v) )
@@ -490,30 +489,21 @@ int match_single( match *m, UChar *text, plugin_log *log )
     while ( 1 );
     return maximal;
 }
-card *match_start_link( match *m )
+location match_start( match *m )
 {
-    return m->start_p;
+    return m->start;
 }
-int match_start_pos( match *m )
+location match_end( match *m )
 {
-    return m->start_pos;
-}
-card *match_end_link( match *m )
-{
-    return m->end_p;
-}
-int match_end_pos( match *m )
-{
-    return m->end_pos;
+    return m->end;
 }
 int match_prev_pos( match *m )
 {
-    return m->prev_pos;
+    return m->prev.pos;
 }
-
 int match_inc_end_pos( match *m )
 {
-    return ++m->end_pos;
+    return ++m->end.pos;
 }
 suffixtree *match_suffixtree( match *m )
 {
@@ -615,156 +605,6 @@ int match_text_end( match *m )
 {
     return m->text_off+m->len;
 }
-/** 
- * Create a card containing an empty or short sequence in the new version
- * @param m1 the first match before m2
- * @param m2 the second after m1
- * @param v the id of the new version
- */
-static card *card_between_matches( match *m1, match *m2, 
-    UChar *text, int v, plugin_log *log )
-{
-    card *between = NULL;
-    int text_len = match_text_off(m2)-match_text_end(m1);
-    UChar *fragment;
-    if ( text_len == 0 )
-        fragment = USTR_EMPTY;
-    else
-    {
-        fragment = calloc( text_len+1, sizeof(UChar) );
-        if ( fragment != NULL )
-            memcpy( fragment, &text[match_text_end(m1)], text_len*sizeof(UChar) );
-        else
-            return NULL;
-    }
-    bitset *bs = bitset_create();
-    if ( bs != NULL )
-    {
-        bs = bitset_set( bs, v );
-        if ( bs != NULL )
-        {
-            pair *frag = pair_create_basic( bs, fragment, text_len );
-            if ( frag != NULL )
-            {
-                between = card_create( frag, log );
-                if ( between != NULL )
-                    card_set_text_off( between, match_text_end(m1) );
-            }
-            bitset_dispose( bs );
-        }
-    }
-    //card_print(between);
-    if ( fragment != USTR_EMPTY && fragment != NULL )
-        free( fragment );
-    return between;
-}
-/**
- * Split the underlying card at match start
- * @param m the match in question
- * @return 1 if it worked
- */
-int match_split_at_start( match *m )
-{
-    int res = 1;
-    pair *p = card_pair( m->start_p );
-    if ( m->start_pos > 0 && m->start_pos < pair_len(p)-1 )
-    {
-        card *old_start_p = m->start_p;
-        res = card_split( m->start_p, m->start_pos );
-        if ( res )
-        {
-            m->start_p = card_right( m->start_p );
-            // check if start and end were not the same
-            if ( old_start_p == m->end_p )
-            {
-                m->end_p = m->start_p;
-                m->end_pos -= m->start_pos;
-            }
-        }
-    }
-    m->start_pos = 0;
-    return res;
-}
-/**
- * Split the underlying card at its end-point
- * @param m the match in question
- * @return 1 if it worked
- */
-int match_split_at_end( match *m )
-{
-    int res = 1;
-    pair *p = card_pair(m->end_p);
-    int plen = pair_len(p);
-    if ( m->end_pos < plen-1 && m->end_pos > 0 )
-    {
-        res = card_split( m->end_p, m->end_pos+1 );
-        if ( res )
-            m->end_pos = pair_len(card_pair(m->end_p))-1;
-    }
-    return res;
-}
-/**
- * Split the MVD pairs corresponding to the match. start_pos, end_pos are 
- * both inclusive
- * @param m the match
- * @param text the text the match is aligned with
- * @param v the number of the new version
- * @param log the log to write errors to
- * @return 1 if successful
- */
-int match_split( match *m, UChar *text, int v, plugin_log *log )
-{
-    match *temp = m;
-    int i,res=1;
-    dyn_array *matches = dyn_array_create(5);
-    if ( matches != NULL )
-    {
-        // convert to an array because we need to go right-to-left
-        dyn_array_add( matches, temp );
-        while ( temp->next != NULL )
-        {
-            temp = temp->next;
-            dyn_array_add( matches, temp );
-        }
-        for ( i=dyn_array_size(matches)-1;i>=0;i-- )
-        {
-            temp = dyn_array_get( matches, i );
-            res = match_split_at_end( temp );
-            if ( res ) 
-                res = match_split_at_start( temp );
-            else
-                plugin_log_add(log,"match: failed to split match at end\n");
-            // special case for last card
-            if ( card_right(temp->end_p) == NULL )
-                temp->end_pos++;
-            if ( i < dyn_array_size(matches)-1 )
-            {
-                // add a short segment linking to the following match
-                card *betw = card_between_matches(temp,
-                    temp->next, text, v, log );
-                if ( betw != NULL )
-                {
-                    if ( card_node_to_right(temp->end_p) )
-                    {
-                        res = card_add_at_node( temp->end_p, betw, 0);
-                        if ( !res )
-                            plugin_log_add(log,
-                                "match: failed to add between lp\n");
-                    }
-                    else
-                        card_add_after( temp->end_p, betw );
-                }
-                else
-                    plugin_log_add(log,"match: failed to join matches\n");
-            }
-            if ( !res ) 
-                break;
-        }
-        dyn_array_dispose( matches );
-    }
-//    card_print(m->start_p);
-    return res;
-}
 /**
  * Get the next match in case it has been extended
  * @return the next match or NULL
@@ -774,51 +614,14 @@ match *match_next( match *m )
     return m->next;
 }
 /**
- * Work out if this match is transposed
- * 1. find left and right closet direct alignments or the end 
- * 2. find the st_offset of each such alignment
- * 3. if our st_off is between these two, then it is direct, 
- * else it is transposed
- * @param m the match to test
- * @param new_version the ID of the new version
- * @param tlen the overall length of the new version text
- * @return 1 if it is transposed else 0
+ * Is a transposition too far away or within range
+ * @param distance between the edges of the transposition and child in chars
+ * @param length length of the transposition
  */
-int match_transposed( match *m, int new_version, int tlen )
+int match_within_threshold( int distance, int length )
 {
-    int text_left = 0;
-    int text_right = tlen;
-    // 1. find left direct align
-    card *left = card_left(m->start_p);
-    while ( left != NULL )
-    {
-        pair *p = card_pair( left );
-        bitset *bs = pair_versions(p);
-        if ( bitset_next_set_bit(bs,new_version)==new_version 
-            && bitset_cardinality(bs)>1 )
-        {
-            text_left = pair_len(p)+card_text_off(left);
-            break;
-        }
-        left = card_left(left);
-    } 
-    card *right = card_right(m->end_p);
-    while ( right != NULL )
-    {
-        pair *p = card_pair( right );
-        bitset *bs = pair_versions(p);
-        if ( bitset_next_set_bit(bs,new_version)==new_version 
-            && bitset_cardinality(bs)>1 )
-        {
-            text_right = card_text_off(right);
-            break;
-        }
-        right = card_right(right);
-    }
-    if ( m->text_off >= text_left && match_text_end(m) <= text_right )
-        return 0;
-    else
-        return 1;
+    double power = pow( (double)length, PHI );
+    return power>(double)distance;
 }
 static char *print_utf8( UChar *ustr, int src_len )
 {

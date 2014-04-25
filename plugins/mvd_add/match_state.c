@@ -30,6 +30,7 @@
 #include "pair.h"
 #include "dyn_array.h"
 #include "card.h"
+#include "location.h"
 #include "match_state.h"
 /**
  * Store the state of a match while matching. This is done whenever there 
@@ -38,10 +39,8 @@
  */
 struct match_state_struct
 {
-    card *start_p;
-    card *end_p;
-    int start_pos;
-    int end_pos;
+    location start;
+    location end;
     int text_off;
     int len;
     bitset *bs;
@@ -51,26 +50,21 @@ struct match_state_struct
 
 /**
  * Create a match state at a branch point in the variant graph
- * @param start_p the start card for the match to resume from
- * @param end_p the end card that has already been matched
- * @param start_pos the start position in start_p
- * @param end_pos the end position match in end_p
+ * @param start the start location for the match to resume from
+ * @param end the end location that has already been matched
  * @param st_off the offset in the suffix tree if set
  * @param bs the versions of this state (already created)
  * @param loc the position in the suffix tree to which we have matched
  * @return a match state object
  */
-match_state *match_state_create( card *start_p, card *end_p, 
-    int start_pos, int end_pos, int text_off, int len, bitset *bs, pos *loc,
-    plugin_log *log )
+match_state *match_state_create( location *start, location *end, 
+    int text_off, int len, bitset *bs, pos *loc, plugin_log *log )
 {
     match_state *ms = calloc( 1, sizeof(match_state) );
     if ( ms != NULL )
     {
-        ms->start_p = start_p;
-        ms->end_p = end_p;
-        ms->start_pos = start_pos;
-        ms->end_pos = end_pos;
+        ms->start = *start;
+        ms->end = *end;
         ms->text_off = text_off;
         ms->len = len;
         ms->bs = bs;
@@ -88,14 +82,18 @@ match_state *match_state_create( card *start_p, card *end_p,
         }
     }
     else
-        plugin_log_add( log, "match_state: failed to craete object\n");
+        plugin_log_add( log, "match_state: failed to create object\n");
     return ms;
 }
+/**
+ * Copy a list of match states
+ * @param ms the head of the list
+ * @param log the log to record errors in
+ */
 match_state *match_state_copy( match_state *ms, plugin_log *log )
 {
-    match_state *ms_copy = match_state_create( ms->start_p, ms->end_p, 
-        ms->start_pos, ms->end_pos, ms->text_off, ms->len, ms->bs, ms->loc,
-        log );
+    match_state *ms_copy = match_state_create( &ms->start, &ms->end, 
+        ms->text_off, ms->len, ms->bs, ms->loc, log );
     if ( ms_copy != NULL )
     {
         if ( ms->next != NULL )
@@ -138,21 +136,13 @@ void match_state_loc( match_state *ms, pos *loc )
 {
     *loc = *(ms->loc);
 }
-card *match_state_start_p( match_state *ms )
+location match_state_start( match_state *ms )
 {
-    return ms->start_p;
+    return ms->start;
 }
-card *match_state_end_p( match_state *ms )
+location match_state_end( match_state *ms )
 {
-    return ms->end_p;
-}
-int match_state_start_pos( match_state *ms )
-{
-    return ms->start_pos;
-}
-int match_state_end_pos( match_state *ms )
-{
-    return ms->end_pos;
+    return ms->end;
 }
 int match_state_text_off( match_state *ms )
 {

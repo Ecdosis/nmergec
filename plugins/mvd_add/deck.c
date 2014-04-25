@@ -20,438 +20,172 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stdlib.h>
-#include <errno.h>
-#include <pthread.h>
-#include <string.h>
 #include <stdio.h>
-#include <unicode/uchar.h>
-#include <unicode/ustring.h>
+#include "bitset.h"
+#include "unicode/uchar.h"
+#include "link_node.h"
+#include "pair.h"
 #include "plugin_log.h"
 #include "node.h"
 #include "pos.h"
 #include "suffixtree.h"
+#include "state.h"
 #include "aatree.h"
-#include "bitset.h"
-#include "link_node.h"
-#include "pair.h"
 #include "dyn_array.h"
 #include "card.h"
 #include "orphanage.h"
+#include "location.h"
+#include "match.h"
+#include "alignment.h"
 #include "deck.h"
 #include "hashmap.h"
-#include "match.h"
-#include "matcher.h"
 #include "utils.h"
-#include "benchmark.h"
+#include "mum.h"
 
-// not used
-#define MAX_THREADS 8
-#define NUM_SEGMENTS 12
-UChar USTR_EMPTY[] = {0};
+#define PQUEUE_LIMIT 50
 
-struct deck_struct 
+/**
+ * A deck is something that looks for matches by comparing the 
+ * list of pairs (cards) with the suffix tree, which itself represents
+ * the new version. After matching is ended the deck returns the 
+ * best MUM.
+ */
+struct deck_struct
 {
-    // our version
-    int version;
-    // our text
-    UChar *text;
-    // offset in text where we start
-    int start;
-    /** length of our section of the text */
-    int len;
-    // overall length of text in characters
-    int tlen;
-    // our suffixtree - computed only once from p
     suffixtree *st;
-    // register or children and parents
-    orphanage *o;
-    // the log to record errors in
+    card *cards;
+    UChar *text;
+    int tlen;
+    aatree *pq;
+    int version;
+    int st_off;
     plugin_log *log;
-    // next deck in queue
-    deck *next;
 };
 /**
- * Create an deck between a bit of text and the MVD.
- * @param text the text of the whole new version in UTF-16
- * @param start the start offset in text
- * @param tlen the length of text in UChars
- * @param version the ID of the new version
- * @param o the orphanage to store unattached children in
- * @param log the log to record errors in
+ * Create a deck
+ * @param a the alignment object
+ * @param cards the list of pairs from the MVD turned into cards
+ * @return a deck object ready to go
  */
-deck *deck_create( UChar *text, int start, int len, int tlen, 
-    int version, orphanage *o, plugin_log *log )
+deck *deck_create( alignment *a, card *cards )
 {
-    deck *a = calloc( 1, sizeof(deck) );
-    if ( a != NULL )
+    deck *d = calloc( 1, sizeof(deck) );
+    if ( d != NULL )
     {
-        a->text = text;
-        a->start = start;
-        a->tlen = tlen;
-        a->len = len;
-        a->version = version;
-        a->log = log;
-        a->o = o;
-        a->st = suffixtree_create( &text[start], len, log );
-        if ( a->st == NULL )
+        d->log = alignment_log( a );
+        d->cards = cards;
+        d->text = alignment_text( a, &d->tlen );
+        d->version = alignment_version(a);
+        d->st = alignment_suffixtree( a );
+        d->st_off = alignment_start(a);
+        d->pq = aatree_create( match_compare, PQUEUE_LIMIT );
+        if ( d->pq == NULL )
         {
-            deck_dispose( a );
-            plugin_log_add(log,"deck: failed to create suffix tree\n");
-            a = NULL;
+            deck_dispose( d );
+            d = NULL;
         }
     }
     else
-        plugin_log_add( log, "deck: failed to allocate object\n");
-    return a;
+        plugin_log_add(d->log, "deck: failed to allocate object\n");
+    return d;
 }
 /**
- * Dispose of an deck.
- * @param a the deck to dispose
+ * Dispose of a deck object
+ * @param m the deck in question
  */
-void deck_dispose( deck *a )
+void deck_dispose( deck *d )
 {
-    if ( a->st != NULL )
-        suffixtree_dispose( a->st );
-    // text and orphanage belongs to the caller
-    free( a );
+    if ( d->pq != NULL )
+        aatree_dispose( d->pq, (aatree_dispose_func)match_dispose );
+    free( d );
 }
 /**
- * Get the textual component of this deck
- * @param a the deck object
- * @param tlen VAR param: its length
- * @return the text in UTF-16 format
+ * Perform an alignment recursively
+ * @param m the deck to do the alignment within
+ * @return 1 if it worked, else 0 on error
  */
-UChar *deck_text( deck *a, int *tlen )
+int deck_align( deck *d )
 {
-    *tlen = a->tlen;
-    return a->text;
-}
-/**
- * Get the log for this deck
- * @param a the deck
- * @return a plugin log
- */
-plugin_log *deck_log( deck *a )
-{
-    return a->log;
-}
-/**
- * Append an deck on the end of another. Keep sorted on decreasing length.
- * @param head the head of the current deck
- * @param next the new one to add at the end
- * @return the new or old head (unchanged)
- */
-deck *deck_push( deck *head, deck *next )
-{
-    deck *prev = NULL;
-    deck *temp = head;
-    while ( temp != NULL && deck_len(temp) > deck_len(next) )
+    card *c = d->cards;
+    while ( c != NULL )
     {
-        prev = temp;
-        temp = temp->next;
-    }
-    if ( prev != NULL )
-    {
-        prev->next = next;
-        next->next = temp;
-    }
-    else
-    {
-        next->next = head;
-        head = next;
-    }
-    /*
-    // verify list
-    temp = head;
-    prev = NULL;
-    while ( temp != NULL )
-    {
-        prev = temp;
-        temp = temp->next;
-        if ( prev != NULL && temp != NULL && temp->len > prev->len )
-            plugin_log_add(head->log,"deck: error in deck list!\n");
-    }*/
-    return head;
-}
-/**
- * Remove from the head of the list
- * @param head the list start
- * @return the new head
- */
-deck *deck_pop( deck *head )
-{
-    return head->next;
-}
-/**
- * Debug routine
- * @param a the deck to print
- * @param prompt the prefix to the deck
- */
-void deck_print( deck *a, const char *prompt )
-{
-    int end = a->start+a->len-1;
-    printf( "%s v=%d %d-%d\n", prompt,
-        a->version,a->start,end);
-}
-/**
- * Merge a transposed MUM into the MVD pairs list. Match is already split.
- * @param mum the mum to merge
- * @param a the deck in question
- */
-static void deck_transpose_merge( deck *a, match *mum )
-{
-    do
-    {
-        card *temp = match_start_link( mum );
-        card *end = match_end_link( mum );
-        bitset *mv = match_versions( mum );
-        int text_off = match_text_off( mum );
-        do
+        pair *p = card_pair( c );
+        bitset *bs = pair_versions(p);
+        // ignore pairs already aligned with the new version
+        if ( bitset_next_set_bit(bs,d->version)!=d->version )
         {
-            // make every pair in the match a parent:
-            // either already a parent, or an ordinary pair or a child
-            card *parent = card_make_parent( temp, a->log );
-            if ( parent == NULL && pair_is_child(card_pair(temp)) )
-                parent = orphanage_get_parent(a->o,temp);
-            if ( parent != NULL )
+            int j,length = pair_len( p );
+            for ( j=0;j<length;j++ )
             {
-                pair *ppair = card_pair(parent);
-                int id = pair_id( ppair );
-                id = (id == 0)?orphanage_next_id(a->o):id;
-                pair_set_id( card_pair(parent), id );
-                orphanage_add_parent( a->o, parent );
-                card *child = card_make_child( parent, a->version, 
-                    a->log );
-                pair_set_id( card_pair(child), id );
-                card_set_text_off( child, text_off );
-                orphanage_add_child( a->o, child );
-                text_off += pair_len(ppair);
-            }
-            else // none of those
-                plugin_log_add(a->log,"deck: failed to create parent\n");
-            temp = card_next( temp, mv );
-        } while ( temp != end );
-        mum = match_next( mum );
-    } while ( mum != NULL );
-}
-/**
- * Merge a MUM directly into the MVD pairs list
- * @param mum the mum to merge (may be a list)
- * @param start_p the first card of the match, starting at offset 0
- * @param end_p the last card of the match, ending at card end
- * @param a the deck to merge within
- */
-static void deck_direct_merge( deck *a, match *mum )
-{
-    do
-    {
-        card *temp = match_start_link( mum );
-        card *end_p = match_end_link( mum );
-        bitset *mv = match_versions(mum);
-        int text_off = match_text_off(mum);
-        // align the middle bit
-        int v = deck_version( a );
-        do
-        {
-            pair *p = card_pair(temp);
-            bitset *bs = pair_versions(p);
-            bitset_set( bs, v );
-            card_set_text_off( temp, text_off );
-            text_off += pair_len(p);
-            if ( temp != end_p )
-                temp = card_next( temp, mv );
-        } while ( temp != end_p );
-        mum = match_next( mum );
-    } while ( mum != NULL );
-}
-/**
- * Split the left-hand-side off from the merged deck
- * @param a the deck whose mum has been computed
- * @param mum the mum in question
- * @param left update with the new left-hand deck if any or NULL
- * @return 1 if it worked
- */
-static int deck_create_lhs( deck *a, match *mum, deck **left )
-{
-    int res = 1;
-    int v = deck_version( a );
-    if ( match_text_off(mum)>0 )
-    {
-        int llen = match_text_off(mum)-a->start;
-        *left = deck_create( a->text, a->start, llen, a->tlen, v, 
-            a->o, a->log );
-        if ( *left == NULL )
-        {
-            plugin_log_add(a->log,"deck: failed to create lhs\n");
-            res = 0;
-        }
-    }
-    else
-        *left = NULL;
-    return res;
-}
-/**
- * Split off the rhs of a match
- * @param a the deck
- * @param last the last mum in the sequence (if several)
- * @return 1 if it worked else 0
- */
-int deck_create_rhs( deck *a, match *last, deck **right )
-{
-    int res = 1;
-    int v = deck_version( a );
-    if ( match_text_end(last) < a->tlen )
-    {
-        int rlen = (a->start+a->len)-match_text_end(last);
-        *right = deck_create( a->text,match_text_end(last),rlen,a->tlen,
-            v,a->o,a->log);
-        if ( *right == NULL )
-        {
-            plugin_log_add(a->log,"deck: failed to create lhs\n");
-            res = 0;
-        }
-    }
-    else // not an error
-        *right = NULL;  
-    return res;
-}
-/**
- * Merge the chosen MUM into the pairs array
- * @param a the deck to merge into the MVD
- * @param mum the mum - transpose or direct
- * @param left the leftover deck on the left
- * @param right the leftover deck on the right
- * @return 1 if it worked
- */
-static int deck_merge( deck *a, match *mum, deck **left, deck **right )
-{
-    int res = 1;
-    res = deck_create_lhs( a, mum, left );
-    if ( res )
-    {
-        match *last = mum;
-        res = match_split( mum, a->text, a->version, a->log );
-        if ( res )
-        {
-            if ( match_transposed(mum,deck_version(a),deck_tlen(a)) )
-                deck_transpose_merge( a, mum );
-            else
-                deck_direct_merge( a, mum );
-            while ( match_next(last) != NULL )
-                last = match_next(last);
-            res = deck_create_rhs( a, last, right );
-            if ( !res )
-                plugin_log_add(a->log,"deck: failed to create rhs\n");
-        }
-        else
-            plugin_log_add(a->log,"deck: failed to split match\n");
-    }
-    else
-        plugin_log_add(a->log,"deck: failed to create lhs\n");
-    return res;
-}
-/**
- * Align with the whole text excluding those segments already aligned
- * @param head the list of decks
- * @param pairs the list of pairs to be searched
- * @param left VAR param set to the leftover deck on the left
- * @param right VAR param set to the leftover deck on the right
- * @return 1 if it merged correctly, else 0
- */
-int deck_align( deck *a, card **cards,  
-    deck **left, deck **right, orphanage *o )
-{
-    int res = 0;
-    matcher *m = matcher_create( a, *cards );
-    if ( m != NULL )
-    {
-        // res==1 if there is at least one match
-        if ( res = matcher_align(m) )
-        {
-            match *mum = matcher_get_mum( m );
-            // all matches may have freq > 1
-            if ( mum != NULL )
-            {
-                match *temp = mum;
-                // debug
-                while ( match_next(temp)!=NULL )
-                    temp = match_next(temp);
-                int end = match_text_end(temp);
-                printf("merging %d-%d\n",match_text_off(mum),end);
-                // end debug
-                res = deck_merge( a, mum, left, right );
-            }
-            else
-                res = 0;
-        }
-        if ( !res )
-        // failed to find a suitable match: add a new pair instead
-        {
-            bitset *bs = bitset_create();
-            if ( bs != NULL )
-            {
-                bs = bitset_set( bs, a->version );
-                if ( bs != NULL )
+                // start a match at each character position
+                match *mt = match_create( c, j, d->cards, d->st, 
+                    d->st_off, d->log );
+                if ( mt != NULL )
                 {
-                    pair *p = pair_create_basic(bs, &a->text[a->start], 
-                        a->len);
-                    //pair_print( p );
-                    card *lp = card_create( p, a->log );
-                    card_set_text_off( lp, a->start );
-                    card_add_at( cards, lp, a->start, a->version );
-                    bitset_dispose( bs );
-                    res = 1;
+                    match_set_versions( mt, bitset_clone(bs) );
+                    while ( mt != NULL )
+                    {
+                        match *queued = NULL;
+                        match *existing = NULL;
+                        if ( match_single(mt,d->text,d->log) )
+                        {
+                            queued = match_extend( mt, d->text, d->log );
+                            existing = aatree_add( d->pq, queued );
+                            if ( existing != NULL )
+                                match_inc_freq( existing );
+                            // if we added it to the queue, freeze its state
+                            if ( existing == queued )
+                                mt = match_copy( mt, d->log );
+                        }    
+                        // does the match have any extensions?
+                        if ( mt != NULL && !match_pop(mt) )
+                        {
+                            match_dispose( mt );
+                            mt = NULL;
+                        }
+                    }
                 }
+                else
+                    break;
             }
         }
-        matcher_dispose( m );
+        c = card_right( c );
     }
-    else
-        res = 0;
-    return res;
+    return !aatree_empty(d->pq);
 }
 /**
- * Get this deck's new version
- * @param a the deck
- * @return its version number for the new version
+ * Check if a MUM is transposed and passes the transpose criteria
+ * @param mt the deck
+ * @param mum the mum to test
+ * @return 1 if the MUM is worth aligning else 0
  */
-int deck_version( deck *a )
+int deck_mum_ok( deck *d, match *mt )
 {
-    return a->version;
+    int dist;
+    if ( mum_transposed((mum*)mt,d->version,d->tlen,&dist) )
+       return match_within_threshold(dist,match_total_len(mt));
+    else // ALL direct alignments are OK
+        return 1;
 }
 /**
- * Get this length of our section of the new version text
- * @param a the deck
- * @return the length of the new unaligned pair
+ * Get the longest maximal *unique* match (MUM)
+ * @param m the deck in question
+ * @return a match, which may be a chain of matches
  */
-int deck_len( deck *a )
+match *deck_get_mum( deck *d )
 {
-    return a->len;
-}
-/**
- * Get the total length of the new version text
- * @param a the deck
- * @return the length of the underlying text
- */
-int deck_tlen( deck *a )
-{
-    return a->tlen;
-}
-/**
- * Get this deck's suffixtree
- * @param a the laignment in question
- * @return a suffixtree made of this deck's text
- */
-suffixtree *deck_suffixtree( deck *a )
-{
-    return a->st;
-}
-/**
- * Get the starting position int he new version
- * @param a the deck in question
- * @return the st_off for this deck
- */
-int deck_start( deck *a )
-{
-    return a->start;
+    match *found = NULL;
+    while ( !aatree_empty(d->pq) )
+    {
+        match *mt = aatree_max( d->pq );
+        //match *mt = aatree_min( d->pq );
+        if ( match_freq(mt) == 1 && deck_mum_ok(d,mt) )
+        {
+            found = mt;
+            break;
+        }
+        else if ( !aatree_delete(d->pq,mt) )
+            break;
+    }
+    return found;
 }

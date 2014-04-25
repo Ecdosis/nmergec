@@ -23,6 +23,7 @@ void orphanage_get_children( orphanage *o, card *parent,
     card **children, int size );
 int orphanage_count_children( orphanage *o, card *parent );
 int orphanage_remove_parent( orphanage *o, card *parent );
+card **orphanage_all_children( orphanage *o, int *num, int *success );
 #ifdef MVD_TEST
 void orphanage_test( int *passed, int *failed );
 #endif

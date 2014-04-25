@@ -5,19 +5,19 @@
         <activeConfIndexElem>0</activeConfIndexElem>
     </data>
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
-    <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/1">
-        <file>file:/Users/desmond/NetBeansProjects/NMergeC/include/plugin.h</file>
-        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/plugin.c</file>
-        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/mvdtool.c</file>
-        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/test.c</file>
-        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/plugin_list.c</file>
-        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/memwatch.c</file>
-        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/chunk_state.c</file>
-        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/operation.c</file>
-        <file>file:/Users/desmond/NetBeansProjects/NMergeC/include/mvdtool.h</file>
-        <file>file:/Users/desmond/NetBeansProjects/NMergeC/include/memwatch.h</file>
-        <file>file:/Users/desmond/NetBeansProjects/NMergeC/include/operation.h</file>
-        <file>file:/Users/desmond/NetBeansProjects/NMergeC/include/plugin_list.h</file>
-        <file>file:/Users/desmond/NetBeansProjects/NMergeC/src/mvdfile.c</file>
+    <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
+        <group>
+            <file>file:/home/desmond/NetBeansProjects/NMergeC/include/operation.h</file>
+            <file>file:/home/desmond/NetBeansProjects/NMergeC/src/char_buf.c</file>
+            <file>file:/home/desmond/NetBeansProjects/NMergeC/src/mvdtool.c</file>
+            <file>file:/home/desmond/NetBeansProjects/NMergeC/src/operation.c</file>
+            <file>file:/home/desmond/NetBeansProjects/NMergeC/src/test.c</file>
+            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/shared/src/dyn_string.c</file>
+            <file>file:/home/desmond/NetBeansProjects/NMergeC/src/plugin_list.c</file>
+            <file>file:/home/desmond/NetBeansProjects/NMergeC/src/mvdfile.c</file>
+            <file>file:/home/desmond/NetBeansProjects/NMergeC/include/plugin_list.h</file>
+            <file>file:/home/desmond/NetBeansProjects/NMergeC/src/plugin.c</file>
+            <file>file:/home/desmond/NetBeansProjects/NMergeC/src/chunk_state.c</file>
+        </group>
     </open-files>
 </project-private>

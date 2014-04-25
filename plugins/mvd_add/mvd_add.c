@@ -45,126 +45,20 @@
 #include "utils.h"
 #include "option_keys.h"
 #include "card.h"
+#include "orphanage.h"
+#include "location.h"
 #include "match.h"
 #include "aatree.h"
 #include "orphanage.h"
+#include "alignment.h"
 #include "deck.h"
-#include "matcher.h"
 #include "verify.h"
-#include "orphanage.h"
+#include "adder.h"
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
 #define ALIGNMENTS_LEN 100 
 
-// object to store state during a call to process
-struct add_struct
-{
-    // the version ID - a /-delimited string
-    UChar *vid;
-    // description of the version to be added
-    UChar *v_description;
-    // MVD description - if need to create one
-    UChar *mvd_description;
-    // the text itself - we use wide UTF-16 as the basic char type
-    UChar *text;
-    // number of wchar_t characters in text 
-    size_t tlen;
-    // encoding of the input file
-    char *encoding;
-};
-
-/**
- * Convert a string to UTF-16 from its own encoding
- * @param src an 8-bit plain string
- * @param src_len the length of src in BYTES
- * @param encoding the src encoding's canonical name
- * @param dst_len VAR param to whole number of UChars converted into
- * @param log a plugin log to record errors
- * @return an allocated UChar string or NULL
- */
-static UChar *convert_to_unicode( char *src, int src_len, char *encoding, 
-    int *dst_len, plugin_log *log )
-{
-    int u_len = measure_from_encoding( src, src_len, encoding );
-    UChar *dst = calloc( u_len+1, sizeof(UChar) );
-    if ( dst != NULL )
-    {
-        int nchars = convert_from_encoding( src, src_len,
-            dst,u_len+1,encoding);
-        if ( nchars == 0 )
-        {
-            plugin_log_add(log,
-                "mvd_add: failed to convert %s via encoding %s\n",
-                src, encoding);
-            free( dst );
-            dst = NULL;
-        }
-        else
-            *dst_len = nchars/sizeof(UChar);
-    }
-    else
-        plugin_log_add(log,"mvd_add: failed to allocate UChar buffer\n");
-    return dst;
-}
-/**
- * Parse the options
- * @param map of key-value pairs already parsed
- * @param log the log to record errors in
- * @return 1 if the options were sane
- */
-static int set_options( struct add_struct *add, hashmap *map, plugin_log *log )
-{
-    int sane = 1;
-    char *value;
-    if ( hashmap_contains(map,ENCODING_KEY) )
-        add->encoding = hashmap_get(map,ENCODING_KEY);
-    if ( hashmap_contains(map,VID_KEY) )
-    {
-        int tlen;
-        value = hashmap_get(map,VID_KEY);
-        add->vid = convert_to_unicode( value, strlen(value), add->encoding, 
-            &tlen, log );
-        if ( add->vid == NULL )
-            sane = 0;
-    }
-    else
-    {
-        plugin_log_add(log,"mvd_add: missing version ID\n");
-        sane = 0;
-    }
-    if ( hashmap_contains(map,LONG_NAME_KEY) )
-    {
-        value = hashmap_get(map,LONG_NAME_KEY);
-        int tlen;
-        add->v_description = convert_to_unicode(value,strlen(value),
-            add->encoding,&tlen,log );
-        if ( add->v_description == NULL )
-        {
-            sane = 0;
-            plugin_log_add(log,"mvd_add: missing version description\n");
-        }
-    }
-    else if ( add->vid != NULL )
-    {
-        add->v_description = DEFAULT_LONG_NAME;
-    }
-    if ( hashmap_contains(map,DESCRIPTION_KEY) )
-    {
-        value = hashmap_get(map,DESCRIPTION_KEY);
-        int tlen;
-        add->mvd_description = convert_to_unicode(value,strlen(value),
-            add->encoding,&tlen,log );
-        if ( add->mvd_description == NULL )
-        {
-            sane = 0;
-            plugin_log_add(log,"mvd_add: missing mvd description\n");
-        }
-    }
-    else
-        add->mvd_description = u_strdup(DEFAULT_DESCRIPTION);
-    return sane;
-}
 /**
  * Add the first version to an mvd
  * @param mvd the mvd to add it to
@@ -174,7 +68,7 @@ static int set_options( struct add_struct *add, hashmap *map, plugin_log *log )
  * @param log the log to record errors in
  * @return 1 if it worked
  */ 
-static int add_first_version( MVD *mvd, struct add_struct *add, UChar *text, 
+static int add_first_version( MVD *mvd, adder *add, UChar *text, 
     int tlen, plugin_log *log )
 {
     int res = 1;
@@ -189,7 +83,8 @@ static int add_first_version( MVD *mvd, struct add_struct *add, UChar *text,
             "mvd_add: failed to add first version\n");
         else
         {
-            version *v = version_create( add->vid, add->v_description );
+            version *v = version_create( adder_vid(add), 
+                adder_version_desc(add) );
             if ( v != NULL )
                 res = mvd_add_version( mvd, v );
             if ( res == 0 )
@@ -198,25 +93,13 @@ static int add_first_version( MVD *mvd, struct add_struct *add, UChar *text,
             else
             {
                 char buffer[128];
-                u_print( add->vid, buffer, 128 );
+                u_print( adder_vid(add), buffer, 128 );
                 plugin_log_add(log,
                     "mvd_add: added version %s successfully!\n",buffer);
             }
         }
     }
     return res;
-}
-/**
- * Get the longest match of 3 but favour the 2nd
- * @param a the first match or NULL
- * @param b the second match of NULL
- * @param c the third match or NULL
- * @return the longest of the three or b
- */
-match *best_of_three( match *a, match *b, match *c )
-{
-    match *maxAC = (match_total_len(a)>match_total_len(c))?a:c;
-    return (match_total_len(maxAC)>match_total_len(b))?maxAC:b;
 }
 /**
  * Wrap an array of pairs into a doubly linked list
@@ -234,21 +117,21 @@ static card *link_pairs( dyn_array *pairs, plugin_log *log, orphanage *o )
     for ( i=0;i<len;i++ )
     {
         pair *p = (pair*)dyn_array_get( pairs, i );
-        card *lp = card_create( p, log );
-        if ( lp != NULL )
+        card *c = card_create( p, log );
+        if ( c != NULL )
         {
             if ( head == NULL )
-                current = head = lp;
+                current = head = c;
             else
             {
-                card_set_right( current, lp );
-                card_set_left( lp, current );
-                current = lp;
+                card_set_right( current, c );
+                card_set_left( c, current );
+                current = c;
             }
             if ( pair_is_parent(p) )
-                orphanage_add_parent(o,lp);
+                orphanage_add_parent(o,c);
             else if ( pair_is_child(p) )
-                orphanage_add_child(o,lp);
+                orphanage_add_child(o,c);
         }
         else
         {
@@ -266,12 +149,86 @@ static card *link_pairs( dyn_array *pairs, plugin_log *log, orphanage *o )
  * @param mvd the MVD to add it to
  * @return 1 if it worked, else 0
  */
-static int add_version( struct add_struct *add, MVD *mvd )
+static int add_version( adder *add, MVD *mvd )
 {
     int res = 0;
-    version *new_v = version_create( add->vid, add->v_description );
+    version *new_v = version_create( adder_vid(add), adder_version_desc(add) );
     if ( new_v != NULL )
         res = mvd_add_version( mvd, new_v );
+    return res;
+}
+/**
+ * Sort the discards by their start offsets in the new version, 
+ * then insert them in order into the list. Fill in any gaps with empty cards.
+ * @param list the list of card comprising the current alignment
+ * @param deviants array of deviants (discards+children)
+ * @param version the version we are comparing with
+ * @param log the log to record errors in
+ * @return 1 if it worked, else 0
+ */
+static int add_deviant_pairs( card *list, dyn_array *deviants, int version, 
+    plugin_log *log )
+{
+    int i,res = 1;
+    int j = 0;
+    bitset *nv = bitset_create();
+    bitset_set(nv,version);
+    int pos = 0;
+    dyn_array_sort( deviants, card_compare );
+    card *c = card_first(list,nv);
+    card *d = dyn_array_get( deviants, 0 );
+    card *e = c;
+    card *old_c = NULL;
+    while ( e != NULL )
+    {
+        printf("%d-%d\n",card_text_off(e),card_len(e)+card_text_off(e));
+        e = card_next(e, nv);
+    }
+    for ( i=0;i<dyn_array_size(deviants);i++ )
+    {
+        e = dyn_array_get( deviants, i );
+        if ( pair_is_child(card_pair(e)) )
+            printf("child: %d-%d\n",card_text_off(e),card_text_off(e)+card_len(e) );
+        else
+            printf("mismatch: %d-%d\n",card_text_off(e),card_text_off(e)+card_len(e));
+    }
+    while ( c != NULL )
+    {
+        printf("pos: %d c: %d-%d",pos,card_text_off(c),card_len(c)
+            +card_text_off(c));
+        if ( d != NULL )
+            printf(" d: %d-%d",card_text_off(d),card_text_off(d)+card_len(d));
+        printf("\n");
+        // test for deviant insertion
+        if ( d != NULL && card_text_off(d)==pos )
+        {
+            if ( old_c == NULL )
+                card_add_before( c, d );
+            else
+                card_add_after( old_c, d );
+            pos = card_end(d);
+            d = dyn_array_get(deviants,++j);    
+        }
+        // test for gap
+        else if ( pos < card_text_off(c) )
+        {
+            card *blank = card_create_blank( version, log );
+            if ( blank != NULL )
+            {
+                card_set_text_off( blank, card_text_off(c) );
+                card_add_before( c, blank );
+            }
+            else
+            {
+                plugin_log_add(log,"mvd_add: failed to create blank");
+                res = 0;
+                break;
+            }
+        }
+        pos = card_end( c );
+        old_c = c;
+        c = card_next( c, nv );
+    }
     return res;
 }
 /**
@@ -283,66 +240,107 @@ static int add_version( struct add_struct *add, MVD *mvd )
  * @param log the log to record errors in
  * @return 1 if it worked
  */
-static int add_subsequent_version( MVD *mvd, struct add_struct *add, 
+static int add_subsequent_version( MVD *mvd, adder *add, 
     UChar *text, int tlen, plugin_log *log )
 {
     int res = 1;
     orphanage *o = orphanage_create();
     if ( o != NULL )
     {
-        dyn_array *pairs = mvd_get_pairs( mvd );
-        card *list = link_pairs( pairs, log, o );
-        // now add its version to the mvd
-        if ( list != NULL )
+        dyn_array *discards = dyn_array_create( 20 );
+        if ( discards != NULL )
         {
-            // create initial deck
-            deck *a = deck_create( text, 0, tlen, tlen,
-                mvd_count_versions(mvd)+1, o, log );
-            if ( a != NULL )
+            int new_vid = mvd_count_versions(mvd)+1;
+            dyn_array *pairs = mvd_get_pairs( mvd );
+            card *list = link_pairs( pairs, log, o );
+            // now add its version to the mvd
+            if ( list != NULL )
             {
-                // list of current decks
-                deck *head = a;
-                res = add_version( add, mvd );
-                // iterate while there are still valid decks
-                while ( res && head != NULL )
+                // create initial alignment
+                alignment *a = alignment_create( text, 0, tlen, tlen,
+                    new_vid, o, log );
+                if ( a != NULL )
                 {
-                    deck *left,*right;
-                    deck_print(head,"aligning:");
-                    res = deck_align( head, &list, &left, &right, o );
-                    if ( res )
+                    // maintain list of current alignments
+                    alignment *head = a;
+                    int first = 1;
+                    res = add_version( add, mvd );
+                    // align first time
+                    if ( res ) 
+                        res = alignment_align( head, list );
+                    // iterate while there are still alignments
+                    while ( res && head != NULL )
                     {
-                        deck *old = head;
-                        head = deck_pop( head );
-                        deck_dispose( old );
-                        // now update the list
+                        alignment *left,*right;
+                        if ( !first )
+                            alignment_update( head, list );
+                        else
+                            first = 0;
+                        res = alignment_merge( head, &left, &right, discards );
+                        if ( res )
+                        {
+                            alignment *old = head;
+                            // now update the list
+                            if ( left != NULL && alignment_align(left,list) )
+                                head = alignment_push( head, left );
+                            if ( right != NULL && alignment_align(right,list) )
+                                head = alignment_push( head, right );
+                            // print current cards
+                            //card_print_list( list );
+                            head = alignment_pop( head );
+                            alignment_dispose( old );
+                        }
+                        else
+                        {
+                            card *reject = alignment_to_card(head,log);
+                            dyn_array_add( discards, reject );
+                            head = alignment_pop(head);
+                            res = 1;
+                        }
+                    }
+                    if ( !res )
+                    {
                         if ( head != NULL )
                         {
-                            if ( left != NULL )
-                                head = deck_push( head, left );
-                            if ( right != NULL )
-                                head = deck_push( head, right );
+                            alignment *d = head;
+                            while ( d != NULL )
+                            {
+                                alignment_dispose( d );
+                                d = alignment_pop( d );
+                            }
                         }
-                        else if ( left != NULL )    // head,tail is NULL
-                        {
-                            head = left;
-                            if ( right != NULL )
-                                head = deck_push( head, right );
-                        }
-                        else if ( right != NULL )   // left is NULL
-                            head = right;
+                        plugin_log_add( log, "alignment failed");
                     }
-                    else    // try again
-                        head = deck_pop(head);
+                    else
+                    {
+                        int i,success,num;
+                        card **children = orphanage_all_children(o,&num,&success);
+                        if ( !success )
+                        {
+                            if ( children != NULL )
+                                free( children );
+                            res = 0;
+                            plugin_log_add(log,"failed to gather children");
+                        }
+                        else 
+                        {
+                            for ( i=0;i<num;i++ )
+                                dyn_array_add( discards, children[i] );
+                            add_deviant_pairs( list, discards, new_vid, log );
+                            card_print_list( list );
+                            pairs = card_to_pairs( list );
+                            mvd_set_pairs( mvd, pairs );
+                            verify *v = verify_create( pairs, 
+                                mvd_count_versions(mvd) );
+                            if ( !verify_check(v) )
+                                fprintf(stderr,"error: unbalanced graph\n"); 
+                            verify_dispose( v );
+                        }
+                    }
                 }
-                card_print( list );
-                pairs = card_to_pairs( list );
-                mvd_set_pairs( mvd, pairs );
-                verify *v = verify_create( pairs, 
-                    mvd_count_versions(mvd) );
-                if ( !verify_check(v) )
-                    fprintf(stderr,"error: unbalanced graph\n");            
+                card_dispose_list( list );
             }
-            card_dispose_list( list );
+            dyn_array_dispose( discards );
         }
         orphanage_dispose( o );
     }
@@ -354,33 +352,33 @@ static int add_subsequent_version( MVD *mvd, struct add_struct *add,
  * @param mvd the MVD to add it to
  * @return 1 if it worked else 0
  */
-static int add_mvd_text( struct add_struct *add, MVD *mvd, 
+static int add_mvd_text( adder *add, MVD *mvd, 
     unsigned char *data, size_t data_len, plugin_log *log )
 {
     int res = 1;
     int tlen;
     char *mvd_encoding = mvd_get_encoding(mvd);
-    if ( add->encoding != NULL )
+    if ( adder_encoding(add) != NULL )
     {
         // set the mvd encoding to add->encoding if it is empty
         if ( mvd_count_versions(mvd)==0 )
-            mvd_set_encoding(mvd,add->encoding);
-        else if ( strcmp(mvd_encoding,add->encoding)!=0 )
+            mvd_set_encoding(mvd,adder_encoding(add));
+        else if ( strcmp(mvd_encoding,adder_encoding(add))!=0 )
         {
             // just a warning, we'll continue
             plugin_log_add(log,
                 "file's encoding %s does not match mvd's (%s):"
-                " assimilating...\n",add->encoding,mvd_encoding);
+                " assimilating...\n",adder_encoding(add),mvd_encoding);
         }
     }
     // convert from the external add->encoding to UTF-16 
     UChar *text = convert_to_unicode( data, data_len, 
-        add->encoding, &tlen, log );
+        adder_encoding(add), &tlen, log );
     if ( tlen > 0 )
     {
         if ( mvd_count_versions(mvd)==0 )
         {
-            mvd_set_description( mvd, add->mvd_description );
+            mvd_set_description( mvd, adder_mvd_desc(add) );
             res = add_first_version( mvd, add, text, tlen, log );
         }
         else
@@ -406,6 +404,7 @@ int process( MVD **mvd, char *options, char **output, unsigned char *data,
     size_t data_len )
 {
     int res = 1;
+    *output = NULL;
     if ( *mvd == NULL )
         *mvd = mvd_create( 1 );
     if ( *mvd != NULL )
@@ -413,17 +412,19 @@ int process( MVD **mvd, char *options, char **output, unsigned char *data,
         plugin_log *log = plugin_log_create();
         if ( log != NULL )
         {
+            if ( *output != NULL )
+                plugin_log_add(log,*output);
             if ( !mvd_is_clean(*mvd) )
                 res = mvd_clean( *mvd );
             if ( res )
             {
-                struct add_struct *add = calloc( 1, sizeof(struct add_struct) );
+                adder *add = adder_create(log);
                 if ( add != NULL )
                 {
                     hashmap *map = parse_options( options );
                     if ( map != NULL )
                     {
-                        res = set_options( add, map, log );
+                        res = adder_set_options( add, map );
                         if ( res && data != NULL && data_len > 0 )
                             res = add_mvd_text( add, *mvd, data, data_len, 
                                 log );
@@ -434,7 +435,7 @@ int process( MVD **mvd, char *options, char **output, unsigned char *data,
                     else
                         plugin_log_add(log,"mvd_add: invalid options %s",
                             options);
-                    free( add );
+                    adder_dispose( add );
                 }
                 else
                     plugin_log_add(log,

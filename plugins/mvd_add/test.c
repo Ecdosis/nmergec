@@ -122,7 +122,7 @@ int main( int argc, char **argv )
     int passed=0;
     int failed=0;
     // reinstate this after debugging
-    report_test( "aatree", aatree_test,&passed,&failed);
+    /*report_test( "aatree", aatree_test,&passed,&failed);
     report_test( "node", node_test,&passed,&failed);
     report_test( "hashtable", hashtable_test,&passed,&failed);
     report_test( "suffixtree", suffixtree_test,&passed,&failed);
@@ -132,7 +132,7 @@ int main( int argc, char **argv )
     report_test( "orphanage", orphanage_test,&passed,&failed);
     
     fprintf( stdout, "total passed %d failed %d tests\n",total_passed,
-        total_failed);
+        total_failed);*/
     test_mvd_add( &passed, &failed );
 }
 #endif
