@@ -335,11 +335,12 @@ int match_restart( match *m, plugin_log *log )
 /**
  * Advance the match position - we have already matched the character
  * @param m the match object
- * @param loc the location in the suffix tree matched to so far
+ * @param loc the location in the suffix tree matched to so far   
+ * @param v the version of the new text. stop when you see this             }
  * @param log the log to record errors in 
  * @return 1 if we could advance else 0 if we reached the end
  */
-int match_advance( match *m, pos *loc, plugin_log *log )
+int match_advance( match *m, pos *loc, int v, plugin_log *log )
 {
     int res = 0;
     if ( m->end.current != NULL )
@@ -348,10 +349,14 @@ int match_advance( match *m, pos *loc, plugin_log *log )
         m->prev = m->end;
         if ( pair_len(card_pair(c))-1==m->end.pos )
         {
-            while ( c != NULL )
+            c = card_next_nonempty( c, m->bs );
+            if ( c != NULL )
             {
-                c = card_next_nonempty( c, m->bs );
-                if ( c != NULL )
+                pair *p = card_pair(c);
+                bitset *bs = pair_versions( p );
+                if ( bitset_next_set_bit(bs,v)==v )
+                    c = NULL;
+                else
                 {
                     bitset *overlap = card_overlap(c,m->bs);
                     if ( overlap != NULL )
@@ -369,7 +374,6 @@ int match_advance( match *m, pos *loc, plugin_log *log )
                     m->end.pos = 0;
                     m->end.current = c;
                     res = 1;
-                    break;
                 }
             }
             if ( c == NULL )
@@ -396,10 +400,11 @@ static int match_extendible( match *m )
  * Extend a match as far as you can
  * @param mt the match to extend
  * @param text the entire UTF-16 text of the new version
+ * @param v the new version
  * @param log the log to record errors in
  * @return the extended/unextended match
  */
-match *match_extend( match *mt, UChar *text, plugin_log *log )
+match *match_extend( match *mt, UChar *text, int v, plugin_log *log )
 {
     match *last = mt;
     match *first = mt;
@@ -412,7 +417,7 @@ match *match_extend( match *mt, UChar *text, plugin_log *log )
             match_restart( mt2, log );
             do  
             {
-                if ( match_single(mt2,text,log) && match_follows(last,mt2) )
+                if ( match_single(mt2,text,v,log) && match_follows(last,mt2) )
                 {// success
                     match_append(last,mt2);
                     mt = last = mt2;
@@ -451,10 +456,11 @@ match *match_extend( match *mt, UChar *text, plugin_log *log )
  * Complete a single match between the pairs list and the suffixtree
  * @param m the match all ready to go
  * @param text the text of the new version
+ * @param v the new version id
  * @param log the log to save errors in
  * @return 1 if the match was at least 1 char long else 0
  */
-int match_single( match *m, UChar *text, plugin_log *log )
+int match_single( match *m, UChar *text, int v, plugin_log *log )
 {
     UChar c;
     int maximal = 0;
@@ -474,13 +480,11 @@ int match_single( match *m, UChar *text, plugin_log *log )
                 if ( !is_maximal(m,text) )
                     break;
                 else
-                {
                     maximal = 1;
-                }
             }
             // we are already matched, so increase length
             m->len++;
-            if ( !match_advance(m,loc,log) )
+            if ( !match_advance(m,loc,v,log) )
                 break;
         }
         else

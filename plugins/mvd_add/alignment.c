@@ -167,7 +167,7 @@ alignment *alignment_push( alignment *head, alignment *next )
     printf("pushing %d to %d\n",mum_text_off(next->best),
         mum_text_off(next->best)+mum_len(next->best) );
 */
-    while ( temp != NULL && mum_total_len(temp->best) > mum_total_len(next->best) )
+    while ( temp != NULL && alignment_len(temp) > alignment_len(next) )
     {
         prev = temp;
         temp = temp->next;
@@ -312,7 +312,9 @@ static int alignment_direct_merge( alignment *a )
             text_off += pair_len(p);
             if ( temp != end_p )
                 temp = card_next( temp, mv );
-        } while ( temp != end_p );
+            else
+                break;
+        } while ( 1 );
         best = mum_next( best );
     } while ( best != NULL );
     return res;
@@ -384,35 +386,12 @@ int alignment_align( alignment *a, card *list )
         {
             match *m = deck_get_mum(d);
             if ( m != NULL )
-            {
                 a->best = mum_create( m, a->log );
-                res = mum_set( a->best, list );
-            }
             else
                 res = 0;
         }
         deck_dispose( d );
     }
-    return res;
-}
-/**
- * Update the pointers to start and end of the mum if needed
- * @param a the alignment to update
- * @param list the list of cards
- * @return 1 if it worked else 0
- */
-int alignment_update( alignment *a, card *list )
-{
-    int res = 1;
-    if ( !a->stale )
-        res = 1;
-    else if ( a->best != NULL )
-    {
-        res = mum_update( a->best, list );
-        a->stale = 0;
-    }
-    else
-        res = 0;
     return res;
 }
 /**
@@ -427,6 +406,7 @@ int alignment_merge( alignment *a, alignment **left,
     alignment **right, dyn_array *discards )
 {
     int res = 1;
+    printf("aligning: %d to %d\n",mum_text_off(a->best),mum_text_off(a->best)+mum_len(a->best));
     res = alignment_create_lhs( a, left );
     if ( res )
     {

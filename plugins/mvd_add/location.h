@@ -21,14 +21,8 @@ struct location_struct
     card *current;
     // position within current card
     int pos;
-    // version to follow to this location
-    int version;
-    // global position within that version
-    int vindex;
 };
 typedef struct location_struct location;
-int location_set( location *l, int version, card *start );
-int location_update( location *l, int version, card *start );
 #ifdef	__cplusplus
 }
 #endif

@@ -63,41 +63,8 @@ void mum_dispose( mum *m )
     free( m );
 }
 /**
- * Set a mum's global coordinates so it can be updated later
- * @param m the mum in question
- * @param cards the list in question
- * @return 1 if it worked else 0
- */
-int mum_set( mum *m, card *cards )
-{
-    int res = 0;
-    int v = bitset_next_set_bit(m->bs,0);
-    while ( m != NULL )
-    {
-        res = location_set( &m->start, v, cards );
-        if ( res )
-            res = location_set( &m->end, v, cards );
-        m = m->next;
-    }
-    return res;
-}
-/**
- * Update the mum's location in the variant graph (might have changed)
- * @param m the mum in question
- * @para cards the full list of cards
- * @return 1 if it worked else 0
- */
-int mum_update( mum *m, card *cards )
-{
-    int v = bitset_next_set_bit(m->bs,0);
-    int res = location_update( &m->start, v, cards );
-    if ( res )
-        res = location_update( &m->end, v, cards );
-    return res;
-}
-/**
  * Get the length of a mum
- * @param m the mum in uestion
+ * @param m the mum in question
  * @return the length of the mum in characters
  */
 int mum_len( mum *m )

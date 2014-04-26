@@ -15,8 +15,6 @@ extern "C" {
 typedef struct mum_struct mum;
 mum *mum_create( match *mt, plugin_log *log );
 void mum_dispose( mum *m );
-int mum_set( mum *m, card *cards );
-int mum_update( mum *m, card *cards );
 int mum_len( mum *m );
 int mum_total_len( mum *m );
 card *mum_start_card( mum *m );

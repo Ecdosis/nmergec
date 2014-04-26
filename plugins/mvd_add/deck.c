@@ -127,9 +127,9 @@ int deck_align( deck *d )
                     {
                         match *queued = NULL;
                         match *existing = NULL;
-                        if ( match_single(mt,d->text,d->log) )
+                        if ( match_single(mt,d->text,d->version,d->log) )
                         {
-                            queued = match_extend( mt, d->text, d->log );
+                            queued = match_extend( mt, d->text, d->version, d->log );
                             existing = aatree_add( d->pq, queued );
                             if ( existing != NULL )
                                 match_inc_freq( existing );

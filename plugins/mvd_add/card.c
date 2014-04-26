@@ -92,7 +92,16 @@ card *card_create_blank( int version, plugin_log *log )
         plugin_log_add(log,"card: failed to create bitset");
     return c;
 }
-        
+card *card_create_blank_bs( bitset *bs, plugin_log *log )
+{
+    card *c = NULL;
+    pair *p = pair_create_basic( bs, ustring_empty, 0 );
+    if ( p != NULL )
+        c = card_create( p, log );
+    else
+        plugin_log_add(log,"card: failed to create pair");
+    return c;
+}
 /**
  * Just dispose of us
  * @param c the card object to free

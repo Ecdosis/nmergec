@@ -177,8 +177,9 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
     dyn_array_sort( deviants, card_compare );
     card *c = card_first(list,nv);
     card *d = dyn_array_get( deviants, 0 );
-    card *e = c;
     card *old_c = NULL;
+    // debug
+    card *e = c;
     while ( e != NULL )
     {
         printf("%d-%d\n",card_text_off(e),card_len(e)+card_text_off(e));
@@ -189,40 +190,62 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
         e = dyn_array_get( deviants, i );
         if ( pair_is_child(card_pair(e)) )
             printf("child: %d-%d\n",card_text_off(e),card_text_off(e)+card_len(e) );
+        else if ( card_len(e)==0 )
+            printf("empty: %d-%d\n",card_text_off(e),card_text_off(e)+card_len(e));
         else
             printf("mismatch: %d-%d\n",card_text_off(e),card_text_off(e)+card_len(e));
     }
+    // end debug
     while ( c != NULL )
     {
-        printf("pos: %d c: %d-%d",pos,card_text_off(c),card_len(c)
-            +card_text_off(c));
-        if ( d != NULL )
-            printf(" d: %d-%d",card_text_off(d),card_text_off(d)+card_len(d));
-        printf("\n");
-        // test for deviant insertion
+        //printf("pos: %d c: %d-%d",pos,card_text_off(c),card_len(c)
+        //    +card_text_off(c));
+        // test for variants, transpositions and empty arcs
         if ( d != NULL && card_text_off(d)==pos )
         {
             if ( old_c == NULL )
                 card_add_before( c, d );
             else
+            {
+                bitset *old_bs = pair_versions(card_pair(old_c));
+                bitset *new_bs = pair_versions(card_pair(c));
+                int insertion = card_len(d)!=0 
+                    && card_right(old_c)==c 
+                    && bitset_cardinality(old_bs)>1 
+                    && bitset_cardinality(new_bs)>1;
                 card_add_after( old_c, d );
-            pos = card_end(d);
-            d = dyn_array_get(deviants,++j);    
+                // test for insertion in new version
+                if ( insertion )
+                {
+                    bitset *bs = bitset_create();
+                    if ( bs != NULL )
+                    {
+                        bitset_or( bs, pair_versions(card_pair(old_c)) );
+                        bitset_and( bs, pair_versions(card_pair(c)) );
+                        bitset_clear_bit( bs, version );
+                        card *blank = card_create_blank_bs( bs, log );
+                        if ( blank != NULL )
+                        {
+                            card_set_text_off( blank, card_text_off(c) );
+                            card_add_after( d, blank );
+                        }
+                        bitset_dispose( bs );
+                    }
+                    else
+                        plugin_log_add(log,"mvd_add: failed to create blank");
+                }
+                pos = card_end(d);
+                d = dyn_array_get(deviants,++j);
+            }
         }
-        // test for gap
-        else if ( pos < card_text_off(c) )
+        // test for deletions in new version
+        else if ( card_text_off(c) > pos )
         {
             card *blank = card_create_blank( version, log );
             if ( blank != NULL )
             {
-                card_set_text_off( blank, card_text_off(c) );
+                card_set_text_off( blank, pos );
                 card_add_before( c, blank );
-            }
-            else
-            {
-                plugin_log_add(log,"mvd_add: failed to create blank");
-                res = 0;
-                break;
             }
         }
         pos = card_end( c );
@@ -230,6 +253,18 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
         c = card_next( c, nv );
     }
     return res;
+}
+/**
+ * Add alignment to rejects collection for later insertion
+ * @param a the alignment to add
+ * @param discards the discards pile
+ * @param log the log to record errors in
+ */
+static void alignment_add_to_rejects( alignment *a, dyn_array *discards,
+    plugin_log *log )
+{
+    card *reject = alignment_to_card(a,log);
+    dyn_array_add( discards, reject );
 }
 /**
  * Add a version to an MVD that already has at least one
@@ -267,79 +302,59 @@ static int add_subsequent_version( MVD *mvd, adder *add,
                     // align first time
                     if ( res ) 
                         res = alignment_align( head, list );
-                    // iterate while there are still alignments
+                    else // only happens if the whole thing does not align!
+                    {
+                        alignment_add_to_rejects( head, discards, log );
+                        alignment_dispose( head );
+                    }
+                    // iterate while there are still alignments to do
                     while ( res && head != NULL )
                     {
                         alignment *left,*right;
-                        res = alignment_merge( head, &left, &right, discards );
+                        res = alignment_align( head, list );
+                        if ( res )
+                            res = alignment_merge( head, &left, &right, discards );
+                        alignment *old = head;
+                        head = alignment_pop( head );
+                        // if merged and aligned
                         if ( res )
                         {
-                            alignment *old = head;
-                            head = alignment_pop( head );
-                            // mark remaining entries as stale
-                            alignment *temp = head;
-                            while ( temp != NULL )
-                            {
-                                alignment_set_stale(temp, 1);
-                                temp = alignment_pop(temp);
-                            }
-                            // now update the list
-                            if ( left != NULL && alignment_align(left,list) )
+                            if ( left != NULL )
                                 head = alignment_push( head, left );
-                            if ( right != NULL && alignment_align(right,list) )
+                            if ( right != NULL )
                                 head = alignment_push( head, right );
-                            if ( head != NULL )
-                                alignment_update( head, list );
-                            // print current cards
-                            card_print_list( list );
-                            alignment_dispose( old );
+                            // card_print_list( list );
                         }
                         else
                         {
-                            card *reject = alignment_to_card(head,log);
-                            dyn_array_add( discards, reject );
-                            head = alignment_pop(head);
+                            alignment_add_to_rejects( old, discards, log );
                             res = 1;
                         }
+                        alignment_dispose( old );
                     }
-                    if ( !res )
+                    // add children to discards
+                    int i,success,num;
+                    card **children = orphanage_all_children(o,&num,&success);
+                    if ( !success )
                     {
-                        if ( head != NULL )
-                        {
-                            alignment *d = head;
-                            while ( d != NULL )
-                            {
-                                alignment_dispose( d );
-                                d = alignment_pop( d );
-                            }
-                        }
-                        plugin_log_add( log, "alignment failed");
+                        if ( children != NULL )
+                            free( children );
+                        res = 0;
+                        plugin_log_add(log,"failed to gather children");
                     }
-                    else
+                    else 
                     {
-                        int i,success,num;
-                        card **children = orphanage_all_children(o,&num,&success);
-                        if ( !success )
-                        {
-                            if ( children != NULL )
-                                free( children );
-                            res = 0;
-                            plugin_log_add(log,"failed to gather children");
-                        }
-                        else 
-                        {
-                            for ( i=0;i<num;i++ )
-                                dyn_array_add( discards, children[i] );
-                            add_deviant_pairs( list, discards, new_vid, log );
-                            card_print_list( list );
-                            pairs = card_to_pairs( list );
-                            mvd_set_pairs( mvd, pairs );
-                            verify *v = verify_create( pairs, 
-                                mvd_count_versions(mvd) );
-                            if ( !verify_check(v) )
-                                fprintf(stderr,"error: unbalanced graph\n"); 
-                            verify_dispose( v );
-                        }
+                        for ( i=0;i<num;i++ )
+                            dyn_array_add( discards, children[i] );
+                        add_deviant_pairs( list, discards, new_vid, log );
+                        card_print_list( list );
+                        pairs = card_to_pairs( list );
+                        mvd_set_pairs( mvd, pairs );
+                        verify *v = verify_create( pairs, 
+                            mvd_count_versions(mvd) );
+                        if ( !verify_check(v) )
+                            fprintf(stderr,"error: unbalanced graph\n"); 
+                        verify_dispose( v );
                     }
                 }
                 card_dispose_list( list );

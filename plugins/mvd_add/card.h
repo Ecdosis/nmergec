@@ -15,6 +15,7 @@ extern "C" {
 typedef struct card_struct card;
 card *card_create( pair *p, plugin_log *log );
 card *card_create_blank( int version, plugin_log *log );
+card *card_create_blank_bs( bitset *bs, plugin_log *log );
 void card_add_hint( card *lp, int version, plugin_log *log );
 card *card_make_parent( card **p, plugin_log *log );
 card *card_make_child( card *parent, int version, plugin_log *log );
