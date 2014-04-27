@@ -66,7 +66,7 @@ void orphanage_dispose( orphanage *o )
     if ( o->orphans != NULL )
         hashmap_dispose( o->orphans, NULL );
     if ( o->parents != NULL )
-        hashmap_dispose( o->parents, NULL );
+        hashmap_dispose( o->parents, free );
     if ( o->children != NULL )
         hashmap_dispose( o->children, NULL );
     free( o );
@@ -110,8 +110,7 @@ int orphanage_add_parent( orphanage *o, card *parent )
                 if ( pp_id == pid )
                     dyn_array_add( da, child );
             }
-            card **children = calloc( dyn_array_size(da)+1, 
-                sizeof(card*) );
+            card **children = calloc( dyn_array_size(da)+1, sizeof(card*) );
             if ( children != NULL )
             {
                 UChar u_key[KEYLEN];
@@ -187,7 +186,7 @@ int orphanage_add_child( orphanage *o, card *child )
                             while ( kids[i] != NULL )
                                 new_kids[i++] == kids[i];
                             new_kids[i] = child;
-                            res = hashmap_remove( o->parents, u_key, NULL/*free*/ );
+                            res = hashmap_remove( o->parents, u_key, free );
                             if ( res )
                                 res = hashmap_put( o->parents, u_key, new_kids );
                             if ( res )

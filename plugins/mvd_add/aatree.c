@@ -104,8 +104,8 @@ void aanode_dispose( aanode *n, aanode *null_node, aatree_dispose_func disp )
         aanode_dispose( n->left, null_node, disp );
     if ( n->right != null_node )
         aanode_dispose( n->right, null_node, disp );
-    //node_frees++;
-    free( n );
+    if ( n != null_node )
+        free( n );
 }
 /**
  * Dispose of the entire tree
@@ -116,14 +116,7 @@ void aatree_dispose( aatree *t )
     //node_frees =0;
     if ( t->size > 0 )
         aanode_dispose( t->root, t->null_node, t->disp );
-    if ( t->root != t->null_node && t->null_node != NULL )
-    {
-        free( t->null_node );
-        //node_frees++;
-    }
-    //aanode_dispose( t->null_node,t->null_node, NULL );
-    // freed already by aanode_dispose of t->root aka null_node
-    //free( t->null_node );
+    free( t->null_node );
     free( t );
 }
 /**
