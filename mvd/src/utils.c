@@ -21,6 +21,11 @@ char *itoa( int value, char *buf, int len )
     snprintf(buf,len,"%d",value);
     return buf;
 }
+/**
+ * Duplicate a Unicode string
+ * @param in the input string to copy
+ * @return an allocated copy of in
+ */
 UChar *u_strdup(UChar *in) 
 {
     uint32_t len = u_strlen(in) + 1;

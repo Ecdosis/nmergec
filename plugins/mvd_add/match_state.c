@@ -32,6 +32,10 @@
 #include "card.h"
 #include "location.h"
 #include "match_state.h"
+
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 /**
  * Store the state of a match while matching. This is done whenever there 
  * is more than one match possible at any point in the pairs list, 

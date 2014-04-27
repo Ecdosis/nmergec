@@ -32,9 +32,12 @@
 #include "orphanage.h"
 #include "hashmap.h"
 #include "link_node.h"
-
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 #define IMPLICIT_SIZE 12
 static UChar ustring_empty[1] = {0};
+
 /**
  * A card is necessary because when creating an MVD by using
  * only a list of fragments we need to insert new pairs. We can't
@@ -63,7 +66,9 @@ card *card_create( pair *p, plugin_log *log )
 {
     card *c = calloc( 1, sizeof(card) );
     if ( c != NULL )
+    {
         c->p = p;
+    }
     else
         plugin_log_add( log, "card: failed to create object\n");
     return c;

@@ -104,6 +104,7 @@ int write_mvd( MVD *mvd, char *file )
                 fclose( dst );
             }
         }
+        free( data );
     }
     return res;
 }

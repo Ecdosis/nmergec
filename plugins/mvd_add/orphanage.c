@@ -12,6 +12,9 @@
 #include "orphanage.h"
 #include "hashmap.h"
 #include "utils.h"
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 #define KEYLEN 32
 /**
  * An orphanage is a collection of parents and their (initially) 
@@ -184,7 +187,7 @@ int orphanage_add_child( orphanage *o, card *child )
                             while ( kids[i] != NULL )
                                 new_kids[i++] == kids[i];
                             new_kids[i] = child;
-                            res = hashmap_remove( o->parents, u_key, free );
+                            res = hashmap_remove( o->parents, u_key, NULL/*free*/ );
                             if ( res )
                                 res = hashmap_put( o->parents, u_key, new_kids );
                             if ( res )
@@ -334,7 +337,7 @@ card **orphanage_all_children( orphanage *o, int *num, int *success )
         {
             int i;
             hashmap_to_array( o->children, keys );
-            children = calloc( *num, sizeof(char*) );
+            children = calloc( *num, sizeof(card*) );
             if ( children != NULL )
             {
                 for ( i=0;i<*num;i++ )
@@ -343,6 +346,7 @@ card **orphanage_all_children( orphanage *o, int *num, int *success )
                 }
                 *success = 1;
             }
+            free( keys );
         }
         else
             *num = 0;

@@ -28,8 +28,8 @@
 /**
  * Arne Andersson style balanced binary tree with a size limitation
  */
-int node_frees = 0;
-int num_inserts = 0;
+static int node_frees = 0;
+static int num_inserts = 0;
 // tree-node
 typedef struct aanode_struct aanode;
 struct aanode_struct
@@ -49,6 +49,7 @@ struct aatree_struct
     aanode *null_node;
 	aanode *delete_ptr;
     aanode *last_ptr;
+    aatree_dispose_func disp;
     // shortcut to finding minimum
     aanode *min;
     // maximum size of tree
@@ -60,9 +61,10 @@ struct aatree_struct
  * Create an aatree instance
  * @param cf the comparison function for elements in the tree
  * @param limit maximum size of the tree
+ * @param disp dispose function for elements or NULL
  * @return an aatree object
  */
-aatree *aatree_create( compare_func cf, int limit )
+aatree *aatree_create( compare_func cf, int limit, aatree_dispose_func disp )
 {
     aatree *t = calloc( 1, sizeof(aatree) );
 	if ( t != NULL )
@@ -74,6 +76,7 @@ aatree *aatree_create( compare_func cf, int limit )
             t->null_node->level = 0;
             t->root = t->null_node;
             t->limit = limit;
+            t->disp = disp;
             t->cf = cf;
         }
         else
@@ -101,17 +104,24 @@ void aanode_dispose( aanode *n, aanode *null_node, aatree_dispose_func disp )
         aanode_dispose( n->left, null_node, disp );
     if ( n->right != null_node )
         aanode_dispose( n->right, null_node, disp );
-    node_frees++;
+    //node_frees++;
     free( n );
 }
 /**
  * Dispose of the entire tree
  * @param t the tree in question
- * @param disp the freeing function for objects or NULL
  */
-void aatree_dispose( aatree *t, aatree_dispose_func disp )
+void aatree_dispose( aatree *t )
 {
-    aanode_dispose( t->root, t->null_node, disp );
+    //node_frees =0;
+    if ( t->size > 0 )
+        aanode_dispose( t->root, t->null_node, t->disp );
+    if ( t->root != t->null_node && t->null_node != NULL )
+    {
+        free( t->null_node );
+        //node_frees++;
+    }
+    //aanode_dispose( t->null_node,t->null_node, NULL );
     // freed already by aanode_dispose of t->root aka null_node
     //free( t->null_node );
     free( t );
@@ -335,6 +345,8 @@ void *aatree_add( aatree *t, void *item )
             {
                 // tree is now too big
                 t->root = aatree_remove( t, t->root, elem );
+                if ( t->disp != NULL )
+                    (t->disp)(elem);
                 t->min = aatree_find_min( t, t->root );
                 exists = aatree_search( t, item );
             }   
@@ -442,7 +454,7 @@ void aatree_test( int *passed, int *failed )
     srand( (long)time(NULL) );
 	int i;
     int values[100];
-    aatree *t = aatree_create( (compare_func) compare, 50 );
+    aatree *t = aatree_create( (compare_func) compare, 50, NULL );
 	i=0;
     int N = sizeof(values)/sizeof(int);
     for ( i=0;i<N;i++ )
@@ -461,7 +473,7 @@ void aatree_test( int *passed, int *failed )
         printf("aatree: tree was incorrect. size=%d\n",t->size);
     }
     int saved_size = t->size;
-    aatree_dispose( t, NULL );
+    aatree_dispose( t );
     if ( node_frees != saved_size )
     {
         printf("aatree: failed to free %d nodes\n",(saved_size-node_frees));

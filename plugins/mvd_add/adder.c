@@ -6,6 +6,9 @@
 #include "adder.h"
 #include "option_keys.h"
 #include "utils.h"
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 /*
  * Store information about a version to be added to the MVD
  */
@@ -37,9 +40,7 @@ adder *adder_create( plugin_log *log )
 {
     adder *a = calloc( 1, sizeof(adder) );
     if ( a != NULL )
-    {
         a->log = log;
-    }
     else
         plugin_log_add( log, "adder: failed to allocate object\n");
 }

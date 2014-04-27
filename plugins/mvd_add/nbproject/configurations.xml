@@ -42,6 +42,7 @@
       <itemPath>hashtable.c</itemPath>
       <itemPath>match.c</itemPath>
       <itemPath>match_state.c</itemPath>
+      <itemPath>../shared/src/memwatch.c</itemPath>
       <itemPath>mum.c</itemPath>
       <itemPath>mvd_add.c</itemPath>
       <itemPath>node.c</itemPath>
@@ -94,6 +95,8 @@
       <item path="../shared/include/option_keys.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../shared/include/plugin_log.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../shared/src/memwatch.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="../shared/src/plugin_log.c" ex="false" tool="0" flavor2="0">
       </item>
@@ -192,6 +195,8 @@
       </item>
       <item path="../shared/include/plugin_log.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="../shared/src/memwatch.c" ex="false" tool="0" flavor2="0">
+      </item>
       <item path="../shared/src/plugin_log.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="aatree.c" ex="false" tool="0" flavor2="0">
@@ -275,6 +280,7 @@
             <pElem>../../include</pElem>
           </incDir>
           <preprocessorList>
+            <Elem>MEMWATCH</Elem>
             <Elem>MVD_TEST</Elem>
           </preprocessorList>
         </cTool>
@@ -304,6 +310,8 @@
       <item path="../shared/include/option_keys.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../shared/include/plugin_log.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../shared/src/memwatch.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="../shared/src/plugin_log.c" ex="false" tool="0" flavor2="0">
       </item>

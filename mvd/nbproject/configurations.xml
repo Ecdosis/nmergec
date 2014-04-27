@@ -76,6 +76,7 @@
             <pElem>../plugins/shared/include</pElem>
           </incDir>
           <preprocessorList>
+            <Elem>MEMWATCH</Elem>
             <Elem>MVD_TEST</Elem>
           </preprocessorList>
         </cTool>

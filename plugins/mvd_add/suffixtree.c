@@ -368,32 +368,40 @@ static void set_e( suffixtree *st, node *v, plugin_log *log )
  */
 suffixtree *suffixtree_create( UChar *txt, size_t tlen, plugin_log *log )
 {
-    suffixtree *st = calloc( 1, sizeof(suffixtree) );
-    if ( st != NULL )
+    if ( txt[tlen] != 0 )
     {
-        st->e = 0;
-        memset( &st->last, 0, sizeof(pos) );
-        memset( &st->old_beta, 0, sizeof(pos) );
-        st->str = txt;
-        st->slen = tlen;
-        // actually build the tree
-        st->root = node_create( 0, 0, log );
-        if ( st->root != NULL )
-        {
-            st->f = node_create_leaf( 0, log );
-            if ( st->f != NULL )
-            {
-                int i;
-                node_add_child( st->root, st->f, st->str, log );
-                for ( i=1; i<=tlen; i++ )
-                    phase(st,i,log);
-                set_e( st, st->root, log );
-            }
-        }
+        plugin_log_add(log,"suffixtree: text not null-terminated!");
+        return NULL;
     }
     else
-        fprintf(stderr,"suffixtree: failed to allocate tree\n");
-    return st;
+    {
+        suffixtree *st = calloc( 1, sizeof(suffixtree) );
+        if ( st != NULL )
+        {
+            st->e = 0;
+            memset( &st->last, 0, sizeof(pos) );
+            memset( &st->old_beta, 0, sizeof(pos) );
+            st->str = txt;
+            st->slen = tlen;
+            // actually build the tree
+            st->root = node_create( 0, 0, log );
+            if ( st->root != NULL )
+            {
+                st->f = node_create_leaf( 0, log );
+                if ( st->f != NULL )
+                {
+                    int i;
+                    node_add_child( st->root, st->f, st->str, log );
+                    for ( i=1; i<=tlen; i++ )
+                        phase(st,i,log);
+                    set_e( st, st->root, log );
+                }
+            }
+        }
+        else
+            fprintf(stderr,"suffixtree: failed to allocate tree\n");
+        return st;
+    }
 }
 /**
  * Dispose of a suffix tree. We don't own the text

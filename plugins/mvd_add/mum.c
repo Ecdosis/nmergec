@@ -16,6 +16,10 @@
 #include "orphanage.h"
 #include "mum.h"
 
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
+
 
 #define MIN(a,b)(a>b)?b:a
 

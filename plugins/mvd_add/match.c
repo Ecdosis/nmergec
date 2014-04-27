@@ -40,6 +40,10 @@
 #include "location.h"
 #include "match.h"
 #include "match_state.h"
+
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 #define KDIST 2
 #define PHI 1.61803399
 /*
@@ -336,7 +340,7 @@ int match_restart( match *m, plugin_log *log )
  * Advance the match position - we have already matched the character
  * @param m the match object
  * @param loc the location in the suffix tree matched to so far   
- * @param v the version of the new text. stop when you see this             }
+ * @param v the version of the new text. Stop when you see this 
  * @param log the log to record errors in 
  * @return 1 if we could advance else 0 if we reached the end
  */
@@ -355,7 +359,9 @@ int match_advance( match *m, pos *loc, int v, plugin_log *log )
                 pair *p = card_pair(c);
                 bitset *bs = pair_versions( p );
                 if ( bitset_next_set_bit(bs,v)==v )
+                {
                     c = NULL;
+                }
                 else
                 {
                     bitset *overlap = card_overlap(c,m->bs);
@@ -414,38 +420,46 @@ match *match_extend( match *mt, UChar *text, int v, plugin_log *log )
         if ( mt2 != NULL )
         {
             int distance = 1;
-            match_restart( mt2, log );
-            do  
+            if ( match_restart(mt2,log) )
             {
-                if ( match_single(mt2,text,v,log) && match_follows(last,mt2) )
-                {// success
-                    match_append(last,mt2);
-                    mt = last = mt2;
-                    break;
-                }
-                else 
-                {// failure: reset and move to next position
-                    if ( distance < KDIST )
-                    {
-                        if ( match_restart(mt2,log) )
+                do  
+                {
+                    if ( match_single(mt2,text,v,log) && match_follows(last,mt2) )
+                    {// success
+                        match_append(last,mt2);
+                        mt = last = mt2;
+                        break;
+                    }
+                    else 
+                    {// failure: reset and move to next position
+                        if ( distance < KDIST )
                         {
-                            distance++;
+                            if ( match_restart(mt2,log) )
+                            {
+                                distance++;
+                            }
+                            else
+                            {
+                                match_dispose( mt2 );
+                                mt = NULL;
+                                break;
+                            }
                         }
-                        else
+                        else    // give up
                         {
-                            mt = NULL;
+                            match_dispose( mt2 );
+                            last = NULL;
                             break;
                         }
                     }
-                    else    // give up
-                    {
-                        match_dispose( mt2 );
-                        last = NULL;
-                        break;
-                    }
                 }
+                while ( distance <= KDIST );
             }
-            while ( distance <= KDIST );
+            else
+            {
+                match_dispose( mt2 );
+                mt = NULL;
+            }
         }
         else
             mt = NULL;

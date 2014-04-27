@@ -51,7 +51,6 @@ match *match_next( match *m );
 void match_print( match *m, UChar *text );
 int match_text_end( match *m );
 int match_within_threshold( int distance, int length );
-
 #ifdef	__cplusplus
 }
 #endif

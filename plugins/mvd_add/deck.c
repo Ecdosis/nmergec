@@ -41,7 +41,9 @@
 #include "hashmap.h"
 #include "utils.h"
 #include "mum.h"
-
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 #define PQUEUE_LIMIT 50
 
 /**
@@ -78,7 +80,8 @@ deck *deck_create( alignment *a, card *cards )
         d->version = alignment_version(a);
         d->st = alignment_suffixtree( a );
         d->st_off = alignment_start(a);
-        d->pq = aatree_create( match_compare, PQUEUE_LIMIT );
+        d->pq = aatree_create( match_compare, PQUEUE_LIMIT, 
+            (aatree_dispose_func)match_dispose );
         if ( d->pq == NULL )
         {
             deck_dispose( d );
@@ -96,7 +99,7 @@ deck *deck_create( alignment *a, card *cards )
 void deck_dispose( deck *d )
 {
     if ( d->pq != NULL )
-        aatree_dispose( d->pq, (aatree_dispose_func)match_dispose );
+        aatree_dispose( d->pq );
     free( d );
 }
 /**
@@ -118,7 +121,7 @@ int deck_align( deck *d )
             for ( j=0;j<length;j++ )
             {
                 // start a match at each character position
-                match *mt = match_create( c, j, d->cards, d->st, 
+                    match *mt = match_create( c, j, d->cards, d->st, 
                     d->st_off, d->log );
                 if ( mt != NULL )
                 {
@@ -186,6 +189,8 @@ match *deck_get_mum( deck *d )
         }
         else if ( !aatree_delete(d->pq,mt) )
             break;
+        else
+            match_dispose( mt );
     }
     return found;
 }

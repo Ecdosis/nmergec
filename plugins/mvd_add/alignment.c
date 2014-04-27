@@ -45,7 +45,9 @@
 #include "utils.h"
 #include "benchmark.h"
 #include "mum.h"
-
+#ifdef MEMWATCH
+#include "memwatch.h"
+#endif
 // not used
 #define MAX_THREADS 8
 #define NUM_SEGMENTS 12
@@ -77,7 +79,7 @@ struct alignment_struct
     // best match found
     mum *best;
     // set to 1 if other mums have been merged that might affect us
-    int stale;
+    UChar *tcopy;
 };
 /**
  * Create an alignment between a bit of text and the MVD.
@@ -101,13 +103,24 @@ alignment *alignment_create( UChar *text, int start, int len, int tlen,
         a->version = version;
         a->log = log;
         a->o = o;
-        a->st = suffixtree_create( &text[start], len, log );
-        if ( a->st == NULL )
+        a->tcopy = calloc( len+1, sizeof(UChar) );
+        if ( a->tcopy != NULL )
         {
-            alignment_dispose( a );
-            plugin_log_add(log,"alignment: failed to create suffix tree\n");
+            u_strncpy(a->tcopy, &text[start], len );
+            a->st = suffixtree_create( a->tcopy, len, log );
+            if ( a->st == NULL )
+            {
+                alignment_dispose( a );
+                plugin_log_add(log,"alignment: failed to create suffix tree\n");
+                a = NULL;
+            }   
+        }
+        else
+        {
+            alignment_dispose(a );
+            plugin_log_add(log,"alignment: failed to copy new version text");
             a = NULL;
-        }                   
+        }
     }
     else
         plugin_log_add( log, "alignment: failed to allocate object\n");
@@ -119,19 +132,14 @@ alignment *alignment_create( UChar *text, int start, int len, int tlen,
  */
 void alignment_dispose( alignment *a )
 {
+    if ( a->tcopy != NULL )
+        free( a->tcopy );
     if ( a->st != NULL )
         suffixtree_dispose( a->st );
+    if ( a->best != NULL )
+        mum_dispose( a->best );
     // text and orphanage belongs to the caller
     free( a );
-}
-/**
- * Set the stale flag: update at next opportunity
- * @param a the alignment to make stale
- * @param stale the new value of stale flag
- */
-void alignment_set_stale( alignment *a, int stale )
-{
-    a->stale = stale;
 }
 /**
  * Get the textual component of this alignment
@@ -167,7 +175,7 @@ alignment *alignment_push( alignment *head, alignment *next )
     printf("pushing %d to %d\n",mum_text_off(next->best),
         mum_text_off(next->best)+mum_len(next->best) );
 */
-    while ( temp != NULL && alignment_len(temp) > alignment_len(next) )
+    while ( temp != NULL && temp->len > next->len )
     {
         prev = temp;
         temp = temp->next;
@@ -232,9 +240,6 @@ static int alignment_transpose_merge( alignment *a, dyn_array *discards )
         int text_off = mum_text_off( best );
         do
         {
-/*
-            printf("transpose merging %d to %d\n",mum_text_off(best),mum_len(best)+mum_text_off(best));
-*/
             // make every pair in the match a parent:
             // either already a parent, or an ordinary pair or a child
             // this may free temp
@@ -304,9 +309,6 @@ static int alignment_direct_merge( alignment *a )
         {
             pair *p = card_pair(temp);
             bitset *bs = pair_versions(p);
-/*
-            printf("directly merging %d to %d\n",mum_text_off(best),mum_len(best)+mum_text_off(best));
-*/
             bitset_set( bs, v );
             card_set_text_off( temp, text_off );
             text_off += pair_len(p);
@@ -386,7 +388,15 @@ int alignment_align( alignment *a, card *list )
         {
             match *m = deck_get_mum(d);
             if ( m != NULL )
+            {
+/*              match *temp = m;
+                while ( temp != NULL )
+                {
+                    printf("mum: %d to %d\n",match_text_off(temp),match_text_end(temp));
+                    temp = match_next(temp);
+                }*/
                 a->best = mum_create( m, a->log );
+            }
             else
                 res = 0;
         }
@@ -406,7 +416,7 @@ int alignment_merge( alignment *a, alignment **left,
     alignment **right, dyn_array *discards )
 {
     int res = 1;
-    printf("aligning: %d to %d\n",mum_text_off(a->best),mum_text_off(a->best)+mum_len(a->best));
+    //printf("aligning: %d to %d\n",mum_text_off(a->best),mum_text_off(a->best)+mum_len(a->best));
     res = alignment_create_lhs( a, left );
     if ( res )
     {

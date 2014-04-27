@@ -180,11 +180,13 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
     card *old_c = NULL;
     // debug
     card *e = c;
+    printf("merged segments:\n");
     while ( e != NULL )
     {
         printf("%d-%d\n",card_text_off(e),card_len(e)+card_text_off(e));
         e = card_next(e, nv);
     }
+    printf("unmerged segments:\n");
     for ( i=0;i<dyn_array_size(deviants);i++ )
     {
         e = dyn_array_get( deviants, i );
@@ -238,14 +240,14 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
                 d = dyn_array_get(deviants,++j);
             }
         }
-        // test for deletions in new version
-        else if ( card_text_off(c) > pos )
+        // test for deletion in new version
+        else if ( old_c != NULL && card_text_off(c) == pos )
         {
             card *blank = card_create_blank( version, log );
             if ( blank != NULL )
             {
                 card_set_text_off( blank, pos );
-                card_add_before( c, blank );
+                card_add_after( old_c, blank );
             }
         }
         pos = card_end( c );
@@ -299,14 +301,6 @@ static int add_subsequent_version( MVD *mvd, adder *add,
                     // maintain list of current alignments
                     alignment *head = a;
                     res = add_version( add, mvd );
-                    // align first time
-                    if ( res ) 
-                        res = alignment_align( head, list );
-                    else // only happens if the whole thing does not align!
-                    {
-                        alignment_add_to_rejects( head, discards, log );
-                        alignment_dispose( head );
-                    }
                     // iterate while there are still alignments to do
                     while ( res && head != NULL )
                     {
@@ -337,8 +331,6 @@ static int add_subsequent_version( MVD *mvd, adder *add,
                     card **children = orphanage_all_children(o,&num,&success);
                     if ( !success )
                     {
-                        if ( children != NULL )
-                            free( children );
                         res = 0;
                         plugin_log_add(log,"failed to gather children");
                     }
@@ -356,6 +348,8 @@ static int add_subsequent_version( MVD *mvd, adder *add,
                             fprintf(stderr,"error: unbalanced graph\n"); 
                         verify_dispose( v );
                     }
+                    if ( children != NULL )
+                        free( children );
                 }
                 card_dispose_list( list );
             }
@@ -402,6 +396,7 @@ static int add_mvd_text( adder *add, MVD *mvd,
         }
         else
             res = add_subsequent_version( mvd, add, text, tlen, log );
+        free( text );
     }
     else
     {
@@ -602,7 +597,11 @@ static int read_dir( char *folder )
                         strcat( options, " description=test" );
                         res = process( &mvd, options, &output, txt, flen );
                         n_files++;
-                        //printf("%s",(char*)output);
+                        if ( output != NULL )
+                        {
+                            printf("%s",(char*)output);
+                            free( output );
+                        }
                         free( txt );
                     }
                     free( path );
