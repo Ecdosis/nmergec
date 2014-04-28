@@ -350,6 +350,8 @@ card **orphanage_all_children( orphanage *o, int *num, int *success )
         else
             *num = 0;
     }
+    else if ( *num == 0 )
+        *success = 1;
     return children;
 }
 #ifdef MVD_TEST

@@ -100,8 +100,9 @@
         <runcommandpicklist>
           <runcommandpicklistitem>"${OUTPUT_PATH}"</runcommandpicklistitem>
           <runcommandpicklistitem>"${OUTPUT_PATH}" english</runcommandpicklistitem>
+          <runcommandpicklistitem>"${OUTPUT_PATH}" "social charity"</runcommandpicklistitem>
         </runcommandpicklist>
-        <runcommand>"${OUTPUT_PATH}" english</runcommand>
+        <runcommand>"${OUTPUT_PATH}" "social charity"</runcommand>
         <rundir></rundir>
         <buildfirst>true</buildfirst>
         <terminal-type>0</terminal-type>

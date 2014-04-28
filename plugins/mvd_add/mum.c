@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <unicode/uchar.h>
 #include <string.h>
+#include <stdio.h>
 #include "plugin_log.h"
 #include "bitset.h"
 #include "link_node.h"
@@ -126,7 +127,7 @@ static int mum_split_at_start( mum *m, orphanage *o, plugin_log *log )
 {
     int res = 1;
     pair *p = card_pair( m->start.current );
-    if ( m->start.pos > 0 && m->start.pos < pair_len(p)-1 )
+    if ( m->start.pos > 0 && m->start.pos < pair_len(p) )
     {
         card *old_start = m->start.current;
         res = card_split( m->start.current, m->start.pos, o, log );
@@ -250,17 +251,6 @@ int mum_split( mum *m, UChar *text, int v, orphanage *o,
                 if ( betw != NULL )
                 {
                     res = dyn_array_add( discards, betw );
-/*
-                    if ( card_node_to_right(temp->end_p) )
-                    {
-                        res = card_add_at_node( temp->end_p, betw, 0);
-                        if ( !res )
-                            plugin_log_add(log,
-                                "mum: failed to add between lp\n");
-                    }
-                    else
-                        card_add_after( temp->end_p, betw );
-*/
                 }
                 else
                     plugin_log_add(log,"mum: failed to join mums\n");

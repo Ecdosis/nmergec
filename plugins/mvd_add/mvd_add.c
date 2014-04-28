@@ -1,5 +1,5 @@
 /*
- *  NMergeC is Copyright 2013 Desmond Schmidt
+ *  NMergeC is Copyright 2014 Desmond Schmidt
  * 
  *  This file is part of NMergeC. NMergeC is a C commandline tool and 
  *  static library and a collection of dynamic libraries for merging 
@@ -181,21 +181,35 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
     // debug
     card *e = c;
     printf("merged segments:\n");
+    int last_off = 0;
     while ( e != NULL )
     {
-        printf("%d-%d\n",card_text_off(e),card_len(e)+card_text_off(e));
+        int end = card_len(e)+card_text_off(e);
+        printf("%d-%d\n",card_text_off(e),end);
+        if ( card_text_off(e) < last_off )
+        {
+            printf("alignment overlaps: %d followed by %d not allowed\n",
+                last_off,card_text_off(e));
+            c = NULL;
+            res = 0;
+            break;
+        }
+        last_off = end;
         e = card_next(e, nv);
     }
-    printf("unmerged segments:\n");
-    for ( i=0;i<dyn_array_size(deviants);i++ )
+    if ( res )
     {
-        e = dyn_array_get( deviants, i );
-        if ( pair_is_child(card_pair(e)) )
-            printf("child: %d-%d\n",card_text_off(e),card_text_off(e)+card_len(e) );
-        else if ( card_len(e)==0 )
-            printf("empty: %d-%d\n",card_text_off(e),card_text_off(e)+card_len(e));
-        else
-            printf("mismatch: %d-%d\n",card_text_off(e),card_text_off(e)+card_len(e));
+        printf("unmerged segments:\n");
+        for ( i=0;i<dyn_array_size(deviants);i++ )
+        {
+            e = dyn_array_get( deviants, i );
+            if ( pair_is_child(card_pair(e)) )
+                printf("child: %d-%d\n",card_text_off(e),card_text_off(e)+card_len(e) );
+            else if ( card_len(e)==0 )
+                printf("empty: %d-%d\n",card_text_off(e),card_text_off(e)+card_len(e));
+            else
+                printf("mismatch: %d-%d\n",card_text_off(e),card_text_off(e)+card_len(e));
+        }
     }
     // end debug
     while ( c != NULL )
@@ -268,6 +282,20 @@ static void alignment_add_to_rejects( alignment *a, dyn_array *discards,
     card *reject = alignment_to_card(a,log);
     dyn_array_add( discards, reject );
 }
+static void get_mvd_short_name( MVD *mvd, char *buf, int len, int vid )
+{
+    int nversions = mvd_count_versions(mvd);
+    version **versions = calloc( nversions, sizeof(version*) );
+    if ( versions != NULL )
+    {
+        int res = mvd_get_versions( mvd, versions, nversions );
+        if ( res )
+        {
+            u_print( version_id(versions[vid-1]), buf, len );
+        }
+        free( versions );
+    }
+}
 /**
  * Add a version to an MVD that already has at least one
  * @param mvd the mvd to add it to
@@ -317,7 +345,7 @@ static int add_subsequent_version( MVD *mvd, adder *add,
                                 head = alignment_push( head, left );
                             if ( right != NULL )
                                 head = alignment_push( head, right );
-                            // card_print_list( list );
+                            //card_print_list( list );
                         }
                         else
                         {
@@ -326,6 +354,9 @@ static int add_subsequent_version( MVD *mvd, adder *add,
                         }
                         alignment_dispose( old );
                     }
+                    char buf[16];
+                    get_mvd_short_name(mvd,buf,16,new_vid);
+                    printf("mvd_add: aligned version %s\n",buf);
                     // add children to discards
                     int i,success,num;
                     card **children = orphanage_all_children(o,&num,&success);
@@ -334,11 +365,14 @@ static int add_subsequent_version( MVD *mvd, adder *add,
                         res = 0;
                         plugin_log_add(log,"failed to gather children");
                     }
-                    else 
+                    else if ( children != NULL )
                     {
                         for ( i=0;i<num;i++ )
                             dyn_array_add( discards, children[i] );
-                        add_deviant_pairs( list, discards, new_vid, log );
+                    }
+                    res = add_deviant_pairs( list, discards, new_vid, log );
+                    if ( res )
+                    {
                         card_print_list( list );
                         pairs = card_to_pairs( list );
                         mvd_set_pairs( mvd, pairs );
@@ -487,7 +521,7 @@ char *help()
  */
 char *plug_version()
 {
-    return "version 1.0 (c) 2013 Desmond Schmidt\n";
+    return "version 1.0 (c) 2014 Desmond Schmidt\n";
 }
 /**
  * Report the plugin's name
@@ -567,7 +601,7 @@ static int read_dir( char *folder )
     int res = 1;
     struct dirent *ent;
     UChar desc[6];
-    char *output;
+    char *output=NULL;
     MVD *mvd=mvd_create(1);
     mvd_set_encoding(mvd, "utf-8");
     ascii_to_uchar( "test", desc, 6 );
@@ -601,6 +635,7 @@ static int read_dir( char *folder )
                         {
                             printf("%s",(char*)output);
                             free( output );
+                            output = NULL;
                         }
                         free( txt );
                     }
@@ -618,7 +653,7 @@ static int read_dir( char *folder )
 // arguments: folder of text files
 int test_mvd_add( int *passed, int *failed )
 {
-    int res = read_dir( "english" );
+    int res = read_dir( "social charity" );
     //int res = read_dir( "tests" );
     if ( res )
     {
