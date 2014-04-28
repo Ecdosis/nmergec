@@ -633,7 +633,7 @@ static int read_dir( char *folder )
                         n_files++;
                         if ( output != NULL )
                         {
-                            printf("%s",(char*)output);
+                            printf("%s",output);
                             free( output );
                             output = NULL;
                         }

@@ -389,12 +389,12 @@ int alignment_align( alignment *a, card *list )
             match *m = deck_get_mum(d);
             if ( m != NULL )
             {
-/*              match *temp = m;
+              match *temp = m;
                 while ( temp != NULL )
                 {
                     printf("mum: %d to %d\n",match_text_off(temp),match_text_end(temp));
                     temp = match_next(temp);
-                }*/
+                }
                 a->best = mum_create( m, a->log );
             }
             else

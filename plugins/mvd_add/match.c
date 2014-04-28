@@ -188,13 +188,13 @@ int match_pop( match *m )
     {
         match_state *ms = m->queue;
         m->queue = match_state_next( ms );
-        match_state_dispose( ms );
         m->start = match_state_start(ms);
         m->end = match_state_end(ms);
         match_state_loc( ms, &m->loc );
         m->text_off = match_state_text_off( ms );
         m->len = match_state_len( ms );
         m->bs = match_state_bs( ms );
+        match_state_dispose( ms );
         return 1;
     }
 }
@@ -232,14 +232,17 @@ int match_follows( match *first, match *second )
         card *lp = first->end.current;
         while ( pairs_dist <= KDIST )
         {
-            card *next = card_next( lp, first->bs );
-            if ( next != NULL )
+            lp = card_next( lp, first->bs );
+            if ( lp != NULL )
             {
-                int p_len = pair_len(card_pair(first->start.current));
+                int p_len = pair_len(card_pair(lp));
                 if ( lp != second->start.current )
                     pairs_dist += p_len;
                 else 
+                {
                     pairs_dist += second->start.pos;
+                    break;
+                }
             }
             else
                 break;
@@ -296,7 +299,7 @@ int match_restart( match *m, plugin_log *log )
 {
     card *old = m->start.current;
     pair *sp = card_pair(m->start.current);
-    if ( m->start.pos == pair_len(sp) )
+    if ( m->start.pos == pair_len(sp)-1 )
     {
         card *c = card_next_nonempty(m->start.current,m->bs);
         if ( c != NULL )
