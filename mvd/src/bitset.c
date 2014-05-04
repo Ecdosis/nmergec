@@ -293,6 +293,27 @@ unsigned char bitset_get_byte( bitset *bs, int index )
         return 0;
 }
 /**
+ * Get the index of the highest set bit
+ * @param bs the bitset in question
+ * @return the highest bit or 0 if none
+ */
+int bitset_tops_bit( bitset *bs )
+{
+    int max = 0;
+    int i = 0;
+    while ( i != -1 )
+    {
+        i = bitset_next_set_bit( bs, i );
+        if ( i > max )
+            max = i;
+        else if ( i == -1 )
+            break;
+        else
+            i++;
+    }
+    return max;
+}
+/**
  * How many bits have been set?
  * @param bs the bitset in question
  * @return the bitset's cardinality

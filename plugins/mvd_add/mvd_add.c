@@ -173,7 +173,7 @@ static void print_unmerged_segments( dyn_array *deviants )
             printf("mismatch: %d-%d\n",card_text_off(e),card_text_off(e)+card_len(e));
     }
 }
-static int print_merged_segments( card *c, bitset *nv )
+static int print_merged_segments( card *c, bitset *nv, int size )
 {
     int res = 1;
     card *e = c;
@@ -183,7 +183,7 @@ static int print_merged_segments( card *c, bitset *nv )
     {
         char buf[16];
         const char *parent;
-        bitset_tostring(pair_versions(card_pair(e)),buf,6);
+        bitset_tostring(pair_versions(card_pair(e)),buf,size+2);
         int end = card_len(e)+card_text_off(e);
         parent = (pair_is_parent(card_pair(e)))?"[p]":"";
         printf("[%s] %d-%d %s\n",buf,card_text_off(e),end,parent);
@@ -197,6 +197,45 @@ static int print_merged_segments( card *c, bitset *nv )
         }
         last_off = end;
         e = card_next(e, nv, 0);
+    }
+    return res;
+}
+/**
+ * Is it possible to go from l to r via some concrete path NOT involving version?
+ * @param l the left limit of the path
+ * @param r the right limit o the path
+ * @param version the version that must NOT be present in the path
+ * @return 1 if it has such a path else 0
+ */
+static int path_exists( card *l, card *r, int version )
+{
+    int res = 0;
+    bitset *lbs = bitset_clone(pair_versions(card_pair(l)));
+    if ( lbs != NULL )
+    {
+        bitset *rbs = bitset_clone(pair_versions(card_pair(r)));
+        if ( rbs != NULL )
+        {
+            bitset_clear_bit( lbs, version );
+            bitset_clear_bit( rbs, version );
+            if ( bitset_intersects(lbs,rbs) )
+            {
+                 l = card_right(l);
+                 while ( l != r )
+                 {
+                    pair *p = card_pair( l );
+                    bitset *bs = pair_versions( p );
+                    if ( pair_len(p) > 0 && bitset_intersects(bs,lbs) )
+                    {
+                        res = 1;
+                        break;
+                    }
+                    l = card_right(l);
+                }
+            }
+            bitset_dispose( rbs );
+        }
+        bitset_dispose( lbs );
     }
     return res;
 }
@@ -222,7 +261,7 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
     card *d = dyn_array_get( deviants, 0 );
     card *old_c = NULL;
     // debug
-    res = print_merged_segments( c, nv );
+    res = print_merged_segments( c, nv, version );
     if ( res )
         print_unmerged_segments( deviants );
     // end debug
@@ -269,7 +308,8 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
             }
         }
         // test for deletion in new version
-        else if ( old_c != NULL && card_text_off(c) == pos )
+        else if ( old_c != NULL && card_text_off(c) == pos 
+            && path_exists(old_c,c,version) )
         {
             card *blank = card_create_blank( version, log );
             if ( blank != NULL )

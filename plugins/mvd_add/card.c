@@ -667,7 +667,8 @@ char *card_tostring( card *c )
     pair *p = card_pair(c);
     bitset *bs = pair_versions(p);
     UChar *data = pair_data( p );
-    bitset_tostring( bs, vbs, 6 );
+    int highest = bitset_top_bit( bs );
+    bitset_tostring( bs, vbs, highest+2 );
     if ( pair_len(p) > 0 )
     {
         dlen = measure_to_encoding( data, pair_len(p), "utf-8" );

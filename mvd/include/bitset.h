@@ -25,6 +25,7 @@ void bitset_and( bitset *bs, bitset *other );
 void bitset_and_not( bitset *bs, bitset *other );
 int bitset_intersects( bitset *a, bitset *b );
 int bitset_cardinality( bitset *bs );
+int bitset_top_bit( bitset *bs );
 void test_bitset( int *passed, int *failed );
 int bitset_next_set_bit( bitset *bs, int index );
 void bitset_clear( bitset *bs );
