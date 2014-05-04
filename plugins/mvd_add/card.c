@@ -417,6 +417,21 @@ card *card_first( card *list, bitset *bs )
     return list;
 }
 /**
+ * Get the previous pair in a list
+ * @param pairs a list of cards
+ * @param c the first card to look at
+ * @param bs the bitset of versions to follow
+ * @return NULL on failure else the the previous relevant card
+ */
+card *card_prev( card *c, bitset *bs )
+{
+    c = c->left;
+    while ( c != NULL 
+        && !bitset_intersects(bs,pair_versions(card_pair(c))) )
+        c = card_left(c);
+    return c;
+}
+/**
  * Get the next nonempty card
  * @param c the card to start from
  * @param bs the bitset to look for
@@ -430,6 +445,15 @@ card *card_next_nonempty( card *c, bitset *bs, int avoid )
         c = card_next( c, bs, avoid );
     }
     while (c != NULL && pair_len(card_pair(c))==0 );
+    return c;
+}
+static card *card_prev_nonempty( card *c, bitset *bs )
+{
+    do
+    {
+        c = card_prev( c, bs );
+    }
+    while ( c != NULL && pair_len(card_pair(c))==0 );
     return c;
 }
 /**
@@ -453,21 +477,6 @@ bitset *card_overlap( card *c, bitset *bs )
         }
     }
     return overlap;
-}
-/**
- * Get the previous pair in a list
- * @param pairs a list of cards
- * @param c the first card to look at
- * @param bs the bitset of versions to follow
- * @return NULL on failure else the the previous relevant card
- */
-card *card_prev( card *c, bitset *bs )
-{
-    c = c->left;
-    while ( c != NULL 
-        && !bitset_intersects(bs,pair_versions(card_pair(c))) )
-        c = card_left(c);
-    return c;
 }
 /**
  * Is this card free? i.e. is it not the trailing pair of a node?
@@ -786,6 +795,54 @@ int card_add_at_node( card *c, card *after, int verify )
     }
     return res;
 }
+int card_is_blank( card *c )
+{
+    return pair_len(c->p)==0;
+}
+static int card_merge_left( card *c_new, card *c )
+{
+    int merged = 0;
+    if ( card_is_blank(c_new) )
+    {
+        bitset *cv= pair_versions(c_new->p);
+        card *l = card_prev_nonempty(c,cv);
+        card *temp = c;
+        while ( temp != NULL && temp != l )
+        {
+            bitset *tv = pair_versions(temp->p);
+            if ( card_is_blank(temp) && card_prev(temp,tv)==l )
+            {
+                bitset_or(tv,cv);
+                merged = 1;
+                break;
+            }
+            temp = temp->left;
+        }
+    }
+    return merged;
+}
+static int card_merge_right( card *c_new, card *c )
+{
+    int merged = 0;
+    if ( card_is_blank(c_new) )
+    {
+        bitset *cv= pair_versions(c_new->p);
+        card *r = card_next_nonempty(c,cv,0);
+        card *temp = c;
+        while ( temp != NULL && temp != r )
+        {
+            bitset *tv = pair_versions(temp->p);
+            if ( card_is_blank(temp) && card_next(temp,tv,0)==r )
+            {
+                bitset_or(tv,cv);
+                merged = 1;
+                break;
+            }
+            temp = temp->right;
+        }
+    }
+    return merged;
+}
 /**
  * Add a new card before an existing one
  * @param c the existing card
@@ -793,18 +850,38 @@ int card_add_at_node( card *c, card *after, int verify )
  */
 void card_add_before( card *c, card *c_new )
 {
-    if ( c->left == NULL )
+    if ( !card_merge_right(c_new,c)&&!card_merge_left(c_new, c) )
     {
-        c_new->right = c->right;
-        c->left = c_new;
+        if ( c->left == NULL )
+        {
+            c_new->right = c->right;
+            c->left = c_new;
+        }
+        else
+        {
+            c_new->right = c->right;
+            c_new->left = c->left;
+            c->right = c_new;
+            if ( c->right != NULL )
+                c->right->left = c_new;
+        }
     }
-    else
+}
+/**
+ * Add a card after a given point, creating a new node.
+ * @param c the point to add it after
+ * @param after the card to become the one after lp
+ * @return 1 if successful else 0
+ */
+void card_add_after( card *c, card *after )
+{
+    if ( !card_merge_left(after,c)&&!card_merge_right(after,c) )
     {
-        c_new->right = c->right;
-        c_new->left = c->left;
-        c->right = c_new;
+        after->right = c->right;
+        after->left = c;
         if ( c->right != NULL )
-            c->right->left = c_new;
+            c->right->left = after;
+        c->right = after;
     }
 }
 /**
@@ -847,20 +924,6 @@ void card_add_at( card **list, card *c, int text_off, int version )
         }
         bitset_dispose( bs );
     }
-}
-/**
- * Add a card after a given point, creating a new node.
- * @param c the point to add it after
- * @param after the card to become the one after lp
- * @return 1 if successful else 0
- */
-void card_add_after( card *c, card *after )
-{
-    after->right = c->right;
-    after->left = c;
-    if ( c->right != NULL )
-        c->right->left = after;
-    c->right = after;
 }
 /**
  * Measure the length of a list
