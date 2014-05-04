@@ -851,7 +851,7 @@ static int card_merge_right( card *c_new, card *c )
  */
 void card_add_before( card *c, card *c_new )
 {
-    if ( !card_merge_right(c_new,c)&&!card_merge_left(c_new, c) )
+    if ( !card_merge_left(c_new, c) )
     {
         if ( c->left == NULL )
         {
@@ -876,7 +876,7 @@ void card_add_before( card *c, card *c_new )
  */
 void card_add_after( card *c, card *after )
 {
-    if ( !card_merge_left(after,c)&&!card_merge_right(after,c) )
+    if ( !card_merge_right(after,c) )
     {
         after->right = c->right;
         after->left = c;

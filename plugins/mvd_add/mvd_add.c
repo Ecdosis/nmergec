@@ -270,6 +270,8 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
         //printf("pos: %d c: %d-%d",pos,card_text_off(c),card_len(c)
         //    +card_text_off(c));
         // test for variants, transpositions and empty arcs
+        if ( pos == 240 && version== 2 )
+            printf("pos==240\n");
         if ( d != NULL && card_text_off(d)==pos )
         {
             if ( old_c == NULL )

@@ -297,7 +297,7 @@ unsigned char bitset_get_byte( bitset *bs, int index )
  * @param bs the bitset in question
  * @return the highest bit or 0 if none
  */
-int bitset_tops_bit( bitset *bs )
+int bitset_top_bit( bitset *bs )
 {
     int max = 0;
     int i = 0;

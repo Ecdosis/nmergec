@@ -289,13 +289,13 @@
             <linkerLibProjectItem>
               <makeArtifact PL="../../mvd"
                             CT="2"
-                            CN="Test"
+                            CN="Debug"
                             AC="true"
                             BL="true"
                             WD="../../mvd"
-                            BC="${MAKE}  -f Makefile CONF=Test"
-                            CC="${MAKE}  -f Makefile CONF=Test clean"
-                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/mvd">
+                            BC="${MAKE}  -f Makefile CONF=Debug"
+                            CC="${MAKE}  -f Makefile CONF=Debug clean"
+                            OP="${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd.${CND_DLIB_EXT}">
               </makeArtifact>
             </linkerLibProjectItem>
             <linkerLibStdlibItem>Mathematics</linkerLibStdlibItem>
