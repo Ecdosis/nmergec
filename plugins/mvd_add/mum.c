@@ -35,10 +35,11 @@ struct mum_struct
 /**
  * Create a mum from a match
  * @param mt the list of matches to copy
+ * @param v the new version
  * @param log the log to record errors in
  * @return a finished mum
  */
-mum *mum_create( match *mt, plugin_log *log )
+mum *mum_create( match *mt, int v, plugin_log *log )
 {
     mum *m = calloc( 1, sizeof(mum) );
     if ( m != NULL )
@@ -48,8 +49,15 @@ mum *mum_create( match *mt, plugin_log *log )
         m->text_off = match_text_off(mt);
         m->len = match_len(mt);
         m->bs = bitset_clone( match_versions(mt) );
+/*
+        pair *p1 = card_pair(m->start.current);
+        pair *p2 = card_pair(m->end.current);
+        if ( bitset_next_set_bit(pair_versions(p1),v)==v
+            || bitset_next_set_bit(pair_versions(p2),v)==v )
+            printf("error!\n");   
+*/
         if ( match_next(mt) != NULL )
-            m->next = mum_create( match_next(mt), log );
+            m->next = mum_create( match_next(mt), v, log );
     }
     else
         plugin_log_add(log, "mum: failed to create object");
@@ -222,6 +230,7 @@ int mum_split( mum *m, UChar *text, int v, orphanage *o,
 {
     mum *temp = m;
     int i,res=1;
+    //mum_verify(m,v);
     dyn_array *mums = dyn_array_create(5);
     if ( mums != NULL )
     {
@@ -235,6 +244,7 @@ int mum_split( mum *m, UChar *text, int v, orphanage *o,
         for ( i=dyn_array_size(mums)-1;i>=0;i-- )
         {
             temp = dyn_array_get( mums, i );
+            pair *p = card_pair(temp->end.current);
             res = mum_split_at_end( temp, o, log );
             if ( res ) 
                 res = mum_split_at_start( temp, o, log );
@@ -260,7 +270,7 @@ int mum_split( mum *m, UChar *text, int v, orphanage *o,
         }
         dyn_array_dispose( mums );
     }
-//    card_print(m->start_p);
+    //mum_verify(m,v);
     return res;
 }
 /**
@@ -279,22 +289,84 @@ int mum_transposed( mum *m, int new_version, int tlen, int *dist )
 {
     int text_left = 0;
     int text_right = tlen;
+    if ( m->text_off==500 )
+        printf("OK\n");
     // 1. find left direct align
     card *left = card_merged_left(m->start.current,new_version);
     if ( left != NULL )
         text_left = card_end( left );
     // find right direct align
-    card *right = card_merged_right(m->end.current,new_version);
+    mum *last = m;
+    while ( last->next != NULL )
+        last = last->next;
+    card *right = card_merged_right(last->end.current,new_version);
     if ( right != NULL )
         text_right = card_text_off( right );
-    if ( m->text_off >= text_left && mum_text_end(m) <= text_right )
+    if ( m->text_off >= text_left && mum_text_end(last) <= text_right )
     {
         *dist = 0;
         return 0;
     }
     else
     {
-        *dist = MIN(abs(m->text_off-text_left),abs(m->text_off-text_right));
+        *dist = MIN(abs(m->text_off-text_left),abs(last->text_off-text_right));
         return 1;
     }
+}
+/**
+ * Check that the mum is between aligned regions on each side
+ * @param m the mum to check
+ * @param v the new version of aligned sections
+ * @return 1 if OK, else 0
+ */
+int mum_verify( mum *m, int v )
+{
+    int res = 1;
+    card *c = m->start.current;
+    bitset *bs = bitset_create();
+    if ( bs != NULL )
+    {
+        bitset_set(bs,v);
+        while ( c != NULL )
+        {
+            c = card_left(c);
+            if ( c != NULL )
+            {
+                pair *p = card_pair(c);
+                if ( bitset_next_set_bit(pair_versions(p),v)==v )
+                {
+                    int end = card_text_off(c)+pair_len(p);
+                    if ( end > m->text_off )
+                    {
+                        printf("mum: aligned card on left at %d > mum start %d\n",
+                            end,m->text_off);
+                        res = 0;
+                    }
+                    break;
+                }
+                c = card_left(c);
+            }
+        }
+        c = m->end.current;
+        while ( c != NULL )
+        {
+            c = card_right(c);
+            if ( c != NULL )
+            {
+                pair *p = card_pair(c);
+                if ( bitset_next_set_bit(pair_versions(p),v)==v )
+                {
+                    if ( card_text_off(c) < m->len+m->text_off )
+                    {
+                        printf("mum: aligned card on right at %d > mum start %d\n",
+                            card_text_off(c),m->text_off+m->len);
+                        res = 0;
+                    }
+                    break;
+                }
+                c = card_right(c);
+            }
+        }
+    }
+    return res;
 }

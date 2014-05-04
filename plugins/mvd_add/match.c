@@ -47,12 +47,14 @@
 #define KDIST 2
 #define PHI 1.61803399
 /*
- * Match represents a sequence of matching charactes in teh pairs list 
+ * Match represents a sequence of matching charactes in the pairs list 
  * and in the new text version.
  */
 struct match_struct
 {
     MATCH_BASE;
+    // next match in this sequence satisfying certain rigid criteria
+    match *next;
     // last matched position in graph
     location prev;
     // offset of our new version segment in the overall text
@@ -63,12 +65,12 @@ struct match_struct
     card *cards;
     // suffix tree of new version to match pairs against - read only
     suffixtree *st;
-    // next match in this sequence satisfying certain rigid criteria
-    match *next;
     // queue of match branches not yet followed
     match_state *queue;
     // location in suffix tree to which match has been verified
     pos loc;
+    // 1 if the match is already maximal, else 0
+    int maximal;
 };
 /**
  * Create a match
@@ -117,6 +119,7 @@ match *match_copy( match *mt, plugin_log *log )
         mt2->st_off = mt->st_off;
         mt2->text_off = 0;
         mt2->len = mt->len;
+        mt2->maximal = mt->maximal;
         mt2->freq = mt->freq;
         mt2->cards = mt->cards;
         mt2->st = mt->st;
@@ -132,7 +135,7 @@ match *match_copy( match *mt, plugin_log *log )
     return mt2;
 }
 /**
- * Clone a match object making ready to continue from where it left off
+ * Clone a match object, preparing it to continue from where it left off
  * @param mt the match to copy
  * @param log the log to report errors to
  * @return a copy of mt or NULL on failure
@@ -147,8 +150,19 @@ match *match_clone( match *mt, plugin_log *log )
         {
             // pick up where our parent left off
             mt2->start = mt->end;
+            mt2->end = mt->end;
             mt2->len = 0;
+            mt2->maximal = 0;
+            // reset because we are starting again
+            mt2->freq = 0;
             mt->end = mt->prev; 
+            // the queue belongs to mt, not to us
+            if ( mt2->queue != NULL )
+            {
+                match_state_dispose( mt2->queue );
+                mt2->queue = NULL;
+            }// this should probably be deleted
+            //mt2->text_off = match_text_end(mt);
         }
     }
     return mt2;
@@ -176,6 +190,43 @@ void match_dispose( match *m )
     free( m );
 }
 /**
+ * Find deepest level of the match that has a queue
+ * @param m the first in a chain of matches
+ * @return the topmost match with a queue
+ */
+static match *match_deepest_queued( match *m )
+{
+    int i;
+    if ( m->next != NULL )
+    {
+        dyn_array *da = dyn_array_create( 5 );
+        if ( da != NULL )
+        {
+            match *temp = m;
+            while ( temp != NULL )
+            {
+                dyn_array_add( da, temp );
+                temp = temp->next;
+            }
+            for ( i=dyn_array_size(da)-1;i>=0;i-- )
+            {
+                match *n = dyn_array_get(da,i);
+                if ( n->queue != NULL )
+                {
+                    m = n;
+                    // clean up any non-queued matches
+                    if ( m->next != NULL )
+                        match_dispose( m->next );
+                    m->next = NULL;
+                    break;
+                }
+            }
+            dyn_array_dispose( da );
+        }
+    }
+    return m;
+}
+/**
  * Pop a previous match state back into the match
  * @param m the match state
  * @return 1 if the pop was possible else 0
@@ -186,14 +237,18 @@ int match_pop( match *m )
         return 0;
     else
     {
-        match_state *ms = m->queue;
-        m->queue = match_state_next( ms );
-        m->start = match_state_start(ms);
-        m->end = match_state_end(ms);
-        match_state_loc( ms, &m->loc );
-        m->text_off = match_state_text_off( ms );
-        m->len = match_state_len( ms );
-        m->bs = match_state_bs( ms );
+        match *n = match_deepest_queued( m );
+        match_state *ms = n->queue;
+        n->queue = match_state_next( ms );
+        n->start = match_state_start(ms);
+        n->end = match_state_end(ms);
+        n->prev = match_state_prev(ms);
+        n->maximal = match_state_maximal(ms);
+        match_state_loc( ms, &n->loc );
+        n->text_off = match_state_text_off( ms );
+        n->len = match_state_len( ms );
+        n->bs = match_state_bs( ms );
+        n->freq = 0;
         match_state_dispose( ms );
         return 1;
     }
@@ -232,7 +287,7 @@ int match_follows( match *first, match *second )
         card *lp = first->end.current;
         while ( pairs_dist <= KDIST )
         {
-            lp = card_next( lp, first->bs );
+            lp = card_next( lp, first->bs, 0 );
             if ( lp != NULL )
             {
                 int p_len = pair_len(card_pair(lp));
@@ -292,17 +347,20 @@ int is_maximal( match *m, UChar *text )
 /**
  * Restart a match by restarting it one character further on
  * @param m the match to restart
+ * @param v the new version
  * @param log the log to record errors in
  * @return 1 if it worked else 0 (ran out of text)
  */
-int match_restart( match *m, plugin_log *log )
+int match_restart( match *m, int v, plugin_log *log )
 {
     card *old = m->start.current;
     pair *sp = card_pair(m->start.current);
     if ( m->start.pos == pair_len(sp)-1 )
     {
-        card *c = card_next_nonempty(m->start.current,m->bs);
-        if ( c != NULL )
+        card *c = card_next_nonempty(m->start.current,m->bs,v);
+        pair *p = (c==NULL)?NULL:card_pair(c);
+        if ( c != NULL && p!= NULL 
+            && bitset_next_set_bit(pair_versions(p),v)!=v )
         {
             bitset *overlap = card_overlap(c,m->bs);
             if ( overlap != NULL )
@@ -315,8 +373,8 @@ int match_restart( match *m, plugin_log *log )
                 loc.loc = 0;
                 loc.v = suffixtree_root(m->st);
                 match_state *ms = match_state_create(
-                    &pos, &pos, m->text_off, 
-                    m->len, overlap, &loc, log );
+                    &pos, &pos, &pos, m->text_off, 
+                    m->len, overlap, &loc, 0, log );
                 if ( m->queue == NULL )
                     m->queue = ms;
                 else
@@ -337,6 +395,7 @@ int match_restart( match *m, plugin_log *log )
     m->end = m->start;
     m->prev = m->end;
     m->len = 0;
+    m->maximal = 0;
     return 1;
 }
 /**
@@ -356,7 +415,8 @@ int match_advance( match *m, pos *loc, int v, plugin_log *log )
         m->prev = m->end;
         if ( pair_len(card_pair(c))-1==m->end.pos )
         {
-            c = card_next_nonempty( c, m->bs );
+            card *old_c = c;
+            c = card_next_nonempty( c, m->bs, v );
             if ( c != NULL )
             {
                 pair *p = card_pair(c);
@@ -370,13 +430,20 @@ int match_advance( match *m, pos *loc, int v, plugin_log *log )
                     bitset *overlap = card_overlap(c,m->bs);
                     if ( overlap != NULL )
                     {
-                        match_state *ms = match_state_create(
-                            &m->start, &m->end, m->text_off, 
-                            m->len, overlap, loc, log );
-                        if ( m->queue == NULL )
-                            m->queue = ms;
-                        else
-                            match_state_push( m->queue, ms );
+                        location new_end;
+                        new_end.current = card_next_nonempty(old_c,overlap,v);
+                        // could return NULL if there was a clash with v
+                        if ( new_end.current != NULL )
+                        {
+                            new_end.pos = 0;
+                            match_state *ms = match_state_create(
+                                &m->start, &new_end, &m->prev, m->text_off,
+                                m->len, overlap, loc, m->maximal, log );
+                            if ( m->queue == NULL )
+                                m->queue = ms;
+                            else
+                                match_state_push( m->queue, ms );
+                        }
                         // restrict the current match to ANDed versions
                         bitset_and( m->bs, pair_versions(card_pair(c)) );
                     }
@@ -385,8 +452,6 @@ int match_advance( match *m, pos *loc, int v, plugin_log *log )
                     res = 1;
                 }
             }
-            if ( c == NULL )
-                m->end.pos = pair_len( card_pair(m->end.current) );
         }
         else
         {
@@ -423,11 +488,12 @@ match *match_extend( match *mt, UChar *text, int v, plugin_log *log )
         if ( mt2 != NULL )
         {
             int distance = 1;
-            if ( match_restart(mt2,log) )
+            match_verify_end( first );
+            if ( match_restart(mt2,v,log) )
             {
                 do  
                 {
-                    if ( match_single(mt2,text,v,log) && match_follows(last,mt2) )
+                    if ( match_single(mt2,text,v,log,0) && match_follows(last,mt2) )
                     {// success
                         match_append(last,mt2);
                         mt = last = mt2;
@@ -437,7 +503,7 @@ match *match_extend( match *mt, UChar *text, int v, plugin_log *log )
                     {// failure: reset and move to next position
                         if ( distance < KDIST )
                         {
-                            if ( match_restart(mt2,log) )
+                            if ( match_restart(mt2,v,log) )
                             {
                                 distance++;
                             }
@@ -467,6 +533,7 @@ match *match_extend( match *mt, UChar *text, int v, plugin_log *log )
         else
             mt = NULL;
     } while ( last == mt );
+    match_verify_end( first );
     return first;
 }
 /**
@@ -477,27 +544,38 @@ match *match_extend( match *mt, UChar *text, int v, plugin_log *log )
  * @param log the log to save errors in
  * @return 1 if the match was at least 1 char long else 0
  */
-int match_single( match *m, UChar *text, int v, plugin_log *log )
+int match_single( match *m, UChar *text, int v, plugin_log *log, int popped )
 {
     UChar c;
-    int maximal = 0;
+    // go to the deepest match if not the first one (as usual)
+    while ( m->next != NULL )
+        m = m->next;
     pos *loc = &m->loc;
-    loc->v = suffixtree_root( m->st );
-    loc->loc = node_start(loc->v)-1;
+    // preserve popped location in suffix tree
+    if ( !popped ) 
+    {
+        loc->v = suffixtree_root( m->st );
+        loc->loc = node_start(loc->v)-1;
+        m->maximal = 0;
+    }
+/*
+    else
+        printf("Popped!\n");
+*/
     do 
     {
         UChar *data = pair_data(card_pair(m->end.current));
         c = data[m->end.pos];
         if ( suffixtree_advance_pos(m->st,loc,c) )
         {
-            if ( !maximal && node_is_leaf(loc->v) )
+            if ( !m->maximal && node_is_leaf(loc->v) )
             {
                 // m->st_off
                 m->text_off = m->st_off + node_start(loc->v)-m->len;
                 if ( !is_maximal(m,text) )
                     break;
                 else
-                    maximal = 1;
+                    m->maximal = 1;
             }
             // we are already matched, so increase length
             m->len++;
@@ -508,7 +586,7 @@ int match_single( match *m, UChar *text, int v, plugin_log *log )
             break;
     }
     while ( 1 );
-    return maximal;
+    return m->maximal;
 }
 location match_start( match *m )
 {
@@ -559,6 +637,21 @@ void match_set_versions( match *m, bitset *bs )
     m->bs = bs;
 }
 /**
+ * Count the number of extensions
+ * @param m the match to count
+ * @return the number of extensions (if no next then 0)
+ */
+static int match_num_extensions( match *m )
+{
+    int extensions = 0;
+    while ( m->next != NULL )
+    {
+        extensions++;
+        m = m->next;
+    }
+    return extensions;
+}
+/**
  * Compare two matches based on their length
  * @param a the first match
  * @param b the second match
@@ -581,7 +674,17 @@ int match_compare( void *a, void *b )
         else if ( two->text_off > one->text_off )
             return -1;
         else
-            return 0;
+        {
+            // the match with the least number of extensions is bigger
+            int mext1 = match_num_extensions( one );
+            int mext2 = match_num_extensions( two );
+            if ( mext1 > mext2 )
+                return -1;
+            else if ( mext1 < mext2 )
+                return 1;
+            else
+                return 0;
+        }
     }
     else
         return 0;
@@ -684,4 +787,75 @@ void match_print( match *m, UChar *text )
         temp = temp->next;
     }
     printf("\n");
+}
+void match_verify_end( match *m )
+{
+    card *current = m->end.current;
+    pair *p = card_pair( current );
+    bitset *versions = pair_versions( p );
+    if ( !bitset_intersects(m->bs,versions) )
+        printf("match improperly terminated\n");
+}
+void match_verify( match *m, UChar *text, int tlen )
+{
+    // sanity check match
+    match_verify_end( m );
+    UChar *copy = calloc( m->len, sizeof(UChar) );
+    if ( copy != NULL )
+    {
+        card *c = m->start.current;
+        int i=0;
+        int count = 0;
+        while ( c != NULL )
+        {
+            pair *p = card_pair(c);
+            UChar *pdata = pair_data(p);
+            if ( m->start.current == m->end.current )
+            {
+                count = (m->end.pos-m->start.pos)+1;
+                if ( i+count<=m->len )
+                    u_memcpy(&copy[i], &pdata[m->start.pos], count);
+                i += count;
+                break;
+            }
+            else if ( m->start.current == c )
+            {
+                count = pair_len(p)-m->start.pos;
+                if ( i+count<=m->len )
+                    u_memcpy(&copy[i], &pdata[m->start.pos], count);
+                i += count;
+            }
+            else if ( c == m->end.current )
+            {
+                count = m->end.pos+1;
+                if ( i+count<=m->len )
+                    u_memcpy(&copy[i], pdata, count);
+                i += count;
+                break;
+            }
+            else
+            {
+                count = pair_len(p);
+                if ( i+count<=m->len )
+                    u_memcpy(&copy[i], pdata, count);
+                i += count;
+            }
+            c = card_next( c, m->bs, 0 );
+        }
+        int j,mend=i;
+        int tend = m->text_off+m->len;
+        if ( m->len != i )
+            printf("match: source %d and dest %d different lengths\n",i,m->len);
+        for ( i=0,j=m->text_off;i<mend&&j<tend;i++,j++ )
+        {
+            if ( text[j] != copy[i] )
+            {
+                printf("match: mismatch!\n");
+                break;
+            }
+        }
+        free( copy );
+    }
+    if ( m->next != NULL )
+        match_verify( m->next, text, tlen );
 }

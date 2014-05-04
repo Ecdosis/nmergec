@@ -396,6 +396,7 @@ void bitset_serialise( bitset *bs, char *buf, int len )
    int start = bitset_next_set_bit(bs,1);
    int end = start;
    int slen = 0;
+   buf[0]=0;
    while ( end >= 1 )
    {
        int res = bitset_next_set_bit( bs, end+1 );

@@ -37,6 +37,7 @@
 #endif
 #define IMPLICIT_SIZE 12
 static UChar ustring_empty[1] = {0};
+//static hashmap *card_map=NULL;
 
 /**
  * A card is necessary because when creating an MVD by using
@@ -64,10 +65,23 @@ struct card_struct
  */
 card *card_create( pair *p, plugin_log *log )
 {
+/*
+    if ( card_map==NULL )
+    {
+        card_map = hashmap_create( 100, 1);
+    }
+*/
     card *c = calloc( 1, sizeof(card) );
     if ( c != NULL )
     {
+        UChar key[16];
         c->p = p;
+/*
+        calc_ukey( key, (long)c, 16 );
+        int res = hashmap_put( card_map, key, c );
+        if ( !res )
+            printf("Duplicate card!\n");
+*/
     }
     else
         plugin_log_add( log, "card: failed to create object\n");
@@ -113,8 +127,23 @@ card *card_create_blank_bs( bitset *bs, plugin_log *log )
  */
 void card_dispose( card *c )
 {
+/*
+    UChar key[16];
+    calc_ukey( key, (long)c, 16 );
+    int res = hashmap_remove( card_map, key, NULL );
+    if ( !res )
+        printf("card: failed to find card when freeing\n");
+*/
     free( c );
 }
+/*
+int card_exists( card *c )
+{
+    UChar key[16];
+    calc_ukey( key, (long)c, 16 );
+    return hashmap_contains( card_map, key );
+}
+*/
 /**
  * Turn a card into a parent pair possibly with no children
  * @param c VAR param: the original card, maybe already a parent
@@ -311,7 +340,7 @@ card *card_merged_right( card *c, int version )
         pair *p = card_pair( right );
         bitset *bs = pair_versions(p);
         if ( bitset_next_set_bit(bs,version)==version 
-            && bitset_cardinality(bs)>1 )
+            /*&& bitset_cardinality(bs)>1*/ )
         {
             break;
         }
@@ -333,7 +362,7 @@ card *card_merged_left( card *c, int version )
         pair *p = card_pair( left );
         bitset *bs = pair_versions(p);
         if ( bitset_next_set_bit(bs,version)==version 
-            && bitset_cardinality(bs)>1 )
+            /*&& bitset_cardinality(bs)>1*/ )
         {
             break;
         }
@@ -346,14 +375,25 @@ card *card_merged_left( card *c, int version )
  * @param pairs a list of cards
  * @param c the first card to look at
  * @param bs the bitset of versions to follow
+ * @param avoid avoid this version
  * @return NULL on failure else the the next relevant card
  */
-card *card_next( card *c, bitset *bs )
+card *card_next( card *c, bitset *bs, int avoid )
 {
     c = c->right;
-    while ( c != NULL 
-        && !bitset_intersects(bs,pair_versions(card_pair(c))) )
-        c = card_right(c);
+    while ( c != NULL )
+    {
+        bitset *pv = pair_versions(card_pair(c));
+        if ( avoid != 0 && bitset_next_set_bit(pv,avoid)==avoid )
+        {
+            c = NULL;
+            break;
+        }
+        else if ( bitset_intersects(bs,pv) )
+            break;
+        else
+            c = card_right(c);
+    }
     return c;
 }
 /**
@@ -380,13 +420,14 @@ card *card_first( card *list, bitset *bs )
  * Get the next nonempty card
  * @param c the card to start from
  * @param bs the bitset to look for
+ * @param avoid avoid this version
  * @return the next nonempty card or NULL
  */
-card *card_next_nonempty( card *c, bitset *bs )
+card *card_next_nonempty( card *c, bitset *bs, int avoid )
 {
     do
     {
-        c = card_next( c, bs );
+        c = card_next( c, bs, avoid );
     }
     while (c != NULL && pair_len(card_pair(c))==0 );
     return c;
@@ -617,7 +658,7 @@ char *card_tostring( card *c )
     pair *p = card_pair(c);
     bitset *bs = pair_versions(p);
     UChar *data = pair_data( p );
-    bitset_tostring( bs, vbs, 4 );
+    bitset_tostring( bs, vbs, 6 );
     if ( pair_len(p) > 0 )
     {
         dlen = measure_to_encoding( data, pair_len(p), "utf-8" );
@@ -802,7 +843,7 @@ void card_add_at( card **list, card *c, int text_off, int version )
                     break;
                 }
             }
-            temp = card_next( temp, bs );
+            temp = card_next( temp, bs, 0 );
         }
         bitset_dispose( bs );
     }
@@ -1125,7 +1166,7 @@ static void card_test_trailing( int *passed, int *failed, plugin_log *log )
 }
 static void card_test_next( int *passed, int *failed, plugin_log *log )
 {
-    card *next = card_next(c1,bs5);
+    card *next = card_next(c1,bs5,0);
     if ( next != c4 )
     {
         fprintf(stderr,"card: card_next failed\n");

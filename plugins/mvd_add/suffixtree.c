@@ -425,6 +425,10 @@ UChar *suffixtree_text( suffixtree *st )
 {
     return st->str;
 }
+int suffixtree_text_len( suffixtree *st )
+{
+    return st->slen;
+}
 #ifdef MVD_TEST
 static char *folder;
 typedef struct entry_struct entry;

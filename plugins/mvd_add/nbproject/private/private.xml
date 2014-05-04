@@ -29,12 +29,15 @@
             <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/pos.h</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/mum.c</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/deck.c</file>
+            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/mum.h</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/deck.h</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/benchmark.c</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/test.c</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/benchmark.h</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/hashtable.c</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/path.c</file>
+            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/hashtable.h</file>
+            <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/include/utils.h</file>
         </group>
     </open-files>
 </project-private>

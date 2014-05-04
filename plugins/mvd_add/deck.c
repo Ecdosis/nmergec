@@ -36,11 +36,11 @@
 #include "orphanage.h"
 #include "location.h"
 #include "match.h"
+#include "mum.h"
 #include "alignment.h"
 #include "deck.h"
 #include "hashmap.h"
 #include "utils.h"
-#include "mum.h"
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
@@ -125,14 +125,18 @@ int deck_align( deck *d )
                     d->st_off, d->log );
                 if ( mt != NULL )
                 {
+                    int popped = 0;
                     match_set_versions( mt, bitset_clone(bs) );
                     while ( mt != NULL )
                     {
                         match *queued = NULL;
                         match *existing = NULL;
-                        if ( match_single(mt,d->text,d->version,d->log) )
+                        if ( match_single(mt,d->text,d->version,d->log,popped) )
                         {
                             queued = match_extend( mt, d->text, d->version, d->log );
+                            // debug
+                            match_verify( queued, d->text, d->tlen );
+                            // end debug
                             existing = aatree_add( d->pq, queued );
                             if ( existing != NULL )
                                 match_inc_freq( existing );
@@ -146,6 +150,8 @@ int deck_align( deck *d )
                             match_dispose( mt );
                             mt = NULL;
                         }
+                        else
+                            popped = 1;
                     }
                 }
                 else

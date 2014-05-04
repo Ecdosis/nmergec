@@ -23,6 +23,7 @@ struct location_struct
     int pos;
 };
 typedef struct location_struct location;
+
 #ifdef	__cplusplus
 }
 #endif

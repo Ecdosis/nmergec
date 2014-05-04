@@ -39,12 +39,13 @@
 #include "orphanage.h"
 #include "location.h"
 #include "match.h"
+#include "mum.h"
 #include "alignment.h"
 #include "hashmap.h"
 #include "deck.h"
 #include "utils.h"
 #include "benchmark.h"
-#include "mum.h"
+
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
@@ -52,7 +53,7 @@
 #define MAX_THREADS 8
 #define NUM_SEGMENTS 12
 UChar USTR_EMPTY[] = {0};
-
+static int debugging = 0;
 /**
  * A alignment is a "deal" of part of the new version to match against the deck
  */
@@ -80,6 +81,7 @@ struct alignment_struct
     mum *best;
     // set to 1 if other mums have been merged that might affect us
     UChar *tcopy;
+    card *list;
 };
 /**
  * Create an alignment between a bit of text and the MVD.
@@ -91,7 +93,7 @@ struct alignment_struct
  * @param log the log to record errors in
  */
 alignment *alignment_create( UChar *text, int start, int len, int tlen, 
-    int version, orphanage *o, plugin_log *log )
+    int version, orphanage *o, plugin_log *log, card *list )
 {
     alignment *a = calloc( 1, sizeof(alignment) );
     if ( a != NULL )
@@ -103,6 +105,7 @@ alignment *alignment_create( UChar *text, int start, int len, int tlen,
         a->version = version;
         a->log = log;
         a->o = o;
+        a->list = list;
         a->tcopy = calloc( len+1, sizeof(UChar) );
         if ( a->tcopy != NULL )
         {
@@ -175,6 +178,8 @@ alignment *alignment_push( alignment *head, alignment *next )
     printf("pushing %d to %d\n",mum_text_off(next->best),
         mum_text_off(next->best)+mum_len(next->best) );
 */
+    if ( next->next != NULL )
+        printf("error\n");
     while ( temp != NULL && temp->len > next->len )
     {
         prev = temp;
@@ -183,12 +188,17 @@ alignment *alignment_push( alignment *head, alignment *next )
     if ( prev != NULL )
     {
         prev->next = next;
+        
         next->next = temp;
+        if ( next == temp )
+            printf("error!\n");
     }
     else
     {
         next->next = head;
         head = next;
+        if ( next->next == next )
+            printf("error!\n");
     }
     /*
     // verify list
@@ -282,7 +292,7 @@ static int alignment_transpose_merge( alignment *a, dyn_array *discards )
             else // none of those
                 plugin_log_add(a->log,"alignment: failed to create parent\n");
             if ( temp != end )
-                temp = card_next( temp, mv );
+                temp = card_next( temp, mv, 0 );
         } while ( temp != end );
         best = mum_next( best );
     } while ( best != NULL );
@@ -305,15 +315,29 @@ static int alignment_direct_merge( alignment *a )
         int text_off = mum_text_off(best);
         // align the middle bit
         int v = a->version;
+        mum_verify( a->best, a->version );
         do
         {
             pair *p = card_pair(temp);
             bitset *bs = pair_versions(p);
             bitset_set( bs, v );
+/*
+            if ( debugging )
+            {
+                card_print(a->list );
+            }
+*/
             card_set_text_off( temp, text_off );
+/*
+            if ( debugging )
+            {
+                card_print(a->list );
+            }
+*/
+            //list_verify(a->list,a->version);
             text_off += pair_len(p);
             if ( temp != end_p )
-                temp = card_next( temp, mv );
+                temp = card_next( temp, mv, 0 );
             else
                 break;
         } while ( 1 );
@@ -335,12 +359,16 @@ static int alignment_create_lhs( alignment *a, alignment **left )
     {
         int llen = mum_text_off(a->best)-a->start;
         *left = alignment_create( a->text, a->start, llen, a->tlen, v, 
-            a->o, a->log );
+            a->o, a->log, a->list );
         if ( *left == NULL )
         {
             plugin_log_add(a->log,"alignment: failed to create lhs\n");
             res = 0;
         }
+/*
+        if ( (*left)->next != NULL )
+            printf("error");
+*/
     }
     else
         *left = NULL;
@@ -360,7 +388,7 @@ static int alignment_create_rhs( alignment *a, mum *last, alignment **right )
     {
         int rlen = alignment_end(a)-mum_text_end(last);
         *right = alignment_create( a->text,mum_text_end(last),rlen,a->tlen,
-            v,a->o,a->log);
+            v,a->o,a->log,a->list);
         if ( *right == NULL )
         {
             plugin_log_add(a->log,"alignment: failed to create lhs\n");
@@ -389,13 +417,13 @@ int alignment_align( alignment *a, card *list )
             match *m = deck_get_mum(d);
             if ( m != NULL )
             {
-              match *temp = m;
+                match *temp = m;
                 while ( temp != NULL )
                 {
                     printf("mum: %d to %d\n",match_text_off(temp),match_text_end(temp));
                     temp = match_next(temp);
                 }
-                a->best = mum_create( m, a->log );
+                a->best = mum_create( m, a->version, a->log );
             }
             else
                 res = 0;
@@ -404,6 +432,7 @@ int alignment_align( alignment *a, card *list )
     }
     return res;
 }
+
 /**
  * Merge the chosen MUM into the pairs array
  * @param a the alignment to merge into the MVD
@@ -416,7 +445,6 @@ int alignment_merge( alignment *a, alignment **left,
     alignment **right, dyn_array *discards )
 {
     int res = 1;
-    //printf("aligning: %d to %d\n",mum_text_off(a->best),mum_text_off(a->best)+mum_len(a->best));
     res = alignment_create_lhs( a, left );
     if ( res )
     {
@@ -430,6 +458,7 @@ int alignment_merge( alignment *a, alignment **left,
                 res = alignment_transpose_merge( a, discards );
             else
                 res = alignment_direct_merge( a );
+            list_verify(a->list,a->version);
             if ( res )
             {
                 while ( mum_next(last) != NULL )
@@ -499,6 +528,15 @@ suffixtree *alignment_suffixtree( alignment *a )
 int alignment_start( alignment *a )
 {
     return a->start;
+}
+/**
+ * Get the MUM if already computed
+ * @param a the alignment to search
+ * @return the mum of NULL
+ */
+mum *alignment_mum( alignment *a )
+{
+    return a->best;
 }
 /**
  * Convert the new version text of a alignment to a card

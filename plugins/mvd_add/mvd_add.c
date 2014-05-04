@@ -50,6 +50,7 @@
 #include "match.h"
 #include "aatree.h"
 #include "orphanage.h"
+#include "mum.h"
 #include "alignment.h"
 #include "deck.h"
 #include "verify.h"
@@ -58,7 +59,7 @@
 #include "memwatch.h"
 #endif
 #define ALIGNMENTS_LEN 100 
-
+#define PARENT "[p]"
 /**
  * Add the first version to an mvd
  * @param mvd the mvd to add it to
@@ -157,6 +158,48 @@ static int add_version( adder *add, MVD *mvd )
         res = mvd_add_version( mvd, new_v );
     return res;
 }
+static void print_unmerged_segments( dyn_array *deviants )
+{
+    int i;
+    printf("unmerged segments:\n");
+    for ( i=0;i<dyn_array_size(deviants);i++ )
+    {
+        card *e = dyn_array_get( deviants, i );
+        if ( pair_is_child(card_pair(e)) )
+            printf("child: %d-%d\n",card_text_off(e),card_text_off(e)+card_len(e) );
+        else if ( card_len(e)==0 )
+            printf("empty: %d-%d\n",card_text_off(e),card_text_off(e)+card_len(e));
+        else
+            printf("mismatch: %d-%d\n",card_text_off(e),card_text_off(e)+card_len(e));
+    }
+}
+static int print_merged_segments( card *c, bitset *nv )
+{
+    int res = 1;
+    card *e = c;
+    printf("merged segments:\n");
+    int last_off = 0;
+    while ( e != NULL )
+    {
+        char buf[16];
+        const char *parent;
+        bitset_tostring(pair_versions(card_pair(e)),buf,6);
+        int end = card_len(e)+card_text_off(e);
+        parent = (pair_is_parent(card_pair(e)))?"[p]":"";
+        printf("[%s] %d-%d %s\n",buf,card_text_off(e),end,parent);
+        if ( card_text_off(e) < last_off )
+        {
+            printf("alignment overlaps: %d followed by %d not allowed\n",
+                last_off,card_text_off(e));
+            c = NULL;
+            res = 0;
+            break;
+        }
+        last_off = end;
+        e = card_next(e, nv, 0);
+    }
+    return res;
+}
 /**
  * Sort the discards by their start offsets in the new version, 
  * then insert them in order into the list. Fill in any gaps with empty cards.
@@ -179,38 +222,9 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
     card *d = dyn_array_get( deviants, 0 );
     card *old_c = NULL;
     // debug
-    card *e = c;
-    printf("merged segments:\n");
-    int last_off = 0;
-    while ( e != NULL )
-    {
-        int end = card_len(e)+card_text_off(e);
-        printf("%d-%d\n",card_text_off(e),end);
-        if ( card_text_off(e) < last_off )
-        {
-            printf("alignment overlaps: %d followed by %d not allowed\n",
-                last_off,card_text_off(e));
-            c = NULL;
-            res = 0;
-            break;
-        }
-        last_off = end;
-        e = card_next(e, nv);
-    }
+    res = print_merged_segments( c, nv );
     if ( res )
-    {
-        printf("unmerged segments:\n");
-        for ( i=0;i<dyn_array_size(deviants);i++ )
-        {
-            e = dyn_array_get( deviants, i );
-            if ( pair_is_child(card_pair(e)) )
-                printf("child: %d-%d\n",card_text_off(e),card_text_off(e)+card_len(e) );
-            else if ( card_len(e)==0 )
-                printf("empty: %d-%d\n",card_text_off(e),card_text_off(e)+card_len(e));
-            else
-                printf("mismatch: %d-%d\n",card_text_off(e),card_text_off(e)+card_len(e));
-        }
-    }
+        print_unmerged_segments( deviants );
     // end debug
     while ( c != NULL )
     {
@@ -266,7 +280,7 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
         }
         pos = card_end( c );
         old_c = c;
-        c = card_next( c, nv );
+        c = card_next( c, nv, 0 );
     }
     return res;
 }
@@ -297,6 +311,56 @@ static void get_mvd_short_name( MVD *mvd, char *buf, int len, int vid )
     }
 }
 /**
+ * Debug routine
+ */
+int list_verify( card *list, int version )
+{
+    int res = 1;
+    bitset *bs = bitset_create();
+    card *c = list;
+    int pos = 0;
+    hashmap *hm = hashmap_create( 200, 1);
+    while (c!=NULL)
+    {
+        UChar buf[16];
+/*
+        if ( !card_exists(c) )
+            printf("Duff card!\n");
+*/
+        calc_ukey( buf, (long)c, 16 );
+        if ( hashmap_contains(hm,buf) )
+            printf("list error: loop in list\n");
+        else
+            hashmap_put( hm, buf, c );
+        if ( bitset_next_set_bit(pair_versions(card_pair(c)),version)==version )
+        {
+            if ( card_text_off(c) < pos )
+            {
+                printf("list error, card offset %d less than previous end %d\n",
+                    card_text_off(c),pos );
+            }
+            pos = pair_len(card_pair(c))+card_text_off(c);
+        }
+        if ( card_left(c)!= NULL )
+        {
+            calc_ukey( buf, (long)card_left(c), 16 );
+            if ( !hashmap_contains(hm,buf) )
+                printf("list error: left pointer not already seen\n");
+        }
+        card *old_c = c;
+        c = card_right( c );
+        if ( c != NULL )
+        {
+            card *d = card_left( c );
+            if ( d != old_c )
+                printf("list: back link broken\n");
+        }
+    }
+    bitset_dispose(bs);
+    hashmap_dispose( hm, NULL );
+    return res;
+}
+/**
  * Add a version to an MVD that already has at least one
  * @param mvd the mvd to add it to
  * @param add the mvd_add object containing options
@@ -316,14 +380,17 @@ static int add_subsequent_version( MVD *mvd, adder *add,
         if ( discards != NULL )
         {
             int new_vid = mvd_count_versions(mvd)+1;
+            bitset *nv = bitset_create();
+            bitset_set(nv,new_vid);
             dyn_array *pairs = mvd_get_pairs( mvd );
             card *list = link_pairs( pairs, log, o );
+            list_verify(list, new_vid);
             // now add its version to the mvd
             if ( list != NULL )
             {
                 // create initial alignment
                 alignment *a = alignment_create( text, 0, tlen, tlen,
-                    new_vid, o, log );
+                    new_vid, o, log, list );
                 if ( a != NULL )
                 {
                     // maintain list of current alignments
@@ -335,7 +402,12 @@ static int add_subsequent_version( MVD *mvd, adder *add,
                         alignment *left,*right;
                         res = alignment_align( head, list );
                         if ( res )
+                        {
+                            //mum_verify(alignment_mum(head),new_vid);
                             res = alignment_merge( head, &left, &right, discards );
+                            //mum_verify(alignment_mum(head),new_vid);
+                            list_verify(list, new_vid);
+                        }
                         alignment *old = head;
                         head = alignment_pop( head );
                         // if merged and aligned
@@ -344,8 +416,9 @@ static int add_subsequent_version( MVD *mvd, adder *add,
                             if ( left != NULL )
                                 head = alignment_push( head, left );
                             if ( right != NULL )
+                            {
                                 head = alignment_push( head, right );
-                            //card_print_list( list );
+                            }
                         }
                         else
                         {

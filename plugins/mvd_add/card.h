@@ -26,9 +26,9 @@ void card_set_left( card *lp, card *left );
 void card_set_right( card *lp, card *right );
 card *card_left( card *lp );
 card *card_right( card *lp );
-card *card_next( card *lp, bitset *bs );
+card *card_next( card *lp, bitset *bs, int avoid );
 card *card_first( card *list, bitset *bs );
-card *card_next_nonempty( card *c, bitset *bs );
+card *card_next_nonempty( card *c, bitset *bs, int v );
 bitset *card_overlap( card *c, bitset *bs );
 card *card_prev( card *lp, bitset *bs );
 void card_set_text_off( card *lp, int text_off );
@@ -52,6 +52,7 @@ char *card_tostring( card *c );
 int card_compare( void *c1, void *c2 );
 card *card_merged_right( card *c, int version );
 card *card_merged_left( card *c, int version );
+//int card_exists( card *c );
 
 extern UChar USTR_EMPTY[];
 

@@ -45,7 +45,9 @@ struct match_state_struct
 {
     location start;
     location end;
+    location prev;
     int text_off;
+    int maximal;
     int len;
     bitset *bs;
     pos *loc;
@@ -56,22 +58,26 @@ struct match_state_struct
  * Create a match state at a branch point in the variant graph
  * @param start the start location for the match to resume from
  * @param end the end location that has already been matched
+ * @param prev the last match position
  * @param st_off the offset in the suffix tree if set
  * @param bs the versions of this state (already created)
  * @param loc the position in the suffix tree to which we have matched
+ * @param maximal 1 if this is maximal
  * @return a match state object
  */
-match_state *match_state_create( location *start, location *end, 
-    int text_off, int len, bitset *bs, pos *loc, plugin_log *log )
+match_state *match_state_create( location *start, location *end, location *prev,
+    int text_off, int len, bitset *bs, pos *loc, int maximal, plugin_log *log )
 {
     match_state *ms = calloc( 1, sizeof(match_state) );
     if ( ms != NULL )
     {
         ms->start = *start;
         ms->end = *end;
+        ms->prev = *prev;
         ms->text_off = text_off;
         ms->len = len;
         ms->bs = bs;
+        ms->maximal = maximal;
         ms->loc = calloc( 1, sizeof(pos) );
         if ( ms->loc == NULL )
         {
@@ -96,8 +102,8 @@ match_state *match_state_create( location *start, location *end,
  */
 match_state *match_state_copy( match_state *ms, plugin_log *log )
 {
-    match_state *ms_copy = match_state_create( &ms->start, &ms->end, 
-        ms->text_off, ms->len, ms->bs, ms->loc, log );
+    match_state *ms_copy = match_state_create( &ms->start, &ms->end, &ms->prev,
+        ms->text_off, ms->len, ms->bs, ms->loc, ms->maximal, log );
     if ( ms_copy != NULL )
     {
         if ( ms->next != NULL )
@@ -148,6 +154,10 @@ location match_state_end( match_state *ms )
 {
     return ms->end;
 }
+location match_state_prev( match_state *ms )
+{
+    return ms->prev;
+}
 int match_state_text_off( match_state *ms )
 {
     return ms->text_off;
@@ -159,4 +169,8 @@ int match_state_len( match_state *ms )
 bitset *match_state_bs( match_state *ms )
 {
     return ms->bs;
+}
+int match_state_maximal( match_state *ms )
+{
+    return ms->maximal;
 }
