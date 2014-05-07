@@ -91,13 +91,6 @@ static int add_first_version( MVD *mvd, adder *add, UChar *text,
             if ( res == 0 )
                 plugin_log_add(log,
                 "mvd_add: failed to add version\n");
-            else
-            {
-                char buffer[128];
-                u_print( adder_vid(add), buffer, 128 );
-                plugin_log_add(log,
-                    "mvd_add: added version %s successfully!\n",buffer);
-            }
         }
     }
     return res;
@@ -201,43 +194,52 @@ static int print_merged_segments( card *c, bitset *nv, int size )
     return res;
 }
 /**
- * Is it possible to go from l to r via some concrete path NOT involving version?
- * @param l the left limit of the path
- * @param r the right limit o the path
- * @param version the version that must NOT be present in the path
+ * Can we go from l to r on some concrete path NOT involving the new version?
+ * @param l the left limit of the path, left of r
+ * @param r the right limit o the path, right of l
+ * @param version the new version 
  * @return 1 if it has such a path else 0
  */
 static int path_exists( card *l, card *r, int version )
 {
-    int res = 0;
-    bitset *lbs = bitset_clone(pair_versions(card_pair(l)));
-    if ( lbs != NULL )
+    if ( l == r || card_right(l) == r )
+        return 0;
+    else if ( card_node_to_right(l) && card_node_to_left(r) )
     {
-        bitset *rbs = bitset_clone(pair_versions(card_pair(r)));
-        if ( rbs != NULL )
-        {
-            bitset_clear_bit( lbs, version );
-            bitset_clear_bit( rbs, version );
-            if ( bitset_intersects(lbs,rbs) )
-            {
-                 l = card_right(l);
-                 while ( l != r )
-                 {
-                    pair *p = card_pair( l );
-                    bitset *bs = pair_versions( p );
-                    if ( pair_len(p) > 0 && bitset_intersects(bs,lbs) )
-                    {
-                        res = 1;
-                        break;
-                    }
-                    l = card_right(l);
-                }
-            }
-            bitset_dispose( rbs );
-        }
-        bitset_dispose( lbs );
+        printf("inserting empty arc for deletion in version %d:\n", version);
+        card_print_until( l, r );
+        return 1;
     }
-    return res;
+    else
+    {
+        bitset *lv = pair_versions(card_pair(l));
+        bitset *rest = bitset_clone( lv );
+        if ( rest != NULL )
+        {
+            bitset *rv = pair_versions(card_pair(r));
+            bitset_and( rest, rv );
+            bitset_clear_bit( rest, version );
+            if ( !bitset_empty(rest) )
+            {
+                card *c = card_right(l);
+                while ( c != r )
+                {
+                   pair *p = card_pair( c );
+                   bitset *bs = pair_versions( p );
+                   if ( pair_len(p) > 0 && bitset_intersects(bs,rest) )
+                   {
+                       printf("inserting empty arc for deletion in version %d:\n",
+                           version);
+                       card_print_until( l, r );
+                       return 1;
+                   }
+                   c = card_right(c);
+                }
+           }
+           bitset_dispose( rest );
+        }
+        return 0;
+    }
 }
 /**
  * Sort the discards by their start offsets in the new version, 
@@ -261,17 +263,17 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
     card *d = dyn_array_get( deviants, 0 );
     card *old_c = NULL;
     // debug
+/*
     res = print_merged_segments( c, nv, version );
     if ( res )
         print_unmerged_segments( deviants );
+*/
     // end debug
     while ( c != NULL )
     {
         //printf("pos: %d c: %d-%d",pos,card_text_off(c),card_len(c)
         //    +card_text_off(c));
         // test for variants, transpositions and empty arcs
-        if ( pos == 240 && version== 2 )
-            printf("pos==240\n");
         if ( d != NULL && card_text_off(d)==pos )
         {
             if ( old_c == NULL )
@@ -316,8 +318,15 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
             card *blank = card_create_blank( version, log );
             if ( blank != NULL )
             {
+                bitset *bs = card_compute_blank( old_c, blank );
                 card_set_text_off( blank, pos );
                 card_add_after( old_c, blank );
+                if ( bs != NULL && !bitset_empty(bs) )
+                {
+                    card *b = card_create_blank_bs( bs, log );
+                    if ( b != NULL )
+                        card_add_after( blank, b );
+                }
             }
         }
         pos = card_end( c );
@@ -471,7 +480,7 @@ static int add_subsequent_version( MVD *mvd, adder *add,
                     }
                     char buf[16];
                     get_mvd_short_name(mvd,buf,16,new_vid);
-                    printf("mvd_add: aligned version %s\n",buf);
+                    //printf("mvd_add: aligned version %s\n",buf);
                     // add children to discards
                     int i,success,num;
                     card **children = orphanage_all_children(o,&num,&success);
@@ -488,13 +497,15 @@ static int add_subsequent_version( MVD *mvd, adder *add,
                     res = add_deviant_pairs( list, discards, new_vid, log );
                     if ( res )
                     {
-                        card_print_list( list );
                         pairs = card_to_pairs( list );
                         mvd_set_pairs( mvd, pairs );
                         verify *v = verify_create( pairs, 
                             mvd_count_versions(mvd) );
-                        if ( !verify_check(v) )
+                        card_print_list( list );
+                        if ( !verify_check(v,0) )
+                        {
                             fprintf(stderr,"error: unbalanced graph\n"); 
+                        }
                         verify_dispose( v );
                     }
                     if ( children != NULL )

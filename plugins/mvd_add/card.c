@@ -117,7 +117,7 @@ card *card_create_blank_bs( bitset *bs, plugin_log *log )
     pair *p = pair_create_basic( bs, ustring_empty, 0 );
     if ( p != NULL )
         c = card_create( p, log );
-    else
+    else if ( log != NULL )
         plugin_log_add(log,"card: failed to create pair");
     return c;
 }
@@ -869,6 +869,60 @@ void card_add_before( card *c, card *c_new )
     }
 }
 /**
+ * Compute the number of incoming arcs to a node
+ * @param rhs the card on the rhs of the node
+ * @return the number of cards oined as incoming to the node
+ */
+static int card_in_degree( card *rhs )
+{
+    int ind = 0;
+    card *lhs = rhs->left;
+    if ( lhs != NULL )
+    {
+        pair *pr = card_pair( rhs );
+        bitset *bs = bitset_clone( pair_versions(pr) );
+        if ( bs != NULL )
+        {
+            pair *pl = card_pair( lhs );
+            if ( bitset_intersects(pair_versions(pr),pair_versions(pl)) )
+            {
+                ind = 1;
+                bitset_and_not( bs, pair_versions(pl) );
+                card *temp = lhs;
+                while ( temp != NULL && !bitset_empty(bs) )
+                {
+                    temp = temp->left;
+                    if ( temp != NULL )
+                    {
+                        pair *pt = card_pair(temp);
+                        if ( bitset_intersects(bs,pair_versions(pt)) )
+                        {
+                            bitset_and_not( bs,pair_versions(pt) );
+                            ind++;
+                        }
+                    }
+                }
+            }
+            bitset_dispose( bs );
+        }
+    }
+    return ind;
+}
+bitset *card_compute_blank( card *c, card *after )
+{
+    bitset *blank = NULL;
+    pair *p = card_pair( c );
+    bitset *bs = pair_versions( p );
+    card *rhs = card_next( c, bs, 0 );
+    if ( rhs != NULL && card_in_degree(rhs)>1 )
+    {
+        blank = bitset_clone( bs );
+        if ( blank != NULL )
+            bitset_and_not( blank, pair_versions(card_pair(after)) );
+    }
+    return blank;
+}
+/**
  * Add a card after a given point, creating a new node.
  * @param c the point to add it after
  * @param after the card to become the one after lp
@@ -1005,6 +1059,23 @@ void card_remove( card *c, int dispose )
 /**
  * Debug
  */
+void card_print_until( card *from, card *to )
+{
+    card *c = from;
+    while ( c != NULL )
+    {
+        if ( c == from )
+            printf("[from]");
+        else if ( c == to )
+            printf("[to]");
+        printf("text_off: %d len: %d",c->text_off,card_len(c));
+        pair *p = card_pair(c);
+        pair_print( p );
+        if ( c == to )
+            break;
+        c = c->right;
+    }
+}
 void card_print( card *c )
 {
     while ( c != NULL )

@@ -289,8 +289,6 @@ int mum_transposed( mum *m, int new_version, int tlen, int *dist )
 {
     int text_left = 0;
     int text_right = tlen;
-    if ( m->text_off==500 )
-        printf("OK\n");
     // 1. find left direct align
     card *left = card_merged_left(m->start.current,new_version);
     if ( left != NULL )

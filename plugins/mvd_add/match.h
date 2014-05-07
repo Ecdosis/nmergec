@@ -32,7 +32,6 @@ int match_update( match *m, card *cards );
 int match_set( match *m, card *cards );
 match *match_extend( match *mt, UChar *text, int v, plugin_log *log );
 int match_follows( match *first, match *second );
-int match_prev_pos( match *m );
 int match_text_off( match *m );
 int match_inc_end_pos( match *m );
 suffixtree *match_suffixtree( match *m );

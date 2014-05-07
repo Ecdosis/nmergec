@@ -418,11 +418,13 @@ int alignment_align( alignment *a, card *list )
             if ( m != NULL )
             {
                 match *temp = m;
+/*
                 while ( temp != NULL )
                 {
                     printf("mum: %d to %d\n",match_text_off(temp),match_text_end(temp));
                     temp = match_next(temp);
                 }
+*/
                 a->best = mum_create( m, a->version, a->log );
             }
             else

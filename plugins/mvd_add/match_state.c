@@ -50,6 +50,7 @@ struct match_state_struct
     int maximal;
     int len;
     bitset *bs;
+    bitset *prev_bs;
     pos *loc;
     match_state *next;
 };
@@ -61,12 +62,14 @@ struct match_state_struct
  * @param prev the last match position
  * @param st_off the offset in the suffix tree if set
  * @param bs the versions of this state (already created)
+ * @param prev_bs the previous versions of the match
  * @param loc the position in the suffix tree to which we have matched
  * @param maximal 1 if this is maximal
  * @return a match state object
  */
 match_state *match_state_create( location *start, location *end, location *prev,
-    int text_off, int len, bitset *bs, pos *loc, int maximal, plugin_log *log )
+    int text_off, int len, bitset *bs, bitset *prev_bs, pos *loc, int maximal, 
+    plugin_log *log )
 {
     match_state *ms = calloc( 1, sizeof(match_state) );
     if ( ms != NULL )
@@ -76,7 +79,10 @@ match_state *match_state_create( location *start, location *end, location *prev,
         ms->prev = *prev;
         ms->text_off = text_off;
         ms->len = len;
-        ms->bs = bs;
+        if ( bs != NULL )
+            ms->bs = bitset_clone( bs );
+        if ( prev_bs != NULL )
+            ms->prev_bs = bitset_clone( prev_bs );
         ms->maximal = maximal;
         ms->loc = calloc( 1, sizeof(pos) );
         if ( ms->loc == NULL )
@@ -103,7 +109,7 @@ match_state *match_state_create( location *start, location *end, location *prev,
 match_state *match_state_copy( match_state *ms, plugin_log *log )
 {
     match_state *ms_copy = match_state_create( &ms->start, &ms->end, &ms->prev,
-        ms->text_off, ms->len, ms->bs, ms->loc, ms->maximal, log );
+        ms->text_off, ms->len, ms->bs, ms->prev_bs, ms->loc, ms->maximal, log );
     if ( ms_copy != NULL )
     {
         if ( ms->next != NULL )
@@ -117,6 +123,10 @@ match_state *match_state_copy( match_state *ms, plugin_log *log )
  */
 void match_state_dispose( match_state *ms )
 {
+    if ( ms->bs != NULL )
+        bitset_dispose( ms->bs );
+    if ( ms->prev_bs != NULL )
+        bitset_dispose( ms->prev_bs );
     if ( ms->loc != NULL )
         free( ms->loc );
     free( ms );
@@ -157,6 +167,10 @@ location match_state_end( match_state *ms )
 location match_state_prev( match_state *ms )
 {
     return ms->prev;
+}
+bitset *match_state_prev_bs( match_state *ms )
+{
+    return ms->prev_bs;
 }
 int match_state_text_off( match_state *ms )
 {

@@ -57,6 +57,8 @@ struct match_struct
     match *next;
     // last matched position in graph
     location prev;
+    // last match bitset
+    bitset *prev_bs;
     // offset of our new version segment in the overall text
     int st_off;
     // number of times this match has been found
@@ -116,6 +118,10 @@ match *match_copy( match *mt, plugin_log *log )
         mt2->start = mt->start;
         mt2->end = mt->end;
         mt2->prev = mt->prev;
+        if ( mt->prev_bs != NULL )
+            mt2->prev_bs = bitset_clone( mt->prev_bs );
+        if ( mt->bs != NULL )
+            mt2->bs = bitset_clone( mt->bs );
         mt2->st_off = mt->st_off;
         mt2->text_off = 0;
         mt2->len = mt->len;
@@ -123,7 +129,6 @@ match *match_copy( match *mt, plugin_log *log )
         mt2->freq = mt->freq;
         mt2->cards = mt->cards;
         mt2->st = mt->st;
-        mt2->bs = bitset_clone(mt->bs);
         if ( mt->next != NULL )
             mt2->next = match_copy( mt->next, log );
         if ( mt->queue != NULL )
@@ -133,6 +138,32 @@ match *match_copy( match *mt, plugin_log *log )
     else
         plugin_log_add( log, "match: failed to duplicate match object\n");
     return mt2;
+}
+static void match_pop_versions( match *m )
+{
+    if ( m->prev_bs == NULL )
+    {
+        if ( m->bs != NULL )
+        {
+            bitset_dispose( m->bs );
+            m->bs = NULL;
+        }
+    }
+    else
+    {
+        bitset_clear( m->bs );
+        bitset_or( m->bs, m->prev_bs );
+    }
+}
+static void match_push_versions( match *m )
+{
+    if ( m->prev_bs != NULL )
+    {
+        bitset_clear( m->prev_bs );
+        bitset_or( m->prev_bs, m->bs );
+    }
+    else
+        m->prev_bs = bitset_clone( m->bs );
 }
 /**
  * Clone a match object, preparing it to continue from where it left off
@@ -156,6 +187,7 @@ match *match_clone( match *mt, plugin_log *log )
             // reset because we are starting again
             mt2->freq = 0;
             mt->end = mt->prev; 
+            match_pop_versions( mt );
             // the queue belongs to mt, not to us
             if ( mt2->queue != NULL )
             {
@@ -175,6 +207,8 @@ void match_dispose( match *m )
 {
     if ( m->bs != NULL )
         bitset_dispose( m->bs );
+    if ( m->prev_bs != NULL )
+        bitset_dispose( m->prev_bs );
     if ( m->next != NULL )
         match_dispose( m->next );
     if ( m->queue != NULL )
@@ -247,7 +281,20 @@ int match_pop( match *m )
         match_state_loc( ms, &n->loc );
         n->text_off = match_state_text_off( ms );
         n->len = match_state_len( ms );
-        n->bs = match_state_bs( ms );
+        if ( n->bs != NULL )
+        {
+            bitset_dispose( n->bs );
+            n->bs = NULL;
+        }
+        if ( match_state_bs(ms) != NULL )
+            n->bs = bitset_clone( match_state_bs(ms) );
+        if ( n->prev_bs != NULL )
+        {
+            bitset_dispose( n->prev_bs );
+            n->prev_bs = NULL;
+        }
+        if ( match_state_prev_bs(ms) != NULL )
+            n->prev_bs = bitset_clone( match_state_prev_bs(ms) );
         n->freq = 0;
         match_state_dispose( ms );
         return 1;
@@ -374,7 +421,7 @@ int match_restart( match *m, int v, plugin_log *log )
                 loc.v = suffixtree_root(m->st);
                 match_state *ms = match_state_create(
                     &pos, &pos, &pos, m->text_off, 
-                    m->len, overlap, &loc, 0, log );
+                    m->len, overlap, NULL, &loc, 0, log );
                 if ( m->queue == NULL )
                     m->queue = ms;
                 else
@@ -394,6 +441,8 @@ int match_restart( match *m, int v, plugin_log *log )
         bitset_and( m->bs, pair_versions(card_pair(m->start.current)) );
     m->end = m->start;
     m->prev = m->end;
+    // push versions
+    match_push_versions( m );
     m->len = 0;
     m->maximal = 0;
     return 1;
@@ -413,6 +462,7 @@ int match_advance( match *m, pos *loc, int v, plugin_log *log )
     {
         card *c = m->end.current;
         m->prev = m->end;
+        match_push_versions( m );
         if ( pair_len(card_pair(c))-1==m->end.pos )
         {
             card *old_c = c;
@@ -437,16 +487,17 @@ int match_advance( match *m, pos *loc, int v, plugin_log *log )
                         {
                             new_end.pos = 0;
                             match_state *ms = match_state_create(
-                                &m->start, &new_end, &m->prev, m->text_off,
-                                m->len, overlap, loc, m->maximal, log );
+                                &m->start, &new_end, &m->prev, m->text_off, 
+                                m->len, overlap, m->prev_bs, loc, 
+                                m->maximal, log );
                             if ( m->queue == NULL )
                                 m->queue = ms;
                             else
                                 match_state_push( m->queue, ms );
                         }
-                        // restrict the current match to ANDed versions
-                        bitset_and( m->bs, pair_versions(card_pair(c)) );
                     }
+                    // restrict the current match to ANDed versions
+                    bitset_and( m->bs, pair_versions(card_pair(c)) );
                     m->end.pos = 0;
                     m->end.current = c;
                     res = 1;
@@ -484,6 +535,7 @@ match *match_extend( match *mt, UChar *text, int v, plugin_log *log )
     match *first = mt;
     do
     {
+        match_verify_end( first );
         match *mt2 = (match_extendible(mt))?match_clone(mt,log):NULL;
         if ( mt2 != NULL )
         {
@@ -558,16 +610,14 @@ int match_single( match *m, UChar *text, int v, plugin_log *log, int popped )
         loc->loc = node_start(loc->v)-1;
         m->maximal = 0;
     }
-/*
-    else
-        printf("Popped!\n");
-*/
     do 
     {
         UChar *data = pair_data(card_pair(m->end.current));
         c = data[m->end.pos];
         if ( suffixtree_advance_pos(m->st,loc,c) )
         {
+            if ( m->bs == NULL )
+                m->bs = bitset_clone( pair_versions(card_pair(m->end.current)) );
             if ( !m->maximal && node_is_leaf(loc->v) )
             {
                 // m->st_off
@@ -595,10 +645,6 @@ location match_start( match *m )
 location match_end( match *m )
 {
     return m->end;
-}
-int match_prev_pos( match *m )
-{
-    return m->prev.pos;
 }
 int match_inc_end_pos( match *m )
 {

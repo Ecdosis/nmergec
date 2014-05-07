@@ -105,9 +105,10 @@ static void subtract_dangling( verify *v, vgnode *u, bitset *bs )
 /**
  * Verify that the MVD represented here is OK. Print the error if any.
  * @param v the verifier to check
+ * @param node_stats 1 if node statistics are desired
  * @return 1 if it checks out else 0
  */
-int verify_check( verify *v )
+int verify_check( verify *v, int node_stats )
 {
     int i,j;
     int res = 1;
@@ -193,7 +194,9 @@ int verify_check( verify *v )
         pair *p = dyn_array_get(v->dangling,j);
         vgnode_add_incoming( end, p );
     }
-    printf("nforced=%d noverhangs=%d ndefaults=%d\n",nforced,noverhangs,ndefaults);
+    if ( node_stats )
+        printf("nforced=%d noverhangs=%d ndefaults=%d\n",nforced,
+            noverhangs,ndefaults);
     // verify that all nodes are balanced
     int nsize = dyn_array_size(v->nodes);
     for ( i=0;i<nsize;i++ )

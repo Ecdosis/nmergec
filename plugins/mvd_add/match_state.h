@@ -14,7 +14,8 @@ extern "C" {
 
 typedef struct match_state_struct match_state;
 match_state *match_state_create( location *start, location *end, location *prev,
-    int text_off, int len, bitset *bs, pos *loc, int maximal, plugin_log *log );
+    int text_off, int len, bitset *bs, bitset *prev_bs, pos *loc, int maximal, 
+    plugin_log *log );
 match_state *match_state_copy( match_state *ms, plugin_log *log );
 void match_state_dispose( match_state *ms );
 void match_state_push( match_state *head, match_state *ms );
@@ -27,6 +28,7 @@ int match_state_text_off( match_state *ms );
 int match_state_len( match_state *ms );
 bitset *match_state_bs( match_state *ms );
 int match_state_maximal( match_state *ms );
+bitset *match_state_prev_bs( match_state *ms );
 
 
 #ifdef	__cplusplus

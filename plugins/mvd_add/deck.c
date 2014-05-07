@@ -126,7 +126,6 @@ int deck_align( deck *d )
                 if ( mt != NULL )
                 {
                     int popped = 0;
-                    match_set_versions( mt, bitset_clone(bs) );
                     while ( mt != NULL )
                     {
                         match *queued = NULL;
