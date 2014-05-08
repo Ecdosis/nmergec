@@ -412,6 +412,23 @@ static int aatree_verify( aatree *t, aanode *n )
         res = aatree_verify( t, n->right );
     return res;
 }
+int aatree_verify_tree( aatree *t )
+{
+    return aatree_verify( t, t->root );
+}
+static void aatree_print( aatree *t, aanode *n, print_node_func pn, void *data )
+{
+    if ( n != t->null_node )
+        (pn)(n->element, data);
+    if ( n->left != t->null_node )
+        aatree_print( t, n->left, pn, data );
+    if ( n->right != t->null_node )
+        aatree_print( t, n->right, pn, data );
+}
+void aatree_print_tree( aatree *t, print_node_func pn, void *data )
+{
+    aatree_print( t, t->root, pn, data );
+}
 /**
  * Compare function for testing
  * @param a pointer to an int

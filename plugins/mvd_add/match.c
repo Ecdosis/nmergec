@@ -364,31 +364,29 @@ int match_follows( match *first, match *second )
  */
 int is_maximal( match *m, UChar *text )
 {
+    UChar *data = pair_data( card_pair(m->start.current) );
     if ( m->text_off == m->st_off )
         return 1;
+    else if ( m->start.pos > 0 )
+    {
+        return text[m->text_off] == data[m->start.pos] &&
+            text[m->text_off-1] != data[m->start.pos-1];
+    }
     else if ( card_prev(m->start.current,m->bs)==NULL )
     {
         return 1;
     }
-    else if ( m->start.pos > 0 )
+    else if ( text[m->text_off] == data[m->start.pos] )
     {
-        UChar *data = pair_data( card_pair(m->start.current) );
-        return text[m->text_off-1] != data[m->start.pos-1];
-    }
-    else
-    {
-        card *lp = card_prev(m->start.current,m->bs);
-        while ( lp != NULL )
+        card *lp = card_prev_nonempty(m->start.current,m->bs);
+        if ( lp != NULL )
         {
             pair *p = card_pair(lp);
-            if ( pair_len(p) > 0 )
-            {
-                UChar *data = pair_data(p);
-                return text[m->text_off-1] != data[pair_len(p)-1];
-            }
-            lp = card_prev(lp,m->bs);
+            UChar *data = pair_data(p);
+            return text[m->text_off-1] != data[pair_len(p)-1];
         }
-        return 0;
+        else
+            return 0;
     }
 }
 /**
@@ -813,8 +811,10 @@ static char *print_utf8( UChar *ustr, int src_len )
  * @param m the match in question
  * @param text the text of the new version to simplify printing
  */
-void match_print( match *m, UChar *text )
+void match_print( void *arg1, void *arg2 )
 {
+    UChar *text = (UChar*)arg2;
+    match *m = (match *)arg1;
     match *temp = m;
     while ( temp != NULL )
     {

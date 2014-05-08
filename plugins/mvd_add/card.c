@@ -447,7 +447,7 @@ card *card_next_nonempty( card *c, bitset *bs, int avoid )
     while (c != NULL && pair_len(card_pair(c))==0 );
     return c;
 }
-static card *card_prev_nonempty( card *c, bitset *bs )
+card *card_prev_nonempty( card *c, bitset *bs )
 {
     do
     {
@@ -908,7 +908,13 @@ static int card_in_degree( card *rhs )
     }
     return ind;
 }
-bitset *card_compute_blank( card *c, card *after )
+/**
+ * Compute the extra blank sometimes needed after deletion blanks
+ * @param c the card after which the deletion blank will be inserted
+ * @param after the deletion blank not yet inserted
+ * @return the set of versions or NULL needed for the extra blank
+ */
+bitset *card_compute_extra_blank( card *c, card *after )
 {
     bitset *blank = NULL;
     pair *p = card_pair( c );

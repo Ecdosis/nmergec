@@ -47,7 +47,7 @@ int is_maximal( match *m, UChar *text );
 void match_inc_freq( match *m );
 int match_freq( match *m );
 match *match_next( match *m );
-void match_print( match *m, UChar *text );
+void match_print( void *arg1, void *arg2 );
 int match_text_end( match *m );
 int match_within_threshold( int distance, int length );
 void match_verify_end( match *m );

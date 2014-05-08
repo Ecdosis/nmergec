@@ -151,6 +151,10 @@ static int add_version( adder *add, MVD *mvd )
         res = mvd_add_version( mvd, new_v );
     return res;
 }
+/**
+ * Print the unmerged segments held in the deviants array
+ * @param deviants a simple array of segments in-between aligned ones
+ */
 static void print_unmerged_segments( dyn_array *deviants )
 {
     int i;
@@ -166,6 +170,12 @@ static void print_unmerged_segments( dyn_array *deviants )
             printf("mismatch: %d-%d\n",card_text_off(e),card_text_off(e)+card_len(e));
     }
 }
+/**
+ * Print the merged segments only
+ * @param c the first card in the list
+ * @param nv a bitset containing only the new version
+ * @param size the size of version-sets
+ */
 static int print_merged_segments( card *c, bitset *nv, int size )
 {
     int res = 1;
@@ -206,8 +216,10 @@ static int path_exists( card *l, card *r, int version )
         return 0;
     else if ( card_node_to_right(l) && card_node_to_left(r) )
     {
+/*
         printf("inserting empty arc for deletion in version %d:\n", version);
         card_print_until( l, r );
+*/
         return 1;
     }
     else
@@ -228,9 +240,11 @@ static int path_exists( card *l, card *r, int version )
                    bitset *bs = pair_versions( p );
                    if ( pair_len(p) > 0 && bitset_intersects(bs,rest) )
                    {
+/*
                        printf("inserting empty arc for deletion in version %d:\n",
                            version);
                        card_print_until( l, r );
+*/
                        return 1;
                    }
                    c = card_right(c);
@@ -263,11 +277,9 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
     card *d = dyn_array_get( deviants, 0 );
     card *old_c = NULL;
     // debug
-/*
     res = print_merged_segments( c, nv, version );
     if ( res )
         print_unmerged_segments( deviants );
-*/
     // end debug
     while ( c != NULL )
     {
@@ -311,21 +323,22 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
                 d = dyn_array_get(deviants,++j);
             }
         }
-        // test for deletion in new version
+        // test for deletion in the new version
         else if ( old_c != NULL && card_text_off(c) == pos 
             && path_exists(old_c,c,version) )
         {
             card *blank = card_create_blank( version, log );
             if ( blank != NULL )
             {
-                bitset *bs = card_compute_blank( old_c, blank );
+                bitset *extra = card_compute_extra_blank( old_c, blank );
                 card_set_text_off( blank, pos );
                 card_add_after( old_c, blank );
-                if ( bs != NULL && !bitset_empty(bs) )
+                // add extra blank to fix split caused by first blank
+                if ( extra != NULL && !bitset_empty(extra) )
                 {
-                    card *b = card_create_blank_bs( bs, log );
-                    if ( b != NULL )
-                        card_add_after( blank, b );
+                    card *ex = card_create_blank_bs( extra, log );
+                    if ( ex != NULL )
+                        card_add_after( blank, ex );
                 }
             }
         }
@@ -347,6 +360,13 @@ static void alignment_add_to_rejects( alignment *a, dyn_array *discards,
     card *reject = alignment_to_card(a,log);
     dyn_array_add( discards, reject );
 }
+/**
+ * Get a version's short name in 8-bit chars
+ * @param mvd the mvd
+ * @param buf a buffer to hold the name
+ * @param length of buf
+ * @param vid the version id
+ */
 static void get_mvd_short_name( MVD *mvd, char *buf, int len, int vid )
 {
     int nversions = mvd_count_versions(mvd);
@@ -501,12 +521,12 @@ static int add_subsequent_version( MVD *mvd, adder *add,
                         mvd_set_pairs( mvd, pairs );
                         verify *v = verify_create( pairs, 
                             mvd_count_versions(mvd) );
-                        card_print_list( list );
                         if ( !verify_check(v,0) )
                         {
                             fprintf(stderr,"error: unbalanced graph\n"); 
                         }
                         verify_dispose( v );
+                        card_print_list( list );
                     }
                     if ( children != NULL )
                         free( children );
@@ -779,7 +799,7 @@ static int read_dir( char *folder )
 // arguments: folder of text files
 int test_mvd_add( int *passed, int *failed )
 {
-    int res = read_dir( "social charity" );
+    int res = read_dir( "english" );
     //int res = read_dir( "tests" );
     if ( res )
     {

@@ -16,7 +16,7 @@ typedef struct card_struct card;
 card *card_create( pair *p, plugin_log *log );
 card *card_create_blank( int version, plugin_log *log );
 card *card_create_blank_bs( bitset *bs, plugin_log *log );
-bitset *card_compute_blank( card *c, card *after );
+bitset *card_compute_extra_blank( card *c, card *after );
 void card_add_hint( card *lp, int version, plugin_log *log );
 card *card_make_parent( card **p, plugin_log *log );
 card *card_make_child( card *parent, int version, plugin_log *log );
@@ -54,6 +54,7 @@ char *card_tostring( card *c );
 int card_compare( void *c1, void *c2 );
 card *card_merged_right( card *c, int version );
 card *card_merged_left( card *c, int version );
+card *card_prev_nonempty( card *c, bitset *bs );
 //int card_exists( card *c );
 
 extern UChar USTR_EMPTY[];
