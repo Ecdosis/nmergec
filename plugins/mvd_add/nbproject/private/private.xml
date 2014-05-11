@@ -21,6 +21,7 @@
             <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/node.c</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/aatree.c</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/adder.h</file>
+            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/shared/include/option_keys.h</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/aatree.h</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/card.h</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/match.h</file>
@@ -36,8 +37,8 @@
             <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/benchmark.h</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/hashtable.c</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/path.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/shared/src/plugin_log.c</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/hashtable.h</file>
+            <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/include/utils.h</file>
         </group>
     </open-files>
 </project-private>

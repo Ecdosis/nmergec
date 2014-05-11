@@ -9,8 +9,8 @@
         <group>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/benchmark.c</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/encoding.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/dyn_array.c</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/mvd.c</file>
+            <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/dyn_array.c</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/hashmap.c</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/pair.c</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/include/pair.h</file>
@@ -27,7 +27,6 @@
             <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/link_node.c</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/include/encoding.h</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/bitset.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/include/utils.h</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/include/dyn_array.h</file>
         </group>
     </open-files>

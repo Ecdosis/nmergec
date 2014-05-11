@@ -315,7 +315,7 @@ static int alignment_direct_merge( alignment *a )
         int text_off = mum_text_off(best);
         // align the middle bit
         int v = a->version;
-        mum_verify( a->best, a->version );
+        //mum_verify( a->best, a->version );
         do
         {
             pair *p = card_pair(temp);
@@ -523,7 +523,7 @@ suffixtree *alignment_suffixtree( alignment *a )
     return a->st;
 }
 /**
- * Get the starting position int he new version
+ * Get the starting position in the new version
  * @param a the alignment in question
  * @return the st_off for this alignment
  */

@@ -43,6 +43,7 @@ int card_node_to_left( card *lp );
 bitset *card_node_overhang( card *lp );
 int card_add_at_node( card *lp, card *after, int verify );
 void card_add_after( card *lp, card *after );
+void card_append( card *c, card *after );
 int card_list_circular( card *lp );
 void card_remove( card *lp, int dispose );
 void card_test( int *passed, int *failed );

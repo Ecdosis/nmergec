@@ -233,6 +233,18 @@ void card_set_right( card *c, card *right )
     c->right = right;
 }
 /**
+ * Append a card to the very end of the list
+ * @param a nominal card to start from (near the end)
+ * @param after the card to put at the very end
+ */
+void card_append( card *c, card *after )
+{
+    while( c->right != NULL )
+        c = c->right;
+    c->right = after;
+    after->left = c;
+}
+/**
  * Get the left pointer
  * @param c the card in question
  * @return the next pair on the left
@@ -822,9 +834,17 @@ static int card_merge_left( card *c_new, card *c )
     }
     return merged;
 }
+/**
+ * Find a blank before the next node that we can add our versions to
+ * @paramc_new the new blank card
+ * @param c the card to start searching from
+ * @return 1 we merged c_new into a blank card already there else 0
+ */
 static int card_merge_right( card *c_new, card *c )
 {
     int merged = 0;
+    pair *cnp = card_pair( c_new );
+    bitset *cnv = pair_versions( cnp );
     if ( card_is_blank(c_new) )
     {
         bitset *cv= pair_versions(c_new->p);
@@ -833,7 +853,8 @@ static int card_merge_right( card *c_new, card *c )
         while ( temp != NULL && temp != r )
         {
             bitset *tv = pair_versions(temp->p);
-            if ( card_is_blank(temp) && card_next(temp,tv,0)==r )
+            if ( card_is_blank(temp) && !bitset_intersects(tv,cnv) 
+                && card_next(temp,tv,0)==r )
             {
                 bitset_or(tv,cv);
                 merged = 1;

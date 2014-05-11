@@ -27,6 +27,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <sys/resource.h>
 #include "bitset.h"
 #include "link_node.h"
 #include "unicode/uchar.h"
@@ -55,6 +56,7 @@
 #include "deck.h"
 #include "verify.h"
 #include "adder.h"
+#include "benchmark.h"
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
@@ -273,13 +275,16 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
     bitset_set(nv,version);
     int pos = 0;
     dyn_array_sort( deviants, card_compare );
+    card *sentinel = NULL;
     card *c = card_first(list,nv);
     card *d = dyn_array_get( deviants, 0 );
     card *old_c = NULL;
     // debug
+/*
     res = print_merged_segments( c, nv, version );
     if ( res )
         print_unmerged_segments( deviants );
+*/
     // end debug
     while ( c != NULL )
     {
@@ -345,6 +350,38 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
         pos = card_end( c );
         old_c = c;
         c = card_next( c, nv, 0 );
+        // handle end of list case
+        if ( c == NULL )
+        {
+            if ( old_c != NULL )
+            {
+                if ( old_c != sentinel )
+                {
+                    bitset *bs = bitset_create();
+                    if ( bs != NULL )
+                    {
+                        for  ( i=1;i<=version;i++ )
+                            bitset_set( bs, i );
+                        sentinel = c = card_create_blank_bs( bs, log );
+                        card_set_text_off( c, card_end(old_c) );
+                        if ( sentinel != NULL )
+                            card_append( old_c, sentinel );
+                        bitset_dispose( bs );
+                        c = sentinel;
+                    }
+                }
+                else 
+                {
+                    card *left = card_left( sentinel );
+                    pair *b = card_pair(sentinel);
+                    card_remove( sentinel, 1 );
+                    pair_dispose( b );
+                    if ( left != NULL )
+                        card_set_right( left, NULL );
+                    break;
+                }
+            }
+        }
     }
     return res;
 }
@@ -455,7 +492,7 @@ static int add_subsequent_version( MVD *mvd, adder *add,
             bitset_set(nv,new_vid);
             dyn_array *pairs = mvd_get_pairs( mvd );
             card *list = link_pairs( pairs, log, o );
-            list_verify(list, new_vid);
+            //list_verify(list, new_vid);
             // now add its version to the mvd
             if ( list != NULL )
             {
@@ -471,6 +508,8 @@ static int add_subsequent_version( MVD *mvd, adder *add,
                     while ( res && head != NULL )
                     {
                         alignment *left,*right;
+                        printf("aligning %d-%d\n",
+                            alignment_start(head),alignment_end(head));
                         res = alignment_align( head, list );
                         if ( res )
                         {
@@ -485,14 +524,22 @@ static int add_subsequent_version( MVD *mvd, adder *add,
                         if ( res )
                         {
                             if ( left != NULL )
+                            {
+                                printf("pushing alignment %d-%d\n",
+                                    alignment_start(left),alignment_end(left));
                                 head = alignment_push( head, left );
+                            }
                             if ( right != NULL )
                             {
+                                printf("pushing alignment %d-%d\n",
+                                    alignment_start(right),alignment_end(right));
                                 head = alignment_push( head, right );
                             }
                         }
                         else
                         {
+                            printf("rejecting alignment %d-%d\n",
+                                alignment_start(old),alignment_end(old));
                             alignment_add_to_rejects( old, discards, log );
                             res = 1;
                         }
@@ -771,6 +818,7 @@ static int read_dir( char *folder )
                         char f_name[128];
                         options[0] = 0;
                         bare_file_name( f_name, 128, ent->d_name );
+                        printf("processing file %s\n",f_name);
                         strcat( options, "vid=" );
                         strcat( options, f_name );
                         strcat( options, " encoding=utf-8" );
@@ -799,7 +847,8 @@ static int read_dir( char *folder )
 // arguments: folder of text files
 int test_mvd_add( int *passed, int *failed )
 {
-    int res = read_dir( "english" );
+    int64_t start = epoch_time();
+    int res = read_dir( "tagore" );
     //int res = read_dir( "tests" );
     if ( res )
     {
@@ -811,6 +860,8 @@ int test_mvd_add( int *passed, int *failed )
         fprintf(stderr,"mvd_add: failed to load test directory\n");
         res = 0;
     }
+    int64_t end = epoch_time();
+    printf("time taken=%ld\n",(end-start));
     return res;
 }
 #endif
