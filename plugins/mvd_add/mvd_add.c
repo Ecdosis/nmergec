@@ -206,13 +206,14 @@ static int print_merged_segments( card *c, bitset *nv, int size )
     return res;
 }
 /**
- * Can we go from l to r on some concrete path NOT involving the new version?
+ * Can we go from l to r on some NOT involving the new version?
  * @param l the left limit of the path, left of r
  * @param r the right limit o the path, right of l
  * @param version the new version 
+ * @param concrete if 1 then the path must contain at least one character
  * @return 1 if it has such a path else 0
  */
-static int path_exists( card *l, card *r, int version )
+static int path_exists( card *l, card *r, int version, int concrete )
 {
     if ( l == r || card_right(l) == r )
         return 0;
@@ -240,7 +241,7 @@ static int path_exists( card *l, card *r, int version )
                 {
                    pair *p = card_pair( c );
                    bitset *bs = pair_versions( p );
-                   if ( pair_len(p) > 0 && bitset_intersects(bs,rest) )
+                   if ( (!concrete || pair_len(p) > 0) && bitset_intersects(bs,rest) )
                    {
 /*
                        printf("inserting empty arc for deletion in version %d:\n",
@@ -280,11 +281,9 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
     card *d = dyn_array_get( deviants, 0 );
     card *old_c = NULL;
     // debug
-/*
     res = print_merged_segments( c, nv, version );
     if ( res )
         print_unmerged_segments( deviants );
-*/
     // end debug
     while ( c != NULL )
     {
@@ -297,12 +296,8 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
                 card_add_before( c, d );
             else
             {
-                bitset *old_bs = pair_versions(card_pair(old_c));
-                bitset *new_bs = pair_versions(card_pair(c));
                 int insertion = card_len(d)!=0 
-                    && card_right(old_c)==c 
-                    && bitset_cardinality(old_bs)>1 
-                    && bitset_cardinality(new_bs)>1;
+                    && !path_exists(old_c,c,version,0);
                 card_add_after( old_c, d );
                 // test for insertion in new version
                 if ( insertion )
@@ -330,7 +325,7 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
         }
         // test for deletion in the new version
         else if ( old_c != NULL && card_text_off(c) == pos 
-            && path_exists(old_c,c,version) )
+            && path_exists(old_c,c,version,1) )
         {
             card *blank = card_create_blank( version, log );
             if ( blank != NULL )
@@ -508,8 +503,8 @@ static int add_subsequent_version( MVD *mvd, adder *add,
                     while ( res && head != NULL )
                     {
                         alignment *left,*right;
-                        printf("aligning %d-%d\n",
-                            alignment_start(head),alignment_end(head));
+                        //printf("aligning %d-%d\n",
+                        //    alignment_start(head),alignment_end(head));
                         res = alignment_align( head, list );
                         if ( res )
                         {
@@ -525,21 +520,21 @@ static int add_subsequent_version( MVD *mvd, adder *add,
                         {
                             if ( left != NULL )
                             {
-                                printf("pushing alignment %d-%d\n",
-                                    alignment_start(left),alignment_end(left));
+                               // printf("pushing alignment %d-%d\n",
+                                //    alignment_start(left),alignment_end(left));
                                 head = alignment_push( head, left );
                             }
                             if ( right != NULL )
                             {
-                                printf("pushing alignment %d-%d\n",
-                                    alignment_start(right),alignment_end(right));
+                                //printf("pushing alignment %d-%d\n",
+                               //     alignment_start(right),alignment_end(right));
                                 head = alignment_push( head, right );
                             }
                         }
                         else
                         {
-                            printf("rejecting alignment %d-%d\n",
-                                alignment_start(old),alignment_end(old));
+                           // printf("rejecting alignment %d-%d\n",
+                           //     alignment_start(old),alignment_end(old));
                             alignment_add_to_rejects( old, discards, log );
                             res = 1;
                         }
@@ -848,7 +843,7 @@ static int read_dir( char *folder )
 int test_mvd_add( int *passed, int *failed )
 {
     int64_t start = epoch_time();
-    int res = read_dir( "tagore" );
+    int res = read_dir( "social charity" );
     //int res = read_dir( "tests" );
     if ( res )
     {
