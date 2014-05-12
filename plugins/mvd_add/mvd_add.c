@@ -206,7 +206,7 @@ static int print_merged_segments( card *c, bitset *nv, int size )
     return res;
 }
 /**
- * Can we go from l to r on some NOT involving the new version?
+ * Can we go from l to r on some path NOT involving the new version?
  * @param l the left limit of the path, left of r
  * @param r the right limit o the path, right of l
  * @param version the new version 
