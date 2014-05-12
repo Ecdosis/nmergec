@@ -77,7 +77,6 @@ int main(int argc, char** argv)
     report_test( "serialiser", test_serialiser, &passed, &failed );
     report_test( "utils", test_utils, &passed, &failed );
     report_test( "version", test_version, &passed, &failed );
-    report_test( "vgnode", test_vgnode, &passed, &failed );
     fprintf( stdout, "total passed %d failed %d tests overall\n",
         total_passed, total_failed);
 }

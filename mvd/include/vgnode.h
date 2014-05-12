@@ -16,18 +16,12 @@ extern "C" {
 #define VGNODE_END 3
 
 typedef struct vgnode_struct vgnode;
-vgnode *vgnode_create( int kind );
+vgnode *vgnode_create();
 void vgnode_dispose( vgnode *n );
-void vgnode_add_incoming( vgnode *n, pair *p );
-void vgnode_add_outgoing( vgnode *n, pair *p );
-int vgnode_verify( vgnode *n, bitset *all );
-void vgnode_outversions( vgnode *n, char *dst, int len );
-void vgnode_inversions( vgnode *n, char *dst, int len );
-bitset *vgnode_overhang( vgnode *n );
-int vgnode_check_incoming( vgnode *n, bitset *pv );
-#ifdef MVD_TEST
-void test_vgnode( int *passed, int *failed );
-#endif
+int vgnode_add_incoming( vgnode *n, pair *p );
+int vgnode_add_outgoing( vgnode *n, pair *p );
+int vgnode_balanced( vgnode *n );
+int vgnode_wants(vgnode *n, pair *p );
 
 #ifdef	__cplusplus
 }

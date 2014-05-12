@@ -954,7 +954,7 @@ bitset *card_compute_extra_blank( card *c, card *after )
 /**
  * Add a card after a given point, creating a new node.
  * @param c the point to add it after
- * @param after the card to become the one after lp
+ * @param after the card to become the one after c
  * @return 1 if successful else 0
  */
 void card_add_after( card *c, card *after )

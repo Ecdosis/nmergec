@@ -258,6 +258,30 @@ static int path_exists( card *l, card *r, int version, int concrete )
         return 0;
     }
 }
+static void check_version_integrity( card *list, bitset *nv, dyn_array *deviants )
+{
+    int pos = 0;
+    int j = 0;
+    card *c = list;
+    card *d = dyn_array_get(deviants,j++);
+    while ( c != NULL && j < dyn_array_size(deviants) )
+    {
+        while ( card_text_off(d)==pos )
+        {
+            pos = card_end(d);
+            d = dyn_array_get(deviants,j++);
+        }
+        pair *p = card_pair(c);
+        bitset *cv = pair_versions(p);
+        if ( bitset_intersects(cv,nv) )
+        {
+            if ( pos != card_text_off(c) )
+                printf("gap in card list\n");
+            pos = card_end(c);
+        }
+        c = card_right( c );
+    }
+}
 /**
  * Sort the discards by their start offsets in the new version, 
  * then insert them in order into the list. Fill in any gaps with empty cards.
@@ -281,9 +305,12 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
     card *d = dyn_array_get( deviants, 0 );
     card *old_c = NULL;
     // debug
+/*
     res = print_merged_segments( c, nv, version );
     if ( res )
         print_unmerged_segments( deviants );
+*/
+    check_version_integrity( list, nv, deviants );
     // end debug
     while ( c != NULL )
     {
@@ -319,9 +346,9 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
                     else
                         plugin_log_add(log,"mvd_add: failed to create blank");
                 }
-                pos = card_end(d);
-                d = dyn_array_get(deviants,++j);
             }
+            pos = card_end(d);
+            d = dyn_array_get(deviants,++j);
         }
         // test for deletion in the new version
         else if ( old_c != NULL && card_text_off(c) == pos 
@@ -342,9 +369,16 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
                 }
             }
         }
-        pos = card_end( c );
-        old_c = c;
-        c = card_next( c, nv, 0 );
+        // move to next card if there are no more d's at this pos
+        if ( d==NULL || card_text_off(d) != pos )
+        {
+            if ( d!= NULL && card_text_off(d) < pos )
+                printf("failed to insert mismatch at %d, length %d\n",
+                    pos,card_len(d));
+            pos = card_end( c );
+            old_c = c;
+            c = card_next( c, nv, 0 );
+        }
         // handle end of list case
         if ( c == NULL )
         {
@@ -561,13 +595,10 @@ static int add_subsequent_version( MVD *mvd, adder *add,
                     {
                         pairs = card_to_pairs( list );
                         mvd_set_pairs( mvd, pairs );
-                        verify *v = verify_create( pairs, 
-                            mvd_count_versions(mvd) );
-                        if ( !verify_check(v,0) )
+                        if ( !verify_check(pairs) )
                         {
                             fprintf(stderr,"error: unbalanced graph\n"); 
                         }
-                        verify_dispose( v );
                         card_print_list( list );
                     }
                     if ( children != NULL )

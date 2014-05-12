@@ -14,210 +14,138 @@
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
-/**
- * Verify that an MVD conforms to its own internal rules
- */
-struct verify_struct
+
+static void check_dangling( dyn_array *dangling, dyn_array *nodes, vgnode *n,
+    pair *exclude, int index )
 {
-    dyn_array *nodes;
-    dyn_array *dangling;
-    bitset *all;
-    int npairs;
-    // not owned by us
-    dyn_array *pairs;
-};
-/**
- * Create a verify object
- * @param pairs the mvd pairs array
- * @param nversions the number of versions in the MVD
- * @return the completed object or NULL on failure
- */
-verify *verify_create( dyn_array *pairs, int nversions )
-{
-    verify *v = calloc( 1, sizeof(verify) );
-    if ( v != NULL )
+    int k=0;
+    while ( k<dyn_array_size(dangling) )
     {
-        int i;
-        v->pairs = pairs;
-        v->npairs = dyn_array_size( v->pairs );
-        v->nodes = dyn_array_create( v->npairs/2 );
-        v->all = bitset_create();
-        for ( i=1;i<=nversions;i++ )
-            bitset_set( v->all, i );
-        v->dangling = dyn_array_create( 12 );
-        if ( v->nodes==NULL||v->dangling==NULL||v->all==NULL )
+        pair *q = (pair*)dyn_array_get(dangling,k);
+        if ( q != exclude )
         {
-            fprintf(stderr,"mvd-verify: failed to initialise object\n");
-            verify_dispose(v);
-            v = NULL;
-        }
-    }
-    else
-        fprintf(stderr,"mvd-verify: failed to create verify object\n");
-    return v;
-}
-/**
- * Dispose of the verifier
- * @param v the verifier to dispose
- */
-void verify_dispose( verify *v )
-{
-    if ( v->all != NULL )
-        bitset_dispose( v->all );
-    if ( v->dangling != NULL )
-        dyn_array_dispose( v->dangling );
-    if ( v->nodes != NULL )
-    {
-        int i,nsize=dyn_array_size(v->nodes);
-        for ( i=0;i<nsize;i++ )
-        {
-            vgnode *n = dyn_array_get(v->nodes,i);
-            vgnode_dispose( n );
-        }
-        dyn_array_dispose( v->nodes );
-    }
-}
-/**
- * Subtract pairs in the dangling set
- * @param v the verification object
- * @param u the node to attach them to
- * @param bs versions of the current pair
- */
-static void subtract_dangling( verify *v, vgnode *u, bitset *bs )
-{
-    int j = dyn_array_size(v->dangling)-1;
-    while ( j>=0 )
-    {
-        pair *p = dyn_array_get( v->dangling, j );
-        if ( bitset_intersects(pair_versions(p),bs) )
-        {
-            if ( !vgnode_check_incoming(u,pair_versions(p)) )
-                fprintf(stderr,"extra incoming arc ignored\n");
-            else
+            if ( vgnode_wants_incoming(n,q) )
             {
-                dyn_array_remove( v->dangling, j );
-                vgnode_add_incoming( u, p );
+                // rule 3: incoming
+                dyn_array_remove( dangling, k );
+                k--;
+                vgnode_add_incoming( n, q );
+                if ( vgnode_balanced(n) )
+                {
+                    dyn_array_remove(nodes, index);
+                    vgnode_dispose( n );
+                    break;
+                }
             }
         }
-        j--;
+        k++;
     }
 }
-/**
- * Verify that the MVD represented here is OK. Print the error if any.
- * @param v the verifier to check
- * @param node_stats 1 if node statistics are desired
- * @return 1 if it checks out else 0
- */
-int verify_check( verify *v, int node_stats )
+int find_index( dyn_array *dangling, pair *p )
 {
-    int i,j;
-    int res = 1;
-    int noverhangs=0,ndefaults=0,nforced=0;
-    pair *prev = NULL;
-    pair *current = NULL;
-    vgnode *start = vgnode_create(VGNODE_START);
-    hint *head = hint_create( v->all, start );
-    vgnode *end = vgnode_create(VGNODE_END);
-    dyn_array_add( v->nodes, start );
-    for ( i=0;i<v->npairs;i++ )
+    int i;
+    for ( i=0;i<dyn_array_size(dangling);i++ )
     {
-        current = dyn_array_get( v->pairs, i );
-        if ( pair_is_hint(current) )
-            continue;
-        else if ( i>0&& (bitset_intersects(pair_versions(prev),
-            pair_versions(current))||pair_is_hint(prev)) )
+        pair *q = (pair*)dyn_array_get(dangling,i);
+        if ( q == p )
+            return i;
+    }
+    return -1;
+}
+int verify_check( dyn_array *pairs )
+{
+    int res = 1;
+    int i;
+    dyn_array *dangling = dyn_array_create( 10 );
+    dyn_array *nodes = dyn_array_create( 10 );
+    bitset *all = bitset_create();
+    pair *prev = NULL;
+    for ( i=0;i<dyn_array_size(pairs);i++ )
+    {
+        pair *p = (pair*)dyn_array_get(pairs,i);
+        bitset *pv = pair_versions(p);
+        bitset_or( all, pv );
+        if ( prev != NULL
+            && bitset_intersects(pv,pair_versions(prev)) )
         {
-            vgnode *n = vgnode_create( VGNODE_BODY );
+            vgnode *n = vgnode_create();
             if ( n != NULL )
             {
-                bitset *oh;
-                vgnode_add_outgoing( n, current );
-                nforced++;
-                subtract_dangling( v, n, pair_versions(current) );
-                // check for overhang, create pseudo "hint"
-                oh = vgnode_overhang( n );
-                if ( pair_is_hint(prev) )
+                // 1. forced rule
+                vgnode_add_incoming( n, prev );
+                vgnode_add_outgoing( n, p );
+                dyn_array_add( dangling, p );
+                int index = find_index(dangling,prev);
+                if ( index < 0 )
                 {
-                    oh = bitset_or( oh, pair_versions(prev) );
-                    bitset_clear_bit( oh, 0 );
+                    printf("dangling arc not found\n");
+                    res = 0;
                 }
-                if ( oh != NULL )
+                else
+                    dyn_array_remove( dangling, index );
+                if ( vgnode_balanced(n) )
                 {
-                    if ( !bitset_empty(oh) )
-                    {
-                        hint *h = hint_create( oh, n );
-                        if ( head == NULL )
-                            head = h;
-                        else
-                            hint_append( head, h );
-                    }
+                    vgnode_dispose( n );
+                    n = NULL;
                 }
-                bitset_dispose( oh );
-                dyn_array_add( v->nodes, n );
-                dyn_array_add( v->dangling, current );
+                else
+                {
+                    dyn_array_add( nodes, n );
+                    check_dangling( dangling, nodes, n, p, dyn_array_size(nodes)-1 );
+                }
             }
-            else
-                break;
         }
         else
         {
-            hint *h = hint_contains(head,pair_versions(current));
-            // look for a node to attach it to
-            if ( h != NULL )
+            // try to attach it as outgoing from some existing node
+            int j;
+            int placed = 0;
+            for ( j=dyn_array_size(nodes)-1;j>=0;j-- )
             {
-                vgnode *hn = hint_node( h );
-                if ( hint_subtract(h,pair_versions(current)) )
+                vgnode *vg = (vgnode*)dyn_array_get(nodes,j);
+                if ( vgnode_wants(vg,p) )
                 {
-                    head = hint_delist(h);
-                    hint_dispose( h );
+                    // rule 2: overhang 
+                    vgnode_add_outgoing( vg, p );
+                    placed = 1;
+                    dyn_array_add( dangling, p );
+                    if ( vgnode_balanced(vg) )
+                    {
+                        dyn_array_remove(nodes,j);
+                        vgnode_dispose(vg);
+                    }
+                    break;
                 }
-                vgnode_add_outgoing( hn, current );
-                noverhangs++;
-                subtract_dangling( v, hn, pair_versions(current) );
             }
-            else
+            if ( !placed )
             {
-                // attach to last node by default
-                ndefaults++;
-                int end_index = dyn_array_size(v->nodes)-1;
-                vgnode *u = dyn_array_get(v->nodes,end_index);
-                vgnode_add_outgoing( u, current );
-                subtract_dangling( v, u, pair_versions(current) );
+                if ( dyn_array_size(nodes)>0 )
+                {
+                    printf("Verify: failed to place arc\n");
+                    res = 0;
+                }
+                else
+                    dyn_array_add( dangling, p );
             }
-            dyn_array_add( v->dangling, current );
         }
-        prev = current;
+        prev = p;
     }
-    dyn_array_add( v->nodes, end );
-    for ( j=0;j<dyn_array_size(v->dangling);j++ )
+    bitset *check = bitset_create();
+    for ( i=0;i<dyn_array_size(dangling);i++ )
     {
-        pair *p = dyn_array_get(v->dangling,j);
-        vgnode_add_incoming( end, p );
+        pair *p = (pair*)dyn_array_get( dangling, i );
+        bitset_or( check, pair_versions(p) );
     }
-    if ( node_stats )
-        printf("nforced=%d noverhangs=%d ndefaults=%d\n",nforced,
-            noverhangs,ndefaults);
-    // verify that all nodes are balanced
-    int nsize = dyn_array_size(v->nodes);
-    for ( i=0;i<nsize;i++ )
+    if ( !bitset_equals(check, all) )
     {
-        vgnode *n = dyn_array_get( v->nodes, i );
-        if ( !vgnode_verify(n,v->all) )
-        {
-            char str1[32],str2[32];
-            vgnode_inversions(n,str1,32);
-            vgnode_outversions(n,str2,32);
-            fprintf(stderr,"verify: vgnode %d of %d unbalanced: "
-                "incoming: %s, outgoing: %s\n",i,nsize,str1,str2);
-            res = 0;
-            break;
-        }
+        printf("verify: closing arcs don't match all versions\n");
+        res = 0;
     }
+    if ( res )
+        res = dyn_array_size(nodes)==0;
+    dyn_array_dispose(nodes );
+    dyn_array_dispose( dangling );
+    bitset_dispose( all );
+    bitset_dispose( check );
     return res;
 }
-#ifdef MVD_TEST
-void test_verify( int *passed, int *failed )
-{
-    // can't do anything without an MVD
-}
-#endif

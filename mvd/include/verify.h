@@ -12,13 +12,7 @@
 extern "C" {
 #endif
 
-typedef struct verify_struct verify;
-verify *verify_create( dyn_array *pairs, int nversions );
-void verify_dispose( verify *v );
-int verify_check( verify *v, int node_stats );
-#ifdef MVD_TEST
-void test_verify( int *passed, int *failed );
-#endif
+int verify_check( dyn_array *pairs );
 
 #ifdef	__cplusplus
 }
