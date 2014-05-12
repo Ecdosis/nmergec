@@ -22,6 +22,7 @@ int vgnode_add_incoming( vgnode *n, pair *p );
 int vgnode_add_outgoing( vgnode *n, pair *p );
 int vgnode_balanced( vgnode *n );
 int vgnode_wants(vgnode *n, pair *p );
+char *vgnode_tostring( vgnode *n );
 
 #ifdef	__cplusplus
 }

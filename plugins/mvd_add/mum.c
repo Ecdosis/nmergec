@@ -176,42 +176,42 @@ static int mum_split_at_end( mum *m, orphanage *o, plugin_log *log )
  * @param m1 the first mum before m2
  * @param m2 the second after m1
  * @param v the id of the new version
+ * @return the between card or NULL if not needed
  */
-static card *card_between_mums( mum *m1, mum *m2, 
-    UChar *text, int v, plugin_log *log )
+static card *card_between_mums( mum *m1, mum *m2, UChar *text, int v, 
+    plugin_log *log )
 {
     card *between = NULL;
     int text_len = mum_text_off(m2)-mum_text_end(m1);
-    UChar *fragment;
-    if ( text_len == 0 )
-        fragment = USTR_EMPTY;
-    else
+    UChar *fragment = NULL;
+    if ( text_len > 0 )
     {
         fragment = calloc( text_len+1, sizeof(UChar) );
         if ( fragment != NULL )
-            memcpy( fragment, &text[mum_text_end(m1)], text_len*sizeof(UChar) );
-        else
-            return NULL;
-    }
-    bitset *bs = bitset_create();
-    if ( bs != NULL )
-    {
-        bs = bitset_set( bs, v );
-        if ( bs != NULL )
         {
-            pair *frag = pair_create_basic( bs, fragment, text_len );
-            if ( frag != NULL )
+            memcpy( fragment, &text[mum_text_end(m1)], text_len*sizeof(UChar) );
+            bitset *bs = bitset_create();
+            if ( bs != NULL )
             {
-                between = card_create( frag, log );
-                if ( between != NULL )
-                    card_set_text_off( between, mum_text_end(m1) );
+                bs = bitset_set( bs, v );
+                if ( bs != NULL )
+                {
+                    pair *frag = pair_create_basic( bs, fragment, text_len );
+                    if ( frag != NULL )
+                    {
+                        between = card_create( frag, log );
+                        if ( between != NULL )
+                            card_set_text_off( between, mum_text_end(m1) );
+                    }
+                    bitset_dispose( bs );
+                }
             }
-            bitset_dispose( bs );
+            //card_print(between);
+            free( fragment );
         }
+        else
+            plugin_log_add(log,"mum: failed to allocate in-between card");
     }
-    //card_print(between);
-    if ( fragment != USTR_EMPTY && fragment != NULL )
-        free( fragment );
     return between;
 }
 /**
@@ -262,8 +262,6 @@ int mum_split( mum *m, UChar *text, int v, orphanage *o,
                 {
                     res = dyn_array_add( discards, betw );
                 }
-                else
-                    plugin_log_add(log,"mum: failed to join mums\n");
             }
             if ( !res ) 
                 break;

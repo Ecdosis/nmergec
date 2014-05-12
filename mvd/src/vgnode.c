@@ -3,6 +3,8 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <math.h>
 #include "unicode/uchar.h"
 #include "bitset.h"
 #include "link_node.h"
@@ -16,7 +18,9 @@ struct vgnode_struct
 {
     bitset *incoming;
     bitset *outgoing;
+    int id;
 };
+static int vgnode_id = 0;
 /**
  * Create a vgnode object
  * @return the created vgnode or NULL
@@ -28,6 +32,7 @@ vgnode *vgnode_create()
     {
         n->incoming = bitset_create();
         n->outgoing = bitset_create();
+        n->id = ++vgnode_id;
         if ( n->incoming == NULL || n->outgoing==NULL )
         {
             vgnode_dispose( n );
@@ -117,4 +122,20 @@ int vgnode_wants_incoming( vgnode *n, pair *p )
         bitset_dispose( diff );
     }
     return res;
+}
+char *vgnode_tostring( vgnode *n )
+{
+    int top_incoming = bitset_top_bit(n->incoming);
+    int top_outgoing = bitset_top_bit(n->outgoing);
+    int len = top_incoming+top_outgoing+6+log10(n->id);
+    char *str = calloc(len,1);
+    strcpy(str,"[");
+    bitset_tostring(n->incoming,&str[1],top_incoming+2);
+    strcat(str,"]");
+    int slen = strlen(str);
+    snprintf(&str[slen],len-slen,"%d",n->id);
+    strcat(&str[strlen(str)],"[");
+    bitset_tostring(n->outgoing,&str[strlen(str)],top_outgoing+2);
+    strcat(str,"]");
+    return str;
 }

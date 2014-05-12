@@ -432,6 +432,47 @@ void pair_print( pair *p )
     };
 }
 /**
+ * Convert a pair to an allocate string in utf-8
+ * @param p the pair to stringify
+ * @return the string - caller to free
+ */
+char *pair_tostring( pair *p )
+{
+    char *str = NULL;
+    char vbs[32];
+    char *udata;
+    int dlen = 0;
+    bitset *bs = pair_versions(p);
+    UChar *data = pair_data( p );
+    int highest = bitset_top_bit( bs );
+    bitset_tostring( bs, vbs, highest+2 );
+    if ( pair_len(p) > 0 )
+    {
+        dlen = measure_to_encoding( data, pair_len(p), "utf-8" );
+        udata = calloc( dlen+1, 1 );
+        if ( udata != NULL )
+            convert_to_encoding( data, pair_len(p), udata, dlen+1, "utf-8" );
+    }
+    else
+        udata = calloc( 1, sizeof(UChar) );
+    if ( udata != NULL )
+    {
+        char tid[16];
+        if ( pair_is_parent(p) )
+            snprintf(tid,16,"-p:%d",pair_id(p));
+        else if ( pair_is_child(p) )
+            snprintf(tid,16,"-c:%d",pair_id(p));
+        else
+            tid[0] = 0;
+        int tlen = strlen(vbs)+dlen+strlen(tid)+3;
+        str = calloc( tlen, 1 );
+        if ( str != NULL )
+            snprintf( str, tlen, "[%s%s]%s", vbs, tid, udata );
+        free( udata );
+    }
+    return str;
+}
+/**
  * Split a pair into two before the given offset. Free the original pair.
  * @param p VAR param the pair to split, becomes leading pair
  * @param at offset into p's data BEFORE which to split it

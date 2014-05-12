@@ -78,7 +78,12 @@ int verify_check( dyn_array *pairs )
                 int index = find_index(dangling,prev);
                 if ( index < 0 )
                 {
-                    printf("dangling arc not found\n");
+                    char *str = pair_tostring(p);
+                    if ( str != NULL )
+                    {
+                        printf("dangling arc %s not found\n",str);
+                        free( str );
+                    }
                     res = 0;
                 }
                 else
@@ -124,7 +129,12 @@ int verify_check( dyn_array *pairs )
             {
                 if ( dyn_array_size(nodes)>0 )
                 {
-                    printf("Verify: failed to place arc\n");
+                    char *str = pair_tostring(p);
+                    if ( str != NULL )
+                    {
+                        printf("Verify: failed to place arc %s\n",str);
+                        free( str );
+                    }
                     res = 0;
                 }
                 else
@@ -133,7 +143,7 @@ int verify_check( dyn_array *pairs )
         }
         prev = p;
         if ( bitset_equals(pv,all) && dyn_array_size(dangling)!=1 )
-            printf("too many items in dangling!\n");
+            printf("too many items (%d) in dangling!\n",dyn_array_size(dangling));
     }
     bitset *check = bitset_create();
     for ( i=0;i<dyn_array_size(dangling);i++ )
@@ -143,11 +153,38 @@ int verify_check( dyn_array *pairs )
     }
     if ( !bitset_equals(check, all) )
     {
-        printf("verify: closing arcs don't match all versions\n");
+        //bitset *bs, char *dst, int len
+        char cvers[12],avers[12];
+        bitset_tostring(check,cvers,12);
+        bitset_tostring(all,avers,12);
+        printf("verify: closing arcs (%s) don't match all versions (%s)\n",
+            cvers,avers);
         res = 0;
     }
     if ( res )
-        res = dyn_array_size(nodes)==0;
+    {
+        if ( dyn_array_size(nodes)!= 0 )
+        {
+            printf("%d nodes left over at end of graph verification\n",
+                dyn_array_size(nodes));
+            res = dyn_array_size(nodes)==0;
+            int k;
+            for ( k=0;k<dyn_array_size(nodes);k++ )
+            {
+                vgnode *vg = (vgnode*)dyn_array_get(nodes,k);
+                if ( !vgnode_balanced(vg) )
+                {
+                    char *str = vgnode_tostring(vg);
+                    if ( str != NULL )
+                    {
+                        printf("node %s unbalanced\n",str);
+                        free( str );
+                    }
+                }
+                vgnode_dispose( vg );
+            }
+        }
+    }
     dyn_array_dispose(nodes );
     dyn_array_dispose( dangling );
     bitset_dispose( all );

@@ -315,6 +315,8 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
         //printf("pos: %d c: %d-%d",pos,card_text_off(c),card_len(c)
         //    +card_text_off(c));
         // test for variants, transpositions and empty arcs
+        if ( pos==255)
+            printf("255\n");
         if ( d != NULL && card_text_off(d)==pos )
         {
             if ( old_c == NULL )
@@ -871,7 +873,7 @@ static int read_dir( char *folder )
 int test_mvd_add( int *passed, int *failed )
 {
     int64_t start = epoch_time();
-    int res = read_dir( "tagore" );
+    int res = read_dir( "social charity" );
     //int res = read_dir( "tests" );
     if ( res )
     {
