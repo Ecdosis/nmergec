@@ -65,6 +65,8 @@ int verify_check( dyn_array *pairs )
         pair *p = (pair*)dyn_array_get(pairs,i);
         bitset *pv = pair_versions(p);
         bitset_or( all, pv );
+        if (i==19)
+            printf("19\n");
         if ( prev != NULL
             && bitset_intersects(pv,pair_versions(prev)) )
         {
@@ -114,6 +116,9 @@ int verify_check( dyn_array *pairs )
                         dyn_array_remove(nodes,j);
                         vgnode_dispose(vg);
                     }
+                    else
+                        check_dangling( dangling, nodes, vg, p, 
+                            dyn_array_size(nodes)-1 );
                     break;
                 }
             }
@@ -129,6 +134,8 @@ int verify_check( dyn_array *pairs )
             }
         }
         prev = p;
+        if ( bitset_equals(pv,all) && dyn_array_size(dangling)!=1 )
+            printf("too many items in dangling!\n");
     }
     bitset *check = bitset_create();
     for ( i=0;i<dyn_array_size(dangling);i++ )

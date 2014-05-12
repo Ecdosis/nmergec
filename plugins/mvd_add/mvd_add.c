@@ -874,7 +874,7 @@ static int read_dir( char *folder )
 int test_mvd_add( int *passed, int *failed )
 {
     int64_t start = epoch_time();
-    int res = read_dir( "social charity" );
+    int res = read_dir( "tagore" );
     //int res = read_dir( "tests" );
     if ( res )
     {
