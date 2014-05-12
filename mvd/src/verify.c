@@ -65,8 +65,6 @@ int verify_check( dyn_array *pairs )
         pair *p = (pair*)dyn_array_get(pairs,i);
         bitset *pv = pair_versions(p);
         bitset_or( all, pv );
-        if (i==19)
-            printf("19\n");
         if ( prev != NULL
             && bitset_intersects(pv,pair_versions(prev)) )
         {

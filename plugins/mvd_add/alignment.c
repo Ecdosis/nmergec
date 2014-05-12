@@ -238,7 +238,7 @@ void alignment_print( alignment *a, const char *prompt )
  * @param discards a set of discarded cards to be add in later
  * @return 1 if it worked else 0
  */
-static int alignment_transpose_merge( alignment *a, dyn_array *discards )
+static int alignment_transpose_merge( alignment *a/*, dyn_array *discards*/ )
 {
     int res = 1;
     mum *best = a->best;
@@ -273,6 +273,7 @@ static int alignment_transpose_merge( alignment *a, dyn_array *discards )
                 // add the child later at the end
                 res = orphanage_add_child( a->o, child );
                 text_off += pair_len(ppair);
+/*
                 // add blank to cover the new version
                 card *blank = card_create_blank( a->version, a->log );
                 if ( blank != NULL )
@@ -288,6 +289,7 @@ static int alignment_transpose_merge( alignment *a, dyn_array *discards )
                     res = 0;
                     break;
                 }
+*/
             }
             else // none of those
                 plugin_log_add(a->log,"alignment: failed to create parent\n");
@@ -457,7 +459,7 @@ int alignment_merge( alignment *a, alignment **left,
             int dist;
             int tlen = alignment_tlen(a);
             if ( mum_transposed(a->best,a->version,tlen,&dist) )
-                res = alignment_transpose_merge( a, discards );
+                res = alignment_transpose_merge( a/*, discards*/ );
             else
                 res = alignment_direct_merge( a );
             list_verify(a->list,a->version);

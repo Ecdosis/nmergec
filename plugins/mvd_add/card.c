@@ -817,25 +817,33 @@ static int card_merge_left( card *c_new, card *c )
     int merged = 0;
     if ( card_is_blank(c_new) )
     {
-        bitset *cv= pair_versions(c_new->p);
-        card *l = card_prev_nonempty(c,cv);
-        card *temp = c;
-        while ( temp != NULL && temp != l )
+        bitset *cnv= pair_versions(c_new->p);
+        bitset *cv = pair_versions(c->p);
+        card *l = card_prev(c,cnv);
+        card *r = (bitset_intersects(cnv,cv))?c:card_next(c,cnv,0);
+        if ( l != NULL && r != NULL)
         {
-            bitset *tv = pair_versions(temp->p);
-            if ( card_is_blank(temp) && card_prev(temp,tv)==l )
+            bitset *rv = pair_versions(r->p);
+            bitset *lv = pair_versions(l->p);
+            card *temp = c;
+            while ( temp != NULL && temp != l )
             {
-                bitset_or(tv,cv);
-                merged = 1;
-                break;
+                bitset *tv = pair_versions(temp->p);
+                if ( card_is_blank(temp) && bitset_intersects(tv,lv) 
+                    && bitset_intersects(tv,rv) )
+                {
+                    bitset_or(tv,cnv);
+                    merged = 1;
+                    break;
+                }
+                temp = temp->left;
             }
-            temp = temp->left;
         }
     }
     return merged;
 }
 /**
- * Find a blank before the next node that we can add our versions to
+ * Find a blank after the next node that we can add our blank to
  * @paramc_new the new blank card
  * @param c the card to start searching from
  * @return 1 we merged c_new into a blank card already there else 0
@@ -845,17 +853,20 @@ static int card_merge_right( card *c_new, card *c )
     int merged = 0;
     if ( card_is_blank(c_new) )
     {
-        bitset *cv= pair_versions(c_new->p);
-        card *r = card_next_nonempty(c,cv,0);
-        if ( r != NULL )
+        bitset *cnv= pair_versions(c_new->p);
+        bitset *cv= pair_versions(c->p);
+        card *r = card_next(c,cnv,0);
+        card *l = (bitset_intersects(cv,cnv))?c:card_prev(c,cnv);
+        if ( r != NULL && l != NULL )
         {
-            pair *pr = card_pair(r);
-            bitset *rv = pair_versions(pr);
+            bitset *rv = pair_versions(r->p);
+            bitset *lv = pair_versions(l->p);
             card *temp = c->right;
             while ( temp != NULL && temp != r )
             {
                 bitset *tv = pair_versions(temp->p);
-                if ( card_is_blank(temp) && bitset_intersects(tv,rv) )
+                if ( card_is_blank(temp) && bitset_intersects(tv,rv) 
+                    && bitset_intersects(tv,lv) )
                 {
                     bitset_or(tv,cv);
                     merged = 1;
@@ -878,16 +889,16 @@ void card_add_before( card *c, card *c_new )
     {
         if ( c->left == NULL )
         {
-            c_new->right = c->right;
+            c_new->right = c;
             c->left = c_new;
         }
         else
         {
-            c_new->right = c->right;
+            c_new->right = c;
             c_new->left = c->left;
-            c->right = c_new;
-            if ( c->right != NULL )
-                c->right->left = c_new;
+            if ( c->left != NULL )
+                c->left->right = c_new;
+            c->left = c_new;
         }
     }
 }
