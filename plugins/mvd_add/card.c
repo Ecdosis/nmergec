@@ -868,7 +868,7 @@ static int card_merge_right( card *c_new, card *c )
                 if ( card_is_blank(temp) && bitset_intersects(tv,rv) 
                     && bitset_intersects(tv,lv) )
                 {
-                    bitset_or(tv,cv);
+                    bitset_or(tv,cnv);
                     merged = 1;
                     break;
                 }

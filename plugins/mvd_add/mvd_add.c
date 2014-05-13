@@ -302,7 +302,7 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
     dyn_array_sort( deviants, card_compare );
     card *sentinel = NULL;
     card *c = card_first(list,nv);
-    card *d = dyn_array_get( deviants, 0 );
+    card *d = dyn_array_get( deviants, 0 );// NB: check if array not empty
     card *old_c = NULL;
     // debug
     res = print_merged_segments( c, nv, version );
@@ -315,8 +315,6 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
         //printf("pos: %d c: %d-%d",pos,card_text_off(c),card_len(c)
         //    +card_text_off(c));
         // test for variants, transpositions and empty arcs
-        if ( pos==255)
-            printf("255\n");
         if ( d != NULL && card_text_off(d)==pos )
         {
             if ( old_c == NULL )
@@ -873,7 +871,7 @@ static int read_dir( char *folder )
 int test_mvd_add( int *passed, int *failed )
 {
     int64_t start = epoch_time();
-    int res = read_dir( "social charity" );
+    int res = read_dir( "tagore" );
     //int res = read_dir( "tests" );
     if ( res )
     {

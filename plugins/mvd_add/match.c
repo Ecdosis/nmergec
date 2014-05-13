@@ -123,7 +123,8 @@ match *match_copy( match *mt, plugin_log *log )
         if ( mt->bs != NULL )
             mt2->bs = bitset_clone( mt->bs );
         mt2->st_off = mt->st_off;
-        mt2->text_off = 0;
+        //mt2->text_off = 0;
+        mt2->text_off = mt->text_off;
         mt2->len = mt->len;
         mt2->maximal = mt->maximal;
         mt2->freq = mt->freq;
@@ -618,7 +619,6 @@ int match_single( match *m, UChar *text, int v, plugin_log *log, int popped )
                 m->bs = bitset_clone( pair_versions(card_pair(m->end.current)) );
             if ( !m->maximal && node_is_leaf(loc->v) )
             {
-                // m->st_off
                 m->text_off = m->st_off + node_start(loc->v)-m->len;
                 if ( !is_maximal(m,text) )
                     break;
@@ -873,6 +873,8 @@ void match_verify( match *m, UChar *text, int tlen )
             }
             else if ( c == m->end.current )
             {
+                if ( m->len==105 )
+                    printf("105\n");
                 count = m->end.pos+1;
                 if ( i+count<=m->len )
                     u_memcpy(&copy[i], pdata, count);
@@ -882,7 +884,7 @@ void match_verify( match *m, UChar *text, int tlen )
             else
             {
                 count = pair_len(p);
-                if ( i+count<=m->len )
+                if ( count>0 && i+count<=m->len )
                     u_memcpy(&copy[i], pdata, count);
                 i += count;
             }
