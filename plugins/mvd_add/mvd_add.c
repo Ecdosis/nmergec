@@ -164,8 +164,6 @@ static void print_unmerged_segments( dyn_array *deviants )
     for ( i=0;i<dyn_array_size(deviants);i++ )
     {
         card *e = dyn_array_get( deviants, i );
-        if ( card_text_off(e)==0 )
-            printf("0!\n");
         if ( pair_is_child(card_pair(e)) )
             printf("child: %d-%d\n",card_text_off(e),card_text_off(e)+card_len(e) );
         else if ( card_len(e)==0 )
@@ -578,7 +576,8 @@ static int add_subsequent_version( MVD *mvd, adder *add,
                     //printf("mvd_add: aligned version %s\n",buf);
                     // add children to discards
                     int i,success,num;
-                    card **children = orphanage_all_children(o,&num,&success);
+                    card **children = orphanage_all_new_children(o,new_vid,
+                        &num,&success);
                     if ( !success )
                     {
                         res = 0;

@@ -321,13 +321,14 @@ int orphanage_remove_parent( orphanage *o, card *parent )
     return res;
 }
 /**
- * Get a simple array of all the children in the orphanage
+ * Get a simple array of all the new children in the orphanage
  * @param o the orphanage to collect them from
+ * @param v the id of the new children
  * @param num VAR param update with number of children found (may be 0)
- * @param success VAR param set to 1 if it worked els set to 0
+ * @param success VAR param set to 1 if it worked else set to 0
  * @return all the children as an allocated array of cards or NULL if none
  */
-card **orphanage_all_children( orphanage *o, int *num, int *success )
+card **orphanage_all_new_children( orphanage *o, int v, int *num, int *success )
 {
     card **children = NULL;
     *success = 0;
@@ -351,18 +352,28 @@ card **orphanage_all_children( orphanage *o, int *num, int *success )
                     {
                         while ( offspring[j] != NULL )
                         {
-                            dyn_array_add( kids, offspring[j] );
+                            pair *cp = card_pair(offspring[i] );
+                            bitset *cbs = pair_versions( cp );
+                            // v must be the ONLY version
+                            if ( bitset_next_set_bit(cbs,0)==v 
+                                && bitset_next_set_bit(cbs,v+1)==-1 )
+                                dyn_array_add( kids, offspring[j] );
                             j++;
                         }
                     }
                 }
-                *success = 1;
-                children = calloc( dyn_array_size(kids), sizeof(card*) );
-                if ( children != NULL )
+                if ( dyn_array_size(kids)> 0 )
                 {
-                    for ( i=0;i<dyn_array_size(kids);i++ )
-                        children[i] = dyn_array_get(kids,i);
-                    *num = dyn_array_size(kids);
+                    *success = 1;
+                    children = calloc( dyn_array_size(kids), sizeof(card*) );
+                    if ( children != NULL )
+                    {
+                        for ( i=0;i<dyn_array_size(kids);i++ )
+                            children[i] = dyn_array_get(kids,i);
+                        *num = dyn_array_size(kids);
+                    }
+                    else
+                        *num = 0;
                 }
                 else
                     *num = 0;
