@@ -26,9 +26,9 @@ struct orphanage_struct
 {
     // children withOUT parents
     hashmap *orphans;
-    // parents WITH or WITHOUT children
+    // index of parents -> children
     hashmap *parents;
-    // children WITH parents
+    // index of children -> parents
     hashmap *children;
     // current ID to be incremented on request
     int currentID;
@@ -168,6 +168,7 @@ int orphanage_add_child( orphanage *o, card *child )
                 card **kids = hashmap_get(o->parents,u_key);
                 if ( kids != NULL )
                 {
+                    // we found the parent
                     int i = 0;
                     while ( kids[i] != NULL )
                     {
@@ -189,6 +190,7 @@ int orphanage_add_child( orphanage *o, card *child )
                             res = hashmap_remove( o->parents, u_key, free );
                             if ( res )
                                 res = hashmap_put( o->parents, u_key, new_kids );
+/*
                             if ( res )
                             {
                                 // update children hash
@@ -196,6 +198,7 @@ int orphanage_add_child( orphanage *o, card *child )
                                 calc_ukey( c_key, cid, KEYLEN );
                                 res = hashmap_put( o->children, c_key, child );
                             }
+*/
                         }
                         else
                         {
@@ -328,29 +331,49 @@ card **orphanage_all_children( orphanage *o, int *num, int *success )
 {
     card **children = NULL;
     *success = 0;
-    *num = hashmap_size( o->children );
-    if ( *num > 0 )
+    int num_parents = hashmap_size( o->parents );
+    if ( num_parents > 0 )
     {
-        UChar **keys = calloc( *num, sizeof(UChar*) );
+        UChar **keys = calloc( num_parents, sizeof(UChar*) );
         if ( keys != NULL )
         {
             int i;
-            hashmap_to_array( o->children, keys );
-            children = calloc( *num, sizeof(card*) );
-            if ( children != NULL )
+            hashmap_to_array( o->parents, keys );
+            dyn_array *kids = dyn_array_create( 20 );
+            if ( kids != NULL )
             {
-                for ( i=0;i<*num;i++ )
+                int j;
+                for ( i=0;i<num_parents;i++ )
                 {
-                    children[i] = hashmap_get(o->children, keys[i] );
+                    j = 0;
+                    card **offspring = (card**)hashmap_get(o->parents, keys[i] );
+                    if ( offspring != NULL )
+                    {
+                        while ( offspring[j] != NULL )
+                        {
+                            dyn_array_add( kids, offspring[j] );
+                            j++;
+                        }
+                    }
                 }
                 *success = 1;
+                children = calloc( dyn_array_size(kids), sizeof(card*) );
+                if ( children != NULL )
+                {
+                    for ( i=0;i<dyn_array_size(kids);i++ )
+                        children[i] = dyn_array_get(kids,i);
+                    *num = dyn_array_size(kids);
+                }
+                else
+                    *num = 0;
+                dyn_array_dispose( kids );
             }
             free( keys );
         }
         else
             *num = 0;
     }
-    else if ( *num == 0 )
+    else if ( num_parents == 0 )
         *success = 1;
     return children;
 }

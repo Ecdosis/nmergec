@@ -46,6 +46,7 @@
 #endif
 #define KDIST 2
 #define PHI 1.61803399
+//static int instance105=0;
 /*
  * Match represents a sequence of matching charactes in the pairs list 
  * and in the new text version.
@@ -461,7 +462,7 @@ int match_advance( match *m, pos *loc, int v, plugin_log *log )
     {
         card *c = m->end.current;
         m->prev = m->end;
-        match_push_versions( m );
+        match_push_versions( m );// surely only needed for a new pair
         if ( pair_len(card_pair(c))-1==m->end.pos )
         {
             card *old_c = c;
@@ -858,7 +859,7 @@ void match_verify( match *m, UChar *text, int tlen )
             UChar *pdata = pair_data(p);
             if ( m->start.current == m->end.current )
             {
-                count = (m->end.pos-m->start.pos)+1;
+                count = (m->prev.pos-m->start.pos)+1;
                 if ( i+count<=m->len )
                     u_memcpy(&copy[i], &pdata[m->start.pos], count);
                 i += count;
@@ -871,11 +872,9 @@ void match_verify( match *m, UChar *text, int tlen )
                     u_memcpy(&copy[i], &pdata[m->start.pos], count);
                 i += count;
             }
-            else if ( c == m->end.current )
+            else if ( c == m->prev.current )
             {
-                if ( m->len==105 )
-                    printf("105\n");
-                count = m->end.pos+1;
+                count = m->prev.pos+1;
                 if ( i+count<=m->len )
                     u_memcpy(&copy[i], pdata, count);
                 i += count;
