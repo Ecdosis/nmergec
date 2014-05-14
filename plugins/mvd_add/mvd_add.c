@@ -217,14 +217,14 @@ static int path_exists( card *l, card *r, int version, int concrete )
 {
     if ( l == r || card_right(l) == r )
         return 0;
+/*
     else if ( card_node_to_right(l) && card_node_to_left(r) )
     {
-/*
         printf("inserting empty arc for deletion in version %d:\n", version);
         card_print_until( l, r );
-*/
         return 1;
     }
+ */
     else
     {
         bitset *lv = pair_versions(card_pair(l));
@@ -241,7 +241,8 @@ static int path_exists( card *l, card *r, int version, int concrete )
                 {
                    pair *p = card_pair( c );
                    bitset *bs = pair_versions( p );
-                   if ( (!concrete || pair_len(p) > 0) && bitset_intersects(bs,rest) )
+                   if ( (!concrete || pair_len(p) > 0) 
+                       && bitset_intersects(bs,rest) )
                    {
 /*
                        printf("inserting empty arc for deletion in version %d:\n",
@@ -264,23 +265,30 @@ static void check_version_integrity( card *list, bitset *nv, dyn_array *deviants
     int j = 0;
     card *c = list;
     card *d = dyn_array_get(deviants,j++);
-    while ( c != NULL && j < dyn_array_size(deviants) )
+    while ( c != NULL )
     {
-        while ( card_text_off(d)==pos )
+        while ( d!=NULL && card_text_off(d)==pos )
         {
             pos = card_end(d);
-            d = dyn_array_get(deviants,j++);
+            if ( j<dyn_array_size(deviants) )
+                d = dyn_array_get(deviants,j++);
+            else
+                d = NULL;
         }
         pair *p = card_pair(c);
         bitset *cv = pair_versions(p);
-        if ( bitset_intersects(cv,nv) )
-        {
-            if ( pos != card_text_off(c) )
-                printf("gap in card list\n");
-            pos = card_end(c);
-        }
-        c = card_right( c );
+        if ( pos != card_text_off(c) )
+            printf("gap in card list\n");
+        pos = card_end(c);
+        c = card_next( c, nv, 0 );
     }
+}
+static int no_dangling_ends( card *l, card *r )
+{
+    if ( card_right(l)==r )
+        return 0;
+    else 
+        return card_node_to_right(l)&&card_node_to_left(r);
 }
 /**
  * Sort the discards by their start offsets in the new version, 
@@ -333,10 +341,11 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
                         bitset_or( bs, pair_versions(card_pair(old_c)) );
                         bitset_and( bs, pair_versions(card_pair(c)) );
                         bitset_clear_bit( bs, version );
-                        card *blank = card_create_blank_bs( bs, log );
-                        if ( blank != NULL )
+                        if ( !bitset_empty(bs) )
                         {
-                            card_add_before( c, blank );
+                            card *blank = card_create_blank_bs( bs, log );
+                            if ( blank != NULL )
+                                card_add_before( c, blank );
                         }
                         bitset_dispose( bs );
                     }
@@ -349,7 +358,7 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
         }
         // test for deletion in the new version
         else if ( old_c != NULL && card_text_off(c) == pos 
-            && path_exists(old_c,c,version,1) )
+            && (path_exists(old_c,c,version,0) ||no_dangling_ends(old_c,c)) )
         {
             card *blank = card_create_blank( version, log );
             if ( blank != NULL )
@@ -872,7 +881,7 @@ static int read_dir( char *folder )
 int test_mvd_add( int *passed, int *failed )
 {
     int64_t start = epoch_time();
-    int res = read_dir( "tagore" );
+    int res = read_dir( "social charity" );
     //int res = read_dir( "tests" );
     if ( res )
     {
