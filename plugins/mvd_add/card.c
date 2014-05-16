@@ -32,6 +32,7 @@
 #include "orphanage.h"
 #include "hashmap.h"
 #include "link_node.h"
+#include "vgnode.h"
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
@@ -903,66 +904,6 @@ void card_add_before( card *c, card *c_new )
     }
 }
 /**
- * Compute the number of incoming arcs to a node
- * @param rhs the card on the rhs of the node
- * @return the number of cards oined as incoming to the node
- */
-static int card_in_degree( card *rhs )
-{
-    int ind = 0;
-    card *lhs = rhs->left;
-    if ( lhs != NULL )
-    {
-        pair *pr = card_pair( rhs );
-        bitset *bs = bitset_clone( pair_versions(pr) );
-        if ( bs != NULL )
-        {
-            pair *pl = card_pair( lhs );
-            if ( bitset_intersects(pair_versions(pr),pair_versions(pl)) )
-            {
-                ind = 1;
-                bitset_and_not( bs, pair_versions(pl) );
-                card *temp = lhs;
-                while ( temp != NULL && !bitset_empty(bs) )
-                {
-                    temp = temp->left;
-                    if ( temp != NULL )
-                    {
-                        pair *pt = card_pair(temp);
-                        if ( bitset_intersects(bs,pair_versions(pt)) )
-                        {
-                            bitset_and_not( bs,pair_versions(pt) );
-                            ind++;
-                        }
-                    }
-                }
-            }
-            bitset_dispose( bs );
-        }
-    }
-    return ind;
-}
-/**
- * Compute the extra blank sometimes needed after deletion blanks
- * @param c the card after which the deletion blank will be inserted
- * @param after the deletion blank not yet inserted
- * @return the set of versions or NULL needed for the extra blank
- */
-bitset *card_compute_extra_blank( card *c, card *after )
-{
-    bitset *blank = NULL;
-    pair *p = card_pair( c );
-    bitset *bs = pair_versions( p );
-    card *rhs = card_next( c, bs, 0 );
-    if ( rhs != NULL && card_in_degree(rhs)>1 )
-    {
-        blank = bitset_clone( bs );
-        if ( blank != NULL )
-            bitset_and_not( blank, pair_versions(card_pair(after)) );
-    }
-    return blank;
-}
-/**
  * Add a card after a given point, creating a new node.
  * @param c the point to add it after
  * @param after the card to become the one after c
@@ -1150,6 +1091,124 @@ void card_print_list( card *list )
         }
     }
 }
+/**
+ * Look backwards in the card list until the vgnode is not overhanging
+ * @param vg an variant graph node with reverse overhang
+ * @param c the first card to test as incoming
+ * @param version ignore this version as you go
+ * @param overhang fill this in with the final overhang value
+ * @return 1 if it worked else 0
+ */
+int vgnode_complete_backwards( vgnode *vg, card *c, int version, int *overhang )
+{
+    int res = 1;
+    while ( c != NULL )
+    {
+        if ( vgnode_wants_incoming(vg,card_pair(c)) )
+        {
+            vgnode_add_incoming( vg, card_pair(c) );
+            vgnode_clear_version(vg,version);
+            *overhang = vgnode_overhangs( vg );
+            if ( *overhang != -1 )
+                break;
+        }
+        c = c->left;
+    }
+    if ( c == NULL )
+    {
+        printf("card: failed to find card matching node %s\n",
+            vgnode_tostring(vg));
+        res = 0;
+    }
+    return res;
+}
+/**
+ * Look forwards in the card list until the vgnode is not overhanging
+ * @param vg an variant graph node with overhang
+ * @param c the first card to test as outgoing
+ * @param version ignore this version as you go
+ * @param overhang fill this in with the final overhang value
+ * @return 1 if it worked else 0
+ */
+int vgnode_complete_forwards( vgnode *vg, card *c, int version, int *overhang )
+{
+    int res = 1;
+    while ( c != NULL )
+    {
+        if ( vgnode_wants(vg,card_pair(c)) )
+        {
+            vgnode_add_outgoing( vg, card_pair(c) );
+            vgnode_clear_version(vg,version);
+            *overhang = vgnode_overhangs(vg);
+            if ( *overhang != 1 )
+                break;
+        }
+        c = c->right;
+    }
+    if ( c == NULL )
+    {
+        printf("card: failed to find card matching node %s\n",
+            vgnode_tostring(vg));
+        res = 0;
+    }
+    return res;
+}
+/**
+ * Find a point to insert a blank card
+ * @param l the left bound of the unaligned region (itself aligned)
+ * @param r the right bound of the unaligned region (itself aligned)
+ * @param v the new version
+ */
+card *card_get_insertion_point( card *l, card *r, int v )
+{
+    card *ip = NULL;
+    card *temp = l;
+    while ( temp != r )
+    {
+        pair *tp = card_pair( temp );
+        pair *trp = card_pair( temp->right );
+        bitset *tpv = pair_versions(tp);
+        bitset *trpv = pair_versions(trp);
+        if ( !bitset_intersects(tpv,trpv)
+            && bitset_next_set_bit(tpv,v)!=v
+            && bitset_next_set_bit(trpv,v)!=v )
+        {
+            ip = temp;
+            break;
+        }
+        else
+            temp = temp->right;
+    }
+    return ip;
+}
+
+/**
+ * Using the card information compute the incoming and outgoing arcs
+ * @param vg the node to compute 
+ * @param leading the card immediately before the node
+ * @param nv the new version (to ignore)
+ * @return 1 if it worked else 0
+ */
+int vgnode_compute( vgnode *vg, card *leading, int nv )
+{
+    int res = 1;
+    pair *pl = leading->p;
+    pair *pr = (leading->right==NULL)?NULL:leading->right->p;
+    vgnode_add_incoming( vg, pl );
+    if ( pr != NULL )
+        vgnode_add_outgoing( vg, pr );
+    vgnode_clear_version(vg,nv);
+    int overhang = vgnode_overhangs(vg);
+    while ( res && (overhang != 0) )
+    {
+        if ( overhang > 0 )
+            res = vgnode_complete_forwards(vg,leading->right->right,nv,&overhang);
+        else
+            res = vgnode_complete_backwards(vg,leading->left,nv,&overhang);
+    }
+    return res; 
+}
+
 #ifdef MVD_TEST
 static UChar data1[7] = {'b','a','n','a','n','a',0};
 static UChar data2[6] = {'a','p','p','l','e',0};

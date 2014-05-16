@@ -57,6 +57,7 @@
 #include "verify.h"
 #include "adder.h"
 #include "benchmark.h"
+#include "vgnode.h"
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
@@ -259,8 +260,15 @@ static int path_exists( card *l, card *r, int version, int concrete )
         return 0;
     }
 }
-static void check_version_integrity( card *list, bitset *nv, dyn_array *deviants )
+/**
+ * Check that there are no gaps in the sequence of aligned and deviant sections
+ * @param list the list of cards
+ * @param nv a set of versions containing the new version only
+ * @param deviants the mismatch and child transpose segments
+ */
+static int check_version_integrity( card *list, bitset *nv, dyn_array *deviants )
 {
+    int res = 1;
     int pos = 0;
     int j = 0;
     card *c = list;
@@ -278,10 +286,14 @@ static void check_version_integrity( card *list, bitset *nv, dyn_array *deviants
         pair *p = card_pair(c);
         bitset *cv = pair_versions(p);
         if ( pos != card_text_off(c) )
+        {
+            res = 0;
             printf("gap in card list\n");
+        }
         pos = card_end(c);
         c = card_next( c, nv, 0 );
     }
+    return res;
 }
 static int no_dangling_ends( card *l, card *r )
 {
@@ -289,6 +301,68 @@ static int no_dangling_ends( card *l, card *r )
         return 0;
     else 
         return card_node_to_right(l)&&card_node_to_left(r);
+}
+/**
+ * Insert a blank in between two cards, both forming nodes
+ * @param bs the set of versions for the blank
+ * @param l the left hand card leading into a node
+ * @param r the right hand card leading out of a node
+ * @param log the log to write errors to
+ * @param pos the position of the blank if the new version
+ * @param version the new version
+ * @return 1 if it worked else 0
+ */
+static int insert_blank_between( bitset *bs, card *l, card *r, 
+    plugin_log *log, int version, int pos )
+{
+    int res = 1;
+    card *blank = card_create_blank_bs( bs, log );
+    if ( blank != NULL )
+    {
+        if ( pos >= 0 )
+            card_set_text_off( blank, pos );        
+        card *ip = card_get_insertion_point(l,r,version);
+        if ( ip != NULL )
+            card_add_after(ip,blank);
+        else
+        {
+            vgnode *vgl = vgnode_create();
+            if ( vgl!= NULL )
+            {
+                if ( vgnode_compute(vgl,l,version) )
+                {
+                    if ( vgnode_indegree(vgl) > 1 )
+                    {
+                        vgnode *vgr = vgnode_create();
+                        if ( vgr != NULL )
+                        {
+                            vgnode_compute(vgr,card_left(r),version);
+                            if ( vgnode_outdegree(vgr) > 1 )
+                            {
+                                // unusual case ...
+                                card *extra = card_create_blank_bs( 
+                                    vgnode_versions(vgl), log );
+                                if ( extra != NULL )
+                                    card_add_after( l, extra );
+                                else
+                                    res = 0;
+                                card_add_after( l, blank );
+                            }
+                        }
+                        else
+                            card_add_before( r, blank );
+                        vgnode_dispose( vgr );
+                    }
+                    else
+                        card_add_after( l, blank );
+                }
+            }
+            else
+                res = 0;
+            vgnode_dispose( vgl );
+        }
+    }
+    return res;
 }
 /**
  * Sort the discards by their start offsets in the new version, 
@@ -315,10 +389,12 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
     // debug
     res = print_merged_segments( c, nv, version );
     if ( res )
+    {
         print_unmerged_segments( deviants );
-    check_version_integrity( list, nv, deviants );
+        res = check_version_integrity( list, nv, deviants );
+    }
     // end debug
-    while ( c != NULL )
+    while ( res && c != NULL )
     {
         //printf("pos: %d c: %d-%d",pos,card_text_off(c),card_len(c)
         //    +card_text_off(c));
@@ -343,9 +419,7 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
                         bitset_clear_bit( bs, version );
                         if ( !bitset_empty(bs) )
                         {
-                            card *blank = card_create_blank_bs( bs, log );
-                            if ( blank != NULL )
-                                card_add_before( c, blank );
+                            res = insert_blank_between( bs, old_c, c, log, version, -1 ); 
                         }
                         bitset_dispose( bs );
                     }
@@ -360,19 +434,12 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
         else if ( old_c != NULL && card_text_off(c) == pos 
             && (path_exists(old_c,c,version,0) ||no_dangling_ends(old_c,c)) )
         {
-            card *blank = card_create_blank( version, log );
-            if ( blank != NULL )
+            bitset *bs = bitset_create();
+            if ( bs != NULL )
             {
-                bitset *extra = card_compute_extra_blank( old_c, blank );
-                card_set_text_off( blank, pos );
-                card_add_after( old_c, blank );
-                // add extra blank to fix split caused by first blank
-                if ( extra != NULL && !bitset_empty(extra) )
-                {
-                    card *ex = card_create_blank_bs( extra, log );
-                    if ( ex != NULL )
-                        card_add_after( blank, ex );
-                }
+                bitset_set( bs, version );
+                res = insert_blank_between( bs, old_c, c, log, version, pos );
+                bitset_dispose( bs );
             }
         }
         // move to next card if there are no more d's at this pos
@@ -590,7 +657,7 @@ static int add_subsequent_version( MVD *mvd, adder *add,
                     if ( !success )
                     {
                         res = 0;
-                        plugin_log_add(log,"failed to gather children");
+                        plugin_log_add(log,"failed to gather children\n");
                     }
                     else if ( children != NULL )
                     {
@@ -864,6 +931,8 @@ static int read_dir( char *folder )
                             free( output );
                             output = NULL;
                         }
+                        if ( !res )
+                            printf("adding of file %s failed\n",f_name);
                         free( txt );
                     }
                     free( path );

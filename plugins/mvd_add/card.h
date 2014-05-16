@@ -25,6 +25,7 @@ void card_dispose( card *lp );
 void card_dispose_list( card *lp );
 void card_set_left( card *lp, card *left );
 void card_set_right( card *lp, card *right );
+card *card_get_insertion_point( card *l, card *r, int v );
 card *card_left( card *lp );
 card *card_right( card *lp );
 card *card_next( card *lp, bitset *bs, int avoid );

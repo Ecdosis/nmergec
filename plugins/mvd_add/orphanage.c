@@ -352,7 +352,7 @@ card **orphanage_all_new_children( orphanage *o, int v, int *num, int *success )
                     {
                         while ( offspring[j] != NULL )
                         {
-                            pair *cp = card_pair(offspring[i] );
+                            pair *cp = card_pair(offspring[j] );
                             bitset *cbs = pair_versions( cp );
                             // v must be the ONLY version
                             if ( bitset_next_set_bit(cbs,0)==v 

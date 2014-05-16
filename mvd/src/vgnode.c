@@ -18,6 +18,8 @@ struct vgnode_struct
 {
     bitset *incoming;
     bitset *outgoing;
+    int n_incoming;
+    int n_outgoing;
     int id;
 };
 static int vgnode_id = 0;
@@ -71,7 +73,10 @@ int vgnode_add_incoming( vgnode *n, pair *p )
         res = 0;
     }
     else
+    {
         bitset_or( n->incoming, pv );
+        n->n_incoming++;
+    }
     return res;
 }
 /**
@@ -90,7 +95,10 @@ int vgnode_add_outgoing( vgnode *n, pair *p )
         res = 0;
     }
     else
+    {
         bitset_or( n->outgoing, pv );
+        n->n_outgoing++;
+    }
     return res;
 }
 int vgnode_balanced( vgnode *n )
@@ -104,7 +112,8 @@ int vgnode_wants(vgnode *n, pair *p )
     if ( diff != NULL )
     {
         bitset_and_not( diff, n->outgoing );
-        if ( bitset_intersects(diff,pair_versions(p)) )
+        bitset *pv = pair_versions(p);
+        if ( bitset_intersects(diff,pv) && !bitset_intersects(n->outgoing,pv) )
             res = 1;
         bitset_dispose( diff );
     }
@@ -117,7 +126,8 @@ int vgnode_wants_incoming( vgnode *n, pair *p )
     if ( diff != NULL )
     {
         bitset_and_not( diff, n->incoming );
-        if ( bitset_intersects(diff, pair_versions(p)) )
+        bitset *pv = pair_versions(p);
+        if ( bitset_intersects(diff, pv) && !bitset_intersects(n->incoming,pv) )
             res = 1;
         bitset_dispose( diff );
     }
@@ -138,4 +148,61 @@ char *vgnode_tostring( vgnode *n )
     bitset_tostring(n->outgoing,&str[strlen(str)],top_outgoing+2);
     strcat(str,"]");
     return str;
+}
+int vgnode_outdegree( vgnode *vg )
+{
+    return vg->n_outgoing;
+}
+int vgnode_indegree( vgnode *vg )
+{
+    return vg->n_incoming;
+}
+bitset *vgnode_outgoing( vgnode *vg )
+{
+    return vg->outgoing;
+}
+bitset *vgnode_incoming( vgnode *vg )
+{
+    return vg->incoming;
+}
+/**
+ * Get all the versions of the node. Incoming should equal outgoing
+ * @param vg the node to get versions off
+ * @param a bitset owned by the vgnode
+ */
+bitset *vgnode_versions( vgnode *vg )
+{
+    return vg->incoming;
+}
+/**
+ * Does this vgnode have overhang and if so of what type?
+ * @param vg the node in question
+ * @return 1 if it has forward overhang, 0 for none and -1 if backwards
+ */
+int vgnode_overhangs( vgnode *vg )
+{
+    int res = 0;
+    bitset *bs = bitset_clone( vg->incoming );
+    if ( bs != NULL )
+    {
+        bitset_and_not(bs,vgnode_outgoing(vg));
+        if ( bitset_empty(bs) )
+        {
+            bitset_or( bs, vgnode_outgoing(vg) );
+            bitset_and_not( bs, vgnode_incoming(vg) );
+            if ( bitset_empty(bs) )
+                res = 0;
+            else
+                res = -1;
+        }
+        else
+            res = 1;
+        bitset_dispose( bs );
+    }
+    return res;
+}
+void vgnode_clear_version( vgnode *vg, int version )
+{
+    bitset_clear_bit( vg->incoming, version );
+    bitset_clear_bit( vg->outgoing, version );
 }
