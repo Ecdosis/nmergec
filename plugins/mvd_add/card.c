@@ -1154,30 +1154,80 @@ int vgnode_complete_forwards( vgnode *vg, card *c, int version, int *overhang )
     return res;
 }
 /**
- * Find a point to insert a blank card
+ * Get the indegree of a node
+ * @param l the incoming arc
+ * @param version the new version
+ * @return -1 if it failed else the indegree
+ */
+static int card_node_indegree( card *l, int version )
+{
+    int indegree = -1;
+    vgnode *vgl = vgnode_create();
+    if ( vgl!= NULL )
+    {
+        if ( vgnode_compute(vgl,l,version))
+        {
+            indegree = vgnode_indegree(vgl);
+            vgnode_dispose( vgl );
+        }
+    }
+    return indegree;
+}
+/**
+ * Get the indegree of a node
+ * @param r the incoming arc
+ * @param version the new version
+ * @return -1 if it failed else the outdegree
+ */
+static int card_node_outdegree( card *r, int version )
+{
+    int outdegree = -1;
+    vgnode *vgr = vgnode_create();
+    if ( vgr!= NULL )
+    {
+        if ( vgnode_compute(vgr,r,version))
+        {
+            outdegree = vgnode_outdegree(vgr);
+            vgnode_dispose( vgr );
+        }
+    }
+    return outdegree;
+}
+/**
+ * Find a point to insert a card belonging to the new version
  * @param l the left bound of the unaligned region (itself aligned)
  * @param r the right bound of the unaligned region (itself aligned)
  * @param v the new version
+ * @return the card AFTER which to insert the blank or filler else NULL
  */
 card *card_get_insertion_point( card *l, card *r, int v )
 {
     card *ip = NULL;
-    card *temp = l;
-    while ( temp != r )
+    if ( card_node_to_right(l) && card_node_indegree(l,v)==1 )
+        ip = l;
+    else if ( card_node_to_left(r) && card_node_outdegree(r,v)==1 )
+        ip = r->left;
+    else
     {
-        pair *tp = card_pair( temp );
-        pair *trp = card_pair( temp->right );
-        bitset *tpv = pair_versions(tp);
-        bitset *trpv = pair_versions(trp);
-        if ( !bitset_intersects(tpv,trpv)
-            && bitset_next_set_bit(tpv,v)!=v
-            && bitset_next_set_bit(trpv,v)!=v )
+        // find a place in the middle where there are no nodes
+        // this might fail
+        card *temp = l;
+        while ( temp != r )
         {
-            ip = temp;
-            break;
+            pair *tp = card_pair( temp );
+            pair *trp = card_pair( temp->right );
+            bitset *tpv = pair_versions(tp);
+            bitset *trpv = pair_versions(trp);
+            if ( !bitset_intersects(tpv,trpv)
+                && bitset_next_set_bit(tpv,v)!=v
+                && bitset_next_set_bit(trpv,v)!=v )
+            {
+                ip = temp;
+                break;
+            }
+            else
+                temp = temp->right;
         }
-        else
-            temp = temp->right;
     }
     return ip;
 }

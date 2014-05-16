@@ -308,59 +308,46 @@ static int no_dangling_ends( card *l, card *r )
  * @param l the left hand card leading into a node
  * @param r the right hand card leading out of a node
  * @param log the log to write errors to
- * @param pos the position of the blank if the new version
  * @param version the new version
  * @return 1 if it worked else 0
  */
-static int insert_blank_between( bitset *bs, card *l, card *r, 
-    plugin_log *log, int version, int pos )
+static int insert_between( card *betw, card *l, card *r, 
+    int version, plugin_log *log )
 {
     int res = 1;
-    card *blank = card_create_blank_bs( bs, log );
-    if ( blank != NULL )
+    card *ip = card_get_insertion_point( l ,r, version );
+    if ( ip != NULL )
+        card_add_after(ip,betw);
+    else
     {
-        if ( pos >= 0 )
-            card_set_text_off( blank, pos );        
-        card *ip = card_get_insertion_point(l,r,version);
-        if ( ip != NULL )
-            card_add_after(ip,blank);
-        else
+        if ( card_node_to_right(l) )
         {
-            vgnode *vgl = vgnode_create();
-            if ( vgl!= NULL )
+            vgnode *vg = vgnode_create();
+            if ( vgnode_compute(vg,l,version) )
             {
-                if ( vgnode_compute(vgl,l,version) )
-                {
-                    if ( vgnode_indegree(vgl) > 1 )
-                    {
-                        vgnode *vgr = vgnode_create();
-                        if ( vgr != NULL )
-                        {
-                            vgnode_compute(vgr,card_left(r),version);
-                            if ( vgnode_outdegree(vgr) > 1 )
-                            {
-                                // unusual case ...
-                                card *extra = card_create_blank_bs( 
-                                    vgnode_versions(vgl), log );
-                                if ( extra != NULL )
-                                    card_add_after( l, extra );
-                                else
-                                    res = 0;
-                                card_add_after( l, blank );
-                            }
-                        }
-                        else
-                            card_add_before( r, blank );
-                        vgnode_dispose( vgr );
-                    }
-                    else
-                        card_add_after( l, blank );
-                }
+                card *b = card_create_blank_bs(vgnode_incoming(vg),log);
+                card_add_after( l, b );
+                card_add_after( b, betw );
+                vgnode_dispose( vg );
             }
             else
                 res = 0;
-            vgnode_dispose( vgl );
         }
+        else if ( card_node_to_left(r) )
+        {
+            vgnode *vg = vgnode_create();
+            if ( vgnode_compute(vg,card_left(r),version) )
+            {
+                card *b = card_create_blank_bs(vgnode_incoming(vg),log);
+                card_add_after( l, b );
+                card_add_after( b, betw );
+                vgnode_dispose( vg );
+            }
+            else
+                res = 0;
+        }
+        else
+            res = 0;// don't know
     }
     return res;
 }
@@ -407,7 +394,8 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
             {
                 int insertion = card_len(d)!=0 
                     && !path_exists(old_c,c,version,0);
-                card_add_after( old_c, d );
+                insert_between( d, old_c, c, version, log );
+                //card_add_after( old_c, d );
                 // test for insertion in new version
                 if ( insertion )
                 {
@@ -419,7 +407,8 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
                         bitset_clear_bit( bs, version );
                         if ( !bitset_empty(bs) )
                         {
-                            res = insert_blank_between( bs, old_c, c, log, version, -1 ); 
+                            card *blank = card_create_blank_bs( bs, log );
+                            res = insert_between( blank, old_c, c, version, log ); 
                         }
                         bitset_dispose( bs );
                     }
@@ -438,7 +427,9 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
             if ( bs != NULL )
             {
                 bitset_set( bs, version );
-                res = insert_blank_between( bs, old_c, c, log, version, pos );
+                card *blank = card_create_blank_bs( bs, log );
+                card_set_text_off( blank, pos );
+                res = insert_between( blank, old_c, c, version, log );
                 bitset_dispose( bs );
             }
         }
