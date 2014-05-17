@@ -1197,18 +1197,24 @@ static int card_node_outdegree( card *r, int version )
  * Find a point to insert a card belonging to the new version
  * @param l the left bound of the unaligned region (itself aligned)
  * @param r the right bound of the unaligned region (itself aligned)
+ * @param c the n card for which an insertion point is sought
  * @param v the new version
  * @return the card AFTER which to insert the blank or filler else NULL
  */
-card *card_get_insertion_point( card *l, card *r, int v )
+card *card_get_insertion_point( card *l, card *r, card *c, int v )
 {
     card *ip = NULL;
-    if ( card_node_to_right(l) && card_node_indegree(l,v)==1 )
+    if ( !card_node_to_right(l) )
         ip = l;
-    else if ( card_node_to_left(r) && card_node_outdegree(r,v)==1 )
+    else if ( !card_node_to_left(r) )
+        ip = r->left;
+    else if ( card_node_indegree(l,v)==1 )
+        ip = l;
+    else if ( card_node_outdegree(r->left,v)==1 )
         ip = r->left;
     else
     {
+        bitset *cv = pair_versions(card_pair(c));
         // find a place in the middle where there are no nodes
         // this might fail
         card *temp = l;
@@ -1219,8 +1225,8 @@ card *card_get_insertion_point( card *l, card *r, int v )
             bitset *tpv = pair_versions(tp);
             bitset *trpv = pair_versions(trp);
             if ( !bitset_intersects(tpv,trpv)
-                && bitset_next_set_bit(tpv,v)!=v
-                && bitset_next_set_bit(trpv,v)!=v )
+                && !bitset_intersects(tpv,cv)
+                && !bitset_intersects(trpv,cv) )
             {
                 ip = temp;
                 break;

@@ -315,7 +315,7 @@ static int insert_between( card *betw, card *l, card *r,
     int version, plugin_log *log )
 {
     int res = 1;
-    card *ip = card_get_insertion_point( l ,r, version );
+    card *ip = card_get_insertion_point( l ,r, betw, version );
     if ( ip != NULL )
         card_add_after(ip,betw);
     else
@@ -339,7 +339,7 @@ static int insert_between( card *betw, card *l, card *r,
             if ( vgnode_compute(vg,card_left(r),version) )
             {
                 card *b = card_create_blank_bs(vgnode_incoming(vg),log);
-                card_add_after( l, b );
+                card_add_before( r, b );
                 card_add_after( b, betw );
                 vgnode_dispose( vg );
             }
@@ -388,6 +388,8 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
         // test for variants, transpositions and empty arcs
         if ( d != NULL && card_text_off(d)==pos )
         {
+            if ( pair_is_child(card_pair(d)) )
+                printf("Pair!\n");
             if ( old_c == NULL )
                 card_add_before( c, d );
             else
@@ -941,7 +943,7 @@ static int read_dir( char *folder )
 int test_mvd_add( int *passed, int *failed )
 {
     int64_t start = epoch_time();
-    int res = read_dir( "social charity" );
+    int res = read_dir( "tagore" );
     //int res = read_dir( "tests" );
     if ( res )
     {
