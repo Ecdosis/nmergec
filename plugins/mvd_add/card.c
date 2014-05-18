@@ -718,14 +718,9 @@ int card_node_to_right( card *c )
     int res = 0;
     if ( c->right != NULL )
     {
-        if ( pair_is_hint(c->right->p) )
-            res = 1;
-        else
-        {
-            bitset *bs1 = pair_versions(c->p);
-            bitset *bs2 = pair_versions(c->right->p);
-            res = bitset_intersects(bs1,bs2);
-        }
+        bitset *bs1 = pair_versions(c->p);
+        bitset *bs2 = pair_versions(c->right->p);
+        res = bitset_intersects(bs1,bs2);
     }
     return res;
 }
@@ -739,14 +734,9 @@ int card_node_to_left( card *c )
     int res = 0;
     if ( c->left != NULL )
     {
-        if ( pair_is_hint(c->left->p) )
-            res = 1;
-        else
-        {
-            bitset *bs1 = pair_versions(c->p);
-            bitset *bs2 = pair_versions(c->left->p);
-            res = bitset_intersects(bs1,bs2);
-        }
+        bitset *bs1 = pair_versions(c->p);
+        bitset *bs2 = pair_versions(c->left->p);
+        res = bitset_intersects(bs1,bs2);
     }
     return res;
 }
@@ -886,21 +876,18 @@ static int card_merge_right( card *c_new, card *c )
  */
 void card_add_before( card *c, card *c_new )
 {
-    if ( !card_merge_left(c_new, c) )
+    if ( c->left == NULL )
     {
-        if ( c->left == NULL )
-        {
-            c_new->right = c;
-            c->left = c_new;
-        }
-        else
-        {
-            c_new->right = c;
-            c_new->left = c->left;
-            if ( c->left != NULL )
-                c->left->right = c_new;
-            c->left = c_new;
-        }
+        c_new->right = c;
+        c->left = c_new;
+    }
+    else
+    {
+        c_new->right = c;
+        c_new->left = c->left;
+        if ( c->left != NULL )
+            c->left->right = c_new;
+        c->left = c_new;
     }
 }
 /**
@@ -911,14 +898,11 @@ void card_add_before( card *c, card *c_new )
  */
 void card_add_after( card *c, card *after )
 {
-    if ( !card_merge_right(after,c) )
-    {
-        after->right = c->right;
-        after->left = c;
-        if ( c->right != NULL )
-            c->right->left = after;
-        c->right = after;
-    }
+    after->right = c->right;
+    after->left = c;
+    if ( c->right != NULL )
+        c->right->left = after;
+    c->right = after;
 }
 /**
  * Add a new card
@@ -1194,46 +1178,90 @@ static int card_node_outdegree( card *r, int version )
     return outdegree;
 }
 /**
+ * Look for a place in the middle where there are no nodes
+ * @param l the left-hand limit
+ * @param r the right hand limit
+ * @param bs the new card's versions
+ */
+static card *card_get_insertion_point_internal( card *l, card *r, bitset *bs )
+{
+    card *ip = NULL;
+    card *temp = l;
+    while ( temp != r )
+    {
+        pair *tp = card_pair( temp );
+        pair *trp = card_pair( temp->right );
+        bitset *tpv = pair_versions(tp);
+        bitset *trpv = pair_versions(trp);
+        if ( !bitset_intersects(tpv,trpv)
+            && !bitset_intersects(tpv,bs)
+            && !bitset_intersects(trpv,bs) )
+        {
+            ip = temp;
+            break;
+        }
+        else
+            temp = temp->right;
+    }
+    return ip;
+}
+/**
+ * Find a point to insert a card belonging to versions NOT between l and r
+ * @param l the left bound of the unaligned region (itself aligned)
+ * @param r the right bound of the unaligned region (itself aligned)
+ * @param c the card to insert
+ * @return the card AFTER which to insert the blank or filler, or NULL
+ */
+card *card_get_insertion_point_other( card *l, card *r, card *c )
+{
+    card *ip = NULL;
+    pair *p = card_pair( c );
+    bitset *cv = pair_versions( p );
+    ip = card_get_insertion_point_internal( l, r, cv );
+    return ip;
+}
+/**
  * Find a point to insert a card belonging to the new version
  * @param l the left bound of the unaligned region (itself aligned)
  * @param r the right bound of the unaligned region (itself aligned)
- * @param c the n card for which an insertion point is sought
  * @param v the new version
- * @return the card AFTER which to insert the blank or filler else NULL
+ * @return the card AFTER which to insert the blank or filler, or NULL
  */
-card *card_get_insertion_point( card *l, card *r, card *c, int v )
+card *card_get_insertion_point_nv( card *l, card *r, int v )
 {
     card *ip = NULL;
-    if ( !card_node_to_right(l) )
-        ip = l;
-    else if ( !card_node_to_left(r) )
-        ip = r->left;
-    else if ( card_node_indegree(l,v)==1 )
+    if ( card_node_indegree(l,v)==1 )
         ip = l;
     else if ( card_node_outdegree(r->left,v)==1 )
         ip = r->left;
-    else
+    if ( ip == NULL )
     {
-        bitset *cv = pair_versions(card_pair(c));
-        // find a place in the middle where there are no nodes
-        // this might fail
-        card *temp = l;
-        while ( temp != r )
+        bitset *bs = bitset_create();
+        if ( bs != NULL )
         {
-            pair *tp = card_pair( temp );
-            pair *trp = card_pair( temp->right );
-            bitset *tpv = pair_versions(tp);
-            bitset *trpv = pair_versions(trp);
-            if ( !bitset_intersects(tpv,trpv)
-                && !bitset_intersects(tpv,cv)
-                && !bitset_intersects(trpv,cv) )
-            {
-                ip = temp;
-                break;
-            }
-            else
-                temp = temp->right;
+            bitset_set( bs, v );
+            ip = card_get_insertion_point_internal( l, r, bs );
+            bitset_dispose( bs );
         }
+    }
+    if ( ip == NULL )
+    {
+        // force insertion on left
+        vgnode *vg = vgnode_create();
+        if ( vg != NULL )
+        {
+            if ( vgnode_compute(vg,l,v) )
+            {
+                card *b = card_create_blank_bs(vgnode_incoming(vg),NULL);
+                if ( b != NULL )
+                {
+                    card_add_after( l, b );
+                    ip = b;
+                }
+            }
+            vgnode_dispose( vg );
+        }
+        // else return NULL
     }
     return ip;
 }
@@ -1264,7 +1292,45 @@ int vgnode_compute( vgnode *vg, card *leading, int nv )
     }
     return res; 
 }
-
+/**
+ * Check that all gaps in the new version end on left and right in nodes
+ * @param list the list of cards
+ * @param v the new version
+ * @return 1 if it passed else 0
+ */
+int card_verify_gaps( card *list, int v )
+{
+    int res = 1;
+    card *c = list;
+    card *prev = NULL;
+    while ( c != NULL )
+    {
+        if ( prev = NULL )
+        {
+            pair *pp = card_pair(prev);
+            bitset *ppv = pair_versions( pp );
+            pair *p = card_pair( c );
+            bitset *cv = pair_versions( p );
+            if ( bitset_next_set_bit(ppv,v)==v 
+                && bitset_next_set_bit(cv,v)!=v
+                && !bitset_intersects(ppv,cv) )
+            {
+                res = 0;
+                break;
+            }
+            else if ( bitset_next_set_bit(ppv,v)!=v 
+                && bitset_next_set_bit(cv,v)==v
+                && !bitset_intersects(ppv,cv) )
+            {
+                res = 0;
+                break;
+            }
+        }
+        prev = c;
+        c = c->right;
+    }
+    return res;
+}
 #ifdef MVD_TEST
 static UChar data1[7] = {'b','a','n','a','n','a',0};
 static UChar data2[6] = {'a','p','p','l','e',0};

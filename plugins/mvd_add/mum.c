@@ -134,8 +134,18 @@ int mum_text_end( mum *m )
 static int mum_split_at_start( mum *m, orphanage *o, plugin_log *log )
 {
     int res = 1;
-    pair *p = card_pair( m->start.current );
-    if ( m->start.pos > 0 && m->start.pos < pair_len(p) )
+    if ( m->start.pos==0 )
+    {
+        // ensure a node at the point of version-change
+        if ( card_left(m->start.current)!=NULL && !card_node_to_left(m->start.current) )
+        {
+            pair *p = card_pair( m->start.current );
+            bitset *bs = pair_versions( p );
+            card *b = card_create_blank_bs(bs,NULL);
+            card_add_before( m->start.current, b );
+        }
+    }
+    else 
     {
         card *old_start = m->start.current;
         res = card_split( m->start.current, m->start.pos, o, log );
@@ -165,7 +175,18 @@ static int mum_split_at_end( mum *m, orphanage *o, plugin_log *log )
     int res = 1;
     pair *p = card_pair(m->end.current);
     int plen = pair_len(p);
-    if ( m->end.pos < plen-1 && m->end.pos >= 0 )
+    if ( m->end.pos == plen-1 )
+    {
+        // ensure a node at the point of version-change
+        if ( card_right(m->end.current)!=NULL && !card_node_to_right(m->end.current) )
+        {
+            pair *p = card_pair( m->end.current );
+            bitset *bs = pair_versions( p );
+            card *b = card_create_blank_bs(bs,NULL);
+            card_add_after( m->end.current, b );
+        }
+    }
+    else
     {
         res = card_split( m->end.current, m->end.pos+1, o, log );
     }

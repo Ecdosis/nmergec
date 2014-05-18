@@ -206,6 +206,13 @@ static int print_merged_segments( card *c, bitset *nv, int size )
     }
     return res;
 }
+static int path_v_exists( card *l, card *r, int v )
+{
+    if ( card_node_to_right(l) && card_node_to_left(r) && card_right(l)!=r )
+        return 0;
+    else
+        return 1;
+}
 /**
  * Can we go from l to r on some path NOT involving the new version?
  * @param l the left limit of the path, left of r
@@ -295,62 +302,6 @@ static int check_version_integrity( card *list, bitset *nv, dyn_array *deviants 
     }
     return res;
 }
-static int no_dangling_ends( card *l, card *r )
-{
-    if ( card_right(l)==r )
-        return 0;
-    else 
-        return card_node_to_right(l)&&card_node_to_left(r);
-}
-/**
- * Insert a blank in between two cards, both forming nodes
- * @param bs the set of versions for the blank
- * @param l the left hand card leading into a node
- * @param r the right hand card leading out of a node
- * @param log the log to write errors to
- * @param version the new version
- * @return 1 if it worked else 0
- */
-static int insert_between( card *betw, card *l, card *r, 
-    int version, plugin_log *log )
-{
-    int res = 1;
-    card *ip = card_get_insertion_point( l ,r, betw, version );
-    if ( ip != NULL )
-        card_add_after(ip,betw);
-    else
-    {
-        if ( card_node_to_right(l) )
-        {
-            vgnode *vg = vgnode_create();
-            if ( vgnode_compute(vg,l,version) )
-            {
-                card *b = card_create_blank_bs(vgnode_incoming(vg),log);
-                card_add_after( l, b );
-                card_add_after( b, betw );
-                vgnode_dispose( vg );
-            }
-            else
-                res = 0;
-        }
-        else if ( card_node_to_left(r) )
-        {
-            vgnode *vg = vgnode_create();
-            if ( vgnode_compute(vg,card_left(r),version) )
-            {
-                card *b = card_create_blank_bs(vgnode_incoming(vg),log);
-                card_add_before( r, b );
-                card_add_after( b, betw );
-                vgnode_dispose( vg );
-            }
-            else
-                res = 0;
-        }
-        else
-            res = 0;// don't know
-    }
-    return res;
-}
 /**
  * Sort the discards by their start offsets in the new version, 
  * then insert them in order into the list. Fill in any gaps with empty cards.
@@ -388,16 +339,18 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
         // test for variants, transpositions and empty arcs
         if ( d != NULL && card_text_off(d)==pos )
         {
-            if ( pair_is_child(card_pair(d)) )
-                printf("Pair!\n");
             if ( old_c == NULL )
                 card_add_before( c, d );
             else
             {
-                int insertion = card_len(d)!=0 
-                    && !path_exists(old_c,c,version,0);
-                insert_between( d, old_c, c, version, log );
-                //card_add_after( old_c, d );
+                int insertion = (card_len(d)!=0 
+                    && !path_exists(old_c,c,version,0));
+                card *ip = card_get_insertion_point_nv( old_c, c, version );
+                if ( ip != NULL )
+                    card_add_after(ip,d);
+                else
+                    plugin_log_add(log,
+                       "failed to obtain insertion point");
                 // test for insertion in new version
                 if ( insertion )
                 {
@@ -410,12 +363,21 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
                         if ( !bitset_empty(bs) )
                         {
                             card *blank = card_create_blank_bs( bs, log );
-                            res = insert_between( blank, old_c, c, version, log ); 
+                            card_add_after( d, blank );
+/*
+                            card *ip = card_get_insertion_point_other( old_c, 
+                                c, blank ); 
+                            if ( ip != NULL )
+                                card_add_after( ip, blank );
+                            else
+                                plugin_log_add(log,
+                                    "failed to obtain insertion point");
+*/ 
                         }
                         bitset_dispose( bs );
                     }
                     else
-                        plugin_log_add(log,"mvd_add: failed to create blank");
+                        plugin_log_add(log,"mvd_add: failed to create bs");
                 }
             }
             pos = card_end(d);
@@ -423,15 +385,23 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
         }
         // test for deletion in the new version
         else if ( old_c != NULL && card_text_off(c) == pos 
-            && (path_exists(old_c,c,version,0) ||no_dangling_ends(old_c,c)) )
+            && c != sentinel && !path_v_exists(old_c,c,version) )
         {
             bitset *bs = bitset_create();
             if ( bs != NULL )
             {
                 bitset_set( bs, version );
                 card *blank = card_create_blank_bs( bs, log );
-                card_set_text_off( blank, pos );
-                res = insert_between( blank, old_c, c, version, log );
+                if( blank != NULL )
+                {
+                    card_set_text_off( blank, pos );
+                    card *ip = card_get_insertion_point_nv( old_c, c, version );
+                    if ( ip != NULL )
+                        card_add_after( ip, blank );
+                    else
+                        plugin_log_add(log,
+                       "failed to obtain insertion point");
+                }
                 bitset_dispose( bs );
             }
         }
@@ -657,6 +627,10 @@ static int add_subsequent_version( MVD *mvd, adder *add,
                         for ( i=0;i<num;i++ )
                             dyn_array_add( discards, children[i] );
                     }
+                    if ( !card_verify_gaps(list,new_vid) )
+                    {
+                        plugin_log_add( log,"gaps invalid");
+                    }
                     res = add_deviant_pairs( list, discards, new_vid, log );
                     if ( res )
                     {
@@ -664,7 +638,7 @@ static int add_subsequent_version( MVD *mvd, adder *add,
                         mvd_set_pairs( mvd, pairs );
                         if ( !verify_check(pairs) )
                         {
-                            fprintf(stderr,"error: unbalanced graph\n"); 
+                            plugin_log_add(log,"error: unbalanced graph\n"); 
                         }
                         card_print_list( list );
                     }
@@ -943,7 +917,7 @@ static int read_dir( char *folder )
 int test_mvd_add( int *passed, int *failed )
 {
     int64_t start = epoch_time();
-    int res = read_dir( "tagore" );
+    int res = read_dir( "social charity" );
     //int res = read_dir( "tests" );
     if ( res )
     {
