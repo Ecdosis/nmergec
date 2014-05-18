@@ -302,6 +302,25 @@ static int check_version_integrity( card *list, bitset *nv, dyn_array *deviants 
     }
     return res;
 }
+static int card_dangles( card *c, card *sentinel )
+{
+    int res = 1;
+    card *temp = card_right(c);
+    pair *cp = card_pair(c);
+    bitset *cpv = pair_versions( cp );
+    while ( temp != sentinel )
+    {
+        pair *p = card_pair(temp);
+        bitset *bs = pair_versions(p);
+        if ( bitset_intersects(cpv,bs) )
+        {
+            res = 0;
+            break;
+        }
+        temp = card_right(temp);
+    }
+    return res;
+}
 /**
  * Sort the discards by their start offsets in the new version, 
  * then insert them in order into the list. Fill in any gaps with empty cards.
@@ -439,10 +458,31 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
                 {
                     card *left = card_left( sentinel );
                     pair *b = card_pair(sentinel);
+                    // check for unfinished nodes
+                    bitset *bs = bitset_clone(pair_versions(b));
+                    bitset *dangling = bitset_create();
+                    card *temp = left;
+                    while ( !bitset_empty(bs) )
+                    {
+                        pair *q = card_pair( temp );
+                        if ( card_dangles(temp,sentinel) )
+                        {
+                            bitset_or(dangling,pair_versions(q) );
+                        }
+                        bitset_and_not( bs, pair_versions(q) );
+                        temp = card_left(temp);
+                    }
+                    bitset *final = pair_versions(b);
+                    bitset_and_not( final, dangling );
+                    if ( !bitset_empty(final) )
+                    {
+                        card *blank = card_create_blank_bs( final,log );
+                        card_add_after( left, blank );
+                    }
                     card_remove( sentinel, 1 );
                     pair_dispose( b );
-                    if ( left != NULL )
-                        card_set_right( left, NULL );
+                    bitset_dispose(bs);
+                    bitset_dispose( dangling );
                     break;
                 }
             }

@@ -835,7 +835,7 @@ static int card_merge_left( card *c_new, card *c )
 }
 /**
  * Find a blank after the next node that we can add our blank to
- * @paramc_new the new blank card
+ * @param c_new the new blank card
  * @param c the card to start searching from
  * @return 1 we merged c_new into a blank card already there else 0
  */
@@ -856,8 +856,11 @@ static int card_merge_right( card *c_new, card *c )
             while ( temp != NULL && temp != r )
             {
                 bitset *tv = pair_versions(temp->p);
-                if ( card_is_blank(temp) && bitset_intersects(tv,rv) 
-                    && bitset_intersects(tv,lv) )
+                if ( card_is_blank(temp) 
+                    //&& bitset_intersects(tv,rv) 
+                    //&& bitset_intersects(tv,lv) )
+                    && card_prev(temp,tv)==l
+                    && card_next(temp,tv,0)==r )
                 {
                     bitset_or(tv,cnv);
                     merged = 1;
@@ -876,18 +879,21 @@ static int card_merge_right( card *c_new, card *c )
  */
 void card_add_before( card *c, card *c_new )
 {
-    if ( c->left == NULL )
+    if ( !card_merge_left(c_new,c) )
     {
-        c_new->right = c;
-        c->left = c_new;
-    }
-    else
-    {
-        c_new->right = c;
-        c_new->left = c->left;
-        if ( c->left != NULL )
-            c->left->right = c_new;
-        c->left = c_new;
+        if ( c->left == NULL )
+        {
+            c_new->right = c;
+            c->left = c_new;
+        }
+        else
+        {
+            c_new->right = c;
+            c_new->left = c->left;
+            if ( c->left != NULL )
+                c->left->right = c_new;
+            c->left = c_new;
+        }
     }
 }
 /**
@@ -898,11 +904,14 @@ void card_add_before( card *c, card *c_new )
  */
 void card_add_after( card *c, card *after )
 {
-    after->right = c->right;
-    after->left = c;
-    if ( c->right != NULL )
-        c->right->left = after;
-    c->right = after;
+    if ( !card_merge_right(after,c) )
+    {
+        after->right = c->right;
+        after->left = c;
+        if ( c->right != NULL )
+            c->right->left = after;
+        c->right = after;
+    }
 }
 /**
  * Add a new card

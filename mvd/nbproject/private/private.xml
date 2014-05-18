@@ -7,10 +7,11 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
+            <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/mvd.c</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/dyn_array.c</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/vgnode.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/pair.c</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/include/vgnode.h</file>
+            <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/pair.c</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/include/pair.h</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/verify.c</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/include/version.h</file>
@@ -19,7 +20,6 @@
             <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/include/mvd.h</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/include/encoding.h</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/bitset.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/include/utils.h</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/include/dyn_array.h</file>
         </group>
     </open-files>
