@@ -278,7 +278,7 @@ static int check_version_integrity( card *list, bitset *nv, dyn_array *deviants 
     int res = 1;
     int pos = 0;
     int j = 0;
-    card *c = list;
+    card *c = card_first(list,nv);
     card *d = dyn_array_get(deviants,j++);
     while ( c != NULL )
     {
@@ -291,7 +291,7 @@ static int check_version_integrity( card *list, bitset *nv, dyn_array *deviants 
                 d = NULL;
         }
         pair *p = card_pair(c);
-        bitset *cv = pair_versions(p);
+        //bitset *cv = pair_versions(p);
         if ( pos != card_text_off(c) )
         {
             res = 0;
@@ -344,12 +344,14 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
     card *d = dyn_array_get( deviants, 0 );// NB: check if array not empty
     card *old_c = NULL;
     // debug
+/*
     res = print_merged_segments( c, nv, version );
     if ( res )
     {
         print_unmerged_segments( deviants );
         res = check_version_integrity( list, nv, deviants );
     }
+*/
     // end debug
     while ( res && c != NULL )
     {

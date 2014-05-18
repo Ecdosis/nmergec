@@ -523,7 +523,7 @@ static int match_extendible( match *m )
 }
 /**
  * Extend a match as far as you can
- * @param mt the match to extend
+ * @param mt the single match to extend
  * @param text the entire UTF-16 text of the new version
  * @param v the new version
  * @param log the log to record errors in
@@ -535,12 +535,12 @@ match *match_extend( match *mt, UChar *text, int v, plugin_log *log )
     match *first = mt;
     do
     {
-        match_verify_end( first );
+        //match_verify_end( first );
         match *mt2 = (match_extendible(mt))?match_clone(mt,log):NULL;
         if ( mt2 != NULL )
         {
             int distance = 1;
-            match_verify_end( first );
+            //match_verify_end( first );
             if ( match_restart(mt2,v,log) )
             {
                 do  
@@ -569,6 +569,7 @@ match *match_extend( match *mt, UChar *text, int v, plugin_log *log )
                         else    // give up
                         {
                             match_dispose( mt2 );
+                            last->next = NULL;
                             last = NULL;
                             break;
                         }
@@ -585,7 +586,7 @@ match *match_extend( match *mt, UChar *text, int v, plugin_log *log )
         else
             mt = NULL;
     } while ( last == mt );
-    match_verify_end( first );
+    //match_verify_end( first );
     return first;
 }
 /**
@@ -853,7 +854,7 @@ void match_verify( match *m, UChar *text, int tlen )
         card *c = m->start.current;
         int i=0;
         int count = 0;
-        while ( c != NULL )
+        while ( c != NULL && i <= m->len )
         {
             pair *p = card_pair(c);
             UChar *pdata = pair_data(p);
