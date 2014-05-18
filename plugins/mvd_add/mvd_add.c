@@ -385,7 +385,7 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
         }
         // test for deletion in the new version
         else if ( old_c != NULL && card_text_off(c) == pos 
-            && c != sentinel && !path_v_exists(old_c,c,version) )
+            /*&& c != sentinel */&& !path_v_exists(old_c,c,version) )
         {
             bitset *bs = bitset_create();
             if ( bs != NULL )
@@ -917,7 +917,7 @@ static int read_dir( char *folder )
 int test_mvd_add( int *passed, int *failed )
 {
     int64_t start = epoch_time();
-    int res = read_dir( "social charity" );
+    int res = read_dir( "tagore" );
     //int res = read_dir( "tests" );
     if ( res )
     {

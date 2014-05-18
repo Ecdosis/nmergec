@@ -35,8 +35,6 @@ vgnode *vgnode_create()
         n->incoming = bitset_create();
         n->outgoing = bitset_create();
         n->id = ++vgnode_id;
-        if ( n->id==146)
-            printf("146\n");
         if ( n->incoming == NULL || n->outgoing==NULL )
         {
             vgnode_dispose( n );

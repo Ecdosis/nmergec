@@ -376,7 +376,10 @@ card **orphanage_all_new_children( orphanage *o, int v, int *num, int *success )
                         *num = 0;
                 }
                 else
+                {
+                    *success = 1;
                     *num = 0;
+                }
                 dyn_array_dispose( kids );
             }
             free( keys );
