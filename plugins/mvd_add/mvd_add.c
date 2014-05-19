@@ -302,6 +302,25 @@ static int check_version_integrity( card *list, bitset *nv, dyn_array *deviants 
     }
     return res;
 }
+static int card_dangles_backwards( card *c )
+{
+    int res = 1;
+    card *temp = card_left(c);
+    pair *cp = card_pair(c);
+    bitset *cpv = pair_versions( cp );
+    while ( temp != NULL )
+    {
+        pair *p = card_pair(temp);
+        bitset *bs = pair_versions(p);
+        if ( bitset_intersects(cpv,bs) )
+        {
+            res = 0;
+            break;
+        }
+        temp = card_left(temp);
+    }
+    return res;
+}
 static int card_dangles( card *c, card *sentinel )
 {
     int res = 1;
@@ -322,15 +341,98 @@ static int card_dangles( card *c, card *sentinel )
     return res;
 }
 /**
+ * Add any missing blank cards at the start
+ * @param list the list of cards
+ * @param all the set of all versions
+ * @return the old or new list
+ */
+static card *sanitise_start( card *list, bitset *all, plugin_log *log )
+{
+    // check for unfinished nodes
+    bitset *bs = bitset_clone( all );
+    if ( bs != NULL )
+    {
+        bitset *dangling = bitset_create();
+        if ( dangling != NULL )
+        {
+            card *temp = list;
+            while ( !bitset_empty(bs) )
+            {
+                pair *q = card_pair( temp );
+                if ( card_dangles_backwards(temp) )
+                {
+                    bitset_or(dangling,pair_versions(q) );
+                }
+                bitset_and_not( bs, pair_versions(q) );
+                temp = card_right(temp);
+            }
+            bitset *final = bitset_clone( all );
+            if ( final != NULL )
+            {
+                bitset_and_not( final, dangling );
+                if ( !bitset_empty(final) )
+                {
+                    card *blank = card_create_blank_bs( final, log );
+                    card_add_before( list, blank );
+                    list = blank;
+                }
+                bitset_dispose( final );
+            }
+            bitset_dispose( dangling );
+        }
+        bitset_dispose(bs);
+    }
+    return list;
+}
+/**
+ * Add any missing blank cards at the end
+ * @param sentinel the sentinel at the end of the list
+ */
+static void sanitise_end( card *sentinel, plugin_log *log )
+{
+    card *end = card_left( sentinel );
+    pair *b = card_pair( sentinel );
+    // check for unfinished nodes
+    bitset *bs = bitset_clone(pair_versions(b));
+    if ( bs != NULL )
+    {
+        bitset *dangling = bitset_create();
+        if ( dangling != NULL )
+        {
+            card *temp = end;
+            while ( !bitset_empty(bs) )
+            {
+                pair *q = card_pair( temp );
+                if ( card_dangles(temp,sentinel) )
+                {
+                    bitset_or(dangling,pair_versions(q) );
+                }
+                bitset_and_not( bs, pair_versions(q) );
+                temp = card_left(temp);
+            }
+            bitset *final = pair_versions(b);
+            bitset_and_not( final, dangling );
+            if ( !bitset_empty(final) )
+            {
+                card *blank = card_create_blank_bs( final,log );
+                if ( !card_merge_left(blank,end) )
+                    card_add_after( end, blank );
+            }
+            bitset_dispose( dangling );
+        }
+        bitset_dispose(bs);
+    }
+}
+/**
  * Sort the discards by their start offsets in the new version, 
  * then insert them in order into the list. Fill in any gaps with empty cards.
- * @param list the list of card comprising the current alignment
+ * @param list the list of card comprising the current alignment (update)
  * @param deviants array of deviants (discards+children)
  * @param version the version we are comparing with
  * @param log the log to record errors in
  * @return 1 if it worked, else 0
  */
-static int add_deviant_pairs( card *list, dyn_array *deviants, int version, 
+static int add_deviant_pairs( card **list, dyn_array *deviants, int version, 
     plugin_log *log )
 {
     int i,res = 1;
@@ -340,7 +442,7 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
     int pos = 0;
     dyn_array_sort( deviants, card_compare );
     card *sentinel = NULL;
-    card *c = card_first(list,nv);
+    card *c = card_first(*list,nv);
     card *d = dyn_array_get( deviants, 0 );// NB: check if array not empty
     card *old_c = NULL;
     // debug
@@ -349,7 +451,7 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
     if ( res )
     {
         print_unmerged_segments( deviants );
-        res = check_version_integrity( list, nv, deviants );
+        res = check_version_integrity( *list, nv, deviants );
     }
 */
     // end debug
@@ -385,15 +487,6 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
                         {
                             card *blank = card_create_blank_bs( bs, log );
                             card_add_after( d, blank );
-/*
-                            card *ip = card_get_insertion_point_other( old_c, 
-                                c, blank ); 
-                            if ( ip != NULL )
-                                card_add_after( ip, blank );
-                            else
-                                plugin_log_add(log,
-                                    "failed to obtain insertion point");
-*/ 
                         }
                         bitset_dispose( bs );
                     }
@@ -458,33 +551,12 @@ static int add_deviant_pairs( card *list, dyn_array *deviants, int version,
                 }
                 else 
                 {
-                    card *left = card_left( sentinel );
                     pair *b = card_pair(sentinel);
-                    // check for unfinished nodes
-                    bitset *bs = bitset_clone(pair_versions(b));
-                    bitset *dangling = bitset_create();
-                    card *temp = left;
-                    while ( !bitset_empty(bs) )
-                    {
-                        pair *q = card_pair( temp );
-                        if ( card_dangles(temp,sentinel) )
-                        {
-                            bitset_or(dangling,pair_versions(q) );
-                        }
-                        bitset_and_not( bs, pair_versions(q) );
-                        temp = card_left(temp);
-                    }
-                    bitset *final = pair_versions(b);
-                    bitset_and_not( final, dangling );
-                    if ( !bitset_empty(final) )
-                    {
-                        card *blank = card_create_blank_bs( final,log );
-                        card_add_after( left, blank );
-                    }
+                    bitset *all = pair_versions( b );
+                    *list = sanitise_start( *list, all, log );
+                    sanitise_end( sentinel, log );
                     card_remove( sentinel, 1 );
                     pair_dispose( b );
-                    bitset_dispose(bs);
-                    bitset_dispose( dangling );
                     break;
                 }
             }
@@ -673,7 +745,7 @@ static int add_subsequent_version( MVD *mvd, adder *add,
                     {
                         plugin_log_add( log,"gaps invalid");
                     }
-                    res = add_deviant_pairs( list, discards, new_vid, log );
+                    res = add_deviant_pairs( &list, discards, new_vid, log );
                     if ( res )
                     {
                         pairs = card_to_pairs( list );

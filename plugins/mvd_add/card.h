@@ -59,6 +59,8 @@ int card_compare( void *c1, void *c2 );
 card *card_merged_right( card *c, int version );
 card *card_merged_left( card *c, int version );
 card *card_prev_nonempty( card *c, bitset *bs );
+int card_merge_left( card *c_new, card *c );
+int card_merge_right( card *c_new, card *c );
 //int card_exists( card *c );
 
 extern UChar USTR_EMPTY[];

@@ -803,7 +803,7 @@ int card_is_blank( card *c )
 {
     return pair_len(c->p)==0;
 }
-static int card_merge_left( card *c_new, card *c )
+int card_merge_left( card *c_new, card *c )
 {
     int merged = 0;
     if ( card_is_blank(c_new) )
@@ -838,7 +838,7 @@ static int card_merge_left( card *c_new, card *c )
  * @param c the card to start searching from
  * @return 1 we merged c_new into a blank card already there else 0
  */
-static int card_merge_right( card *c_new, card *c )
+int card_merge_right( card *c_new, card *c )
 {
     int merged = 0;
     if ( card_is_blank(c_new) )
