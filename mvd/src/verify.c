@@ -60,6 +60,7 @@ int verify_check( dyn_array *pairs )
     dyn_array *nodes = dyn_array_create( 10 );
     bitset *all = bitset_create();
     pair *prev = NULL;
+    vgnode_reset();
     for ( i=0;i<dyn_array_size(pairs);i++ )
     {
         pair *p = (pair*)dyn_array_get(pairs,i);
@@ -129,15 +130,29 @@ int verify_check( dyn_array *pairs )
             {
                 if ( dyn_array_size(nodes)>0 )
                 {
-                    char *str = pair_tostring(p);
-                    if ( str != NULL )
+                    int k;
+                    for ( k=i-1;k>=0;k-- )
                     {
-                        printf("Verify: failed to place arc %s\n",str);
-                        free( str );
+                        pair *q = dyn_array_get(pairs,k);
+                        if ( bitset_intersects(pair_versions(q),pair_versions(p)) )
+                            break;
                     }
-                    res = 0;
+                    if ( k != -1 )
+                    {
+                        char *str = pair_tostring(p);
+                        if ( str != NULL )
+                        {
+                            printf("Verify: failed to place arc %s\n",str);
+                            free( str );
+                        }
+                        res = 0;
+                    }
+                    else
+                        placed = 1;
                 }
                 else
+                    placed = 1;
+                if ( placed )
                     dyn_array_add( dangling, p );
             }
         }

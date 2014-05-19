@@ -46,6 +46,13 @@ vgnode *vgnode_create()
     return n;
 }
 /**
+ * Reset the id counter
+ */
+void vgnode_reset()
+{
+    vgnode_id = 0;
+}
+/**
  * Dispose of a vgnode
  * @param n the vgnode to dispose
  */

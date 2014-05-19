@@ -17,6 +17,7 @@ extern "C" {
 
 typedef struct vgnode_struct vgnode;
 vgnode *vgnode_create();
+void vgnode_reset();
 void vgnode_dispose( vgnode *n );
 int vgnode_add_incoming( vgnode *n, pair *p );
 int vgnode_add_outgoing( vgnode *n, pair *p );
