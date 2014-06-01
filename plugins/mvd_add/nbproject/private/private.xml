@@ -7,40 +7,12 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/match_state.h</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/suffixtree.h</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/match_state.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/alignment.h</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/mvd_add.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/orphanage.h</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/alignment.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/suffixtree.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/orphanage.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/shared/src/memwatch.c</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/card.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/adder.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/node.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/aatree.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/adder.h</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/shared/include/option_keys.h</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/aatree.h</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/card.h</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/match.h</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/location.h</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/match.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/pos.h</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/mum.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/deck.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/mum.h</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/deck.h</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/benchmark.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/test.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/benchmark.h</file>
             <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/hashtable.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/path.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/shared/src/plugin_log.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/hashtable.h</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/include/utils.h</file>
+            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/match.c</file>
+            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/mvd_add.c</file>
+            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/mum.c</file>
+            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_add/suffixtree.c</file>
         </group>
     </open-files>
 </project-private>

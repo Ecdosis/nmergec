@@ -48,7 +48,7 @@
 #define PHI 1.61803399
 //static int instance105=0;
 /*
- * Match represents a sequence of matching charactes in the pairs list 
+ * Match represents a sequence of matching characters in the pairs list 
  * and in the new text version.
  */
 struct match_struct
