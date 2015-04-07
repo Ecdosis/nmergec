@@ -109,14 +109,14 @@ void plugin_list_dispose( plugin_list *list )
 plugin *plugin_list_get( plugin_list *list, char *name )
 {
     int i;
-	for ( i=0;i<list->num_plugins;i++ )
-	{
-		const char *plug_name = plugin_name(list->plugins[i]);
-		if ( strcmp(plug_name,name)==0 )
-			return list->plugins[i];
+    for ( i=0;i<list->num_plugins;i++ )
+    {
+        const char *plug_name = plugin_name(list->plugins[i]);
+        if ( strcmp(plug_name,name)==0 )
+            return list->plugins[i];
     }
-	fprintf(stderr,"plugin_list: failed to find plugin %s\n",name);
-	return NULL;
+    fprintf(stderr,"plugin_list: failed to find plugin %s\n",name);
+    return NULL;
 }
 /**
  * List loaded plugins
@@ -126,10 +126,10 @@ void plugin_list_all( plugin_list *list )
 {
     int i;
     for ( i=0;i<list->num_plugins;i++ )
-	{
-		const char *plug_name = plugin_name(list->plugins[i]);
+    {
+        const char *plug_name = plugin_name(list->plugins[i]);
         printf("%s - %s",plug_name, plugin_description(list->plugins[i]));
-	}
+    }
 }
 // NB: can't really test this without creating plugins per se
 #ifdef MVD_TEST

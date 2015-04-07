@@ -70,22 +70,22 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_export.${CND_DLIB_EXT}: ${OBJE
 ${OBJECTDIR}/_ext/688439529/memwatch.o: ../shared/src/memwatch.c 
 	${MKDIR} -p ${OBJECTDIR}/_ext/688439529
 	${RM} "$@.d"
-	$(COMPILE.c) -g -DMEMWATCH -I../../mvd/include -I../shared/include -I../../include -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/688439529/memwatch.o ../shared/src/memwatch.c
+	$(COMPILE.c) -g -I../../mvd/include -I../shared/include -I../../include -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/688439529/memwatch.o ../shared/src/memwatch.c
 
 ${OBJECTDIR}/dom.o: dom.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -g -DMEMWATCH -I../../mvd/include -I../shared/include -I../../include -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/dom.o dom.c
+	$(COMPILE.c) -g -I../../mvd/include -I../shared/include -I../../include -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/dom.o dom.c
 
 ${OBJECTDIR}/mvd_export.o: mvd_export.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -g -DMEMWATCH -I../../mvd/include -I../shared/include -I../../include -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/mvd_export.o mvd_export.c
+	$(COMPILE.c) -g -I../../mvd/include -I../shared/include -I../../include -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/mvd_export.o mvd_export.c
 
 ${OBJECTDIR}/mvd_json.o: mvd_json.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -g -DMEMWATCH -I../../mvd/include -I../shared/include -I../../include -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/mvd_json.o mvd_json.c
+	$(COMPILE.c) -g -I../../mvd/include -I../shared/include -I../../include -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/mvd_json.o mvd_json.c
 
 # Subprojects
 .build-subprojects:

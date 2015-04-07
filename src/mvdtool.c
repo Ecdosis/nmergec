@@ -152,19 +152,19 @@ static int read_args( int argc, char **argv )
  */
 static int open_plugin( char *path )
 {
-	int res = 1;
+    int res = 1;
     void *handle = dlopen( path, RTLD_LOCAL|RTLD_LAZY );
     if ( handle != NULL )
-	{
-		if ( plugins == NULL )
-			plugins = plugin_list_create();
-		res = plugin_list_add( plugins, handle );
-	}
-	else
     {
-		fprintf(stderr, 
+        if ( plugins == NULL )
+            plugins = plugin_list_create();
+        res = plugin_list_add( plugins, handle );
+    }
+    else
+    {
+        fprintf(stderr, 
             "mvdtool: failed to read plugin path %s. error: %s\n",
-			path,dlerror() );
+            path,dlerror() );
         res = 0;
     }
     return res;
@@ -175,29 +175,29 @@ static int open_plugin( char *path )
  */
 static int do_open_plugins()
 {
-	struct dirent *dp;
-	DIR *dir = opendir(PLUGIN_DIR);
+    struct dirent *dp;
+    DIR *dir = opendir(PLUGIN_DIR);
     int suffix_len = strlen(LIB_SUFFIX);
     // without this it won't find any plugins
-	setenv("LD_LIBRARY_PATH",PLUGIN_DIR,1);
-    int res = 1;
-	while (res && (dp=readdir(dir)) != NULL)
-	{
-		char path[PATH_LEN];
-		char suffix[32];
-		int len;
-		snprintf( path, PATH_LEN, "%s/%s", PLUGIN_DIR, dp->d_name );
-		len = strlen( dp->d_name );
-		if ( len > suffix_len )
-		{
+    int res = setenv("LD_LIBRARY_PATH",PLUGIN_DIR,1);
+    res = 1;
+    while (res && (dp=readdir(dir)) != NULL)
+    {
+        char path[PATH_LEN];
+        char suffix[32];
+        int len;
+        snprintf( path, PATH_LEN, "%s/%s", PLUGIN_DIR, dp->d_name );
+        len = strlen( dp->d_name );
+        if ( len > suffix_len )
+        {
             // is it a dynamic library?
             char *dot_pos = strrchr(dp->d_name,'.');
-			strncpy( suffix, dot_pos, 32 );
-			if ( strcmp(suffix,LIB_SUFFIX)==0 )
-				res = open_plugin( path );
-		}
-	}
-	closedir(dir);
+            strncpy( suffix, dot_pos, 32 );
+            if ( strcmp(suffix,LIB_SUFFIX)==0 )
+                res = open_plugin( path );
+        }
+    }
+    closedir(dir);
     return res;
 }
 /**
@@ -386,6 +386,12 @@ static int test_mvd_file( char *path, int *passed, int *failed )
     else    // failed all tests in effect
         *failed += 4;
 }
+/**
+ * Test a directory of MVD files, loading and saving them in 2 formats
+ * @param folder the directory to search
+ * @param passed increment number of tests passed
+ * @param failed increment number of tests failed
+ */
 static void test_mvd_dir( char *folder, int *passed, int *failed )
 {
     int res = 1;

@@ -180,7 +180,7 @@ static int write_line( dyn_array *da, UChar *vid, char *data, int *data_len,
 /**
  * Do the work of this plugin
  * @param mvd the mvd to manipulte or read
- * @param options a string contianing the plugin's options
+ * @param options a string containing the plugin's options
  * @param output buffer of length SCRATCH_LEN
  * @param data user-supplied data or NULL
  * @param data_len of data (0 if data is NULL)
@@ -202,13 +202,13 @@ int process( MVD **mvd, char *options, char **output,
                 res = mvd_get_versions( *mvd, versions, n_versions );
                 if ( res )
                 {
-                    int i,o_len = plugin_log_pos(log);
+                    int i,o_len = 1024;
                     dyn_array *da = dyn_array_create( 5 );
                     if ( da != NULL )
                     {
                         UChar *desc = mvd_description( *mvd );
                         sort_versions( versions, n_versions );
-                        *output = plugin_log_buffer(log);
+                        *output = calloc( 1024, sizeof(char) );
                         res = write_utf8_string( desc, *output, &o_len );
                         if ( !res )
                             plugin_log_add(log,

@@ -6,34 +6,6 @@
     </data>
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
-        <group>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/src/mvdtool.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/src/plugin.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/src/plugin_list.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/src/operation.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/include/operation.h</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/src/test.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/src/mvdfile.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/shared/src/dyn_string.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/src/char_buf.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/src/chunk_state.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/test.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/mvd.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/include/plugin_list.h</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/plugins/mvd_list/mvd_list.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/utils.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/encoding.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/serialiser.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/version.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/pair.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/bitset.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/hashmap.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/dyn_array.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/verify.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/benchmark.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/group.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/link_node.c</file>
-            <file>file:/home/desmond/NetBeansProjects/NMergeC/mvd/src/vgnode.c</file>
-        </group>
+        <group/>
     </open-files>
 </project-private>

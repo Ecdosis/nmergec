@@ -4,6 +4,9 @@
 #ifdef MEMWATCH
 #include "memwatch.h"
 #endif
+/**
+ * General purpose list node object
+ */
 struct link_node_struct
 {
     void *obj;

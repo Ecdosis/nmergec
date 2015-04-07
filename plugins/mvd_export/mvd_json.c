@@ -53,11 +53,19 @@
  */
 static char *to_utf8( UChar *ustr, int ulen )
 {
-    int len = measure_to_encoding( ustr, ulen, "utf-8" );
-    char *dst = calloc( len+1, sizeof(char) );
-    if ( dst != NULL )
+    char *dst;
+    if ( ulen == 0 )
     {
-        convert_to_encoding( ustr, ulen, dst, len+1, "utf-8" );
+        dst = calloc( 1, sizeof(char) );
+    }
+    else
+    {
+        int len = measure_to_encoding( ustr, ulen, "utf-8" );
+        dst = calloc( len+1, sizeof(char) );
+        if ( dst != NULL )
+        {
+            convert_to_encoding( ustr, ulen, dst, len+1, "utf-8" );
+        }
     }
     return dst;
 }
@@ -186,7 +194,10 @@ int write_one_pair( pair *p, dom_item *p_parent, hashmap *parents,
                     dom_add_attribute( child, dom_attribute_create("parent", 
                         id_str) );
                     ln = link_node_next( ln );
-                    dom_item *child = link_node_obj( ln );
+                    if ( ln != NULL )
+                        child = link_node_obj( ln );
+                    else
+                        child = NULL;
                 }
                 hashmap_remove( orphans, u_key, NULL );
                 link_node_dispose( ln );
@@ -230,8 +241,10 @@ int write_one_pair( pair *p, dom_item *p_parent, hashmap *parents,
         if ( res )
         {
             if ( pair_is_hint(p) )
+            {
                 dom_add_attribute( p_element, 
                     dom_attribute_create("hint","true") );
+            }
             int bytes = bitset_allocated(pair_versions(p))*8;
             char *bit_str = calloc( bytes+1, 1 );
             if ( bit_str != NULL )
