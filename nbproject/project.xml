@@ -11,6 +11,7 @@
             <make-dep-projects>
                 <make-dep-project>plugins/mvd_add</make-dep-project>
                 <make-dep-project>plugins/mvd_list</make-dep-project>
+                <make-dep-project>plugins/mvd_create</make-dep-project>
                 <make-dep-project>mvd</make-dep-project>
                 <make-dep-project>plugins/mvd_export</make-dep-project>
             </make-dep-projects>

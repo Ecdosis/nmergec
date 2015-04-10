@@ -72,11 +72,13 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=-L/usr/local/lib/nmerge-plugins -L/usr/local/lib -L/usr/lib/x86_64-linux-gnu -lmvd -lmvd_add -lmvd_list -lmvd_create -licuuc -lm -ldl
+LDLIBSOPTIONS=-L/usr/local/lib/nmerge-plugins -L/usr/local/lib -L/usr/lib/x86_64-linux-gnu -lmvd -lmvd_add -lmvd_list -lmvd_create -licuuc -lm -ldl -Wl,-rpath,plugins/mvd_create/dist/Debug/GNU-Linux-x86 -Lplugins/mvd_create/dist/Debug/GNU-Linux-x86 -lmvd_create
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
 	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nmergec
+
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nmergec: plugins/mvd_create/dist/Debug/GNU-Linux-x86/libmvd_create.so
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nmergec: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
@@ -189,6 +191,7 @@ ${OBJECTDIR}/src/zip/zutil.o: src/zip/zutil.c
 
 # Subprojects
 .build-subprojects:
+	cd plugins/mvd_create && ${MAKE}  -f Makefile CONF=Debug
 	cd mvd && ${MAKE}  -f Makefile CONF=Debug
 
 # Clean Targets
@@ -198,6 +201,7 @@ ${OBJECTDIR}/src/zip/zutil.o: src/zip/zutil.c
 
 # Subprojects
 .clean-subprojects:
+	cd plugins/mvd_create && ${MAKE}  -f Makefile CONF=Debug clean
 	cd mvd && ${MAKE}  -f Makefile CONF=Debug clean
 
 # Enable dependency checking

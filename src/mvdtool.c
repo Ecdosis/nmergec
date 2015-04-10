@@ -40,7 +40,7 @@
 /** name of plugin command */
 static char *command=NULL;
 /** options for command */
-static char *options=NULL;
+static char *options="";
 /** name of mvd file */
 static char *mvdFile=NULL;
 /** list of available plugins */

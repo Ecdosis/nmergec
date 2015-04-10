@@ -44,6 +44,8 @@ int process( MVD **mvd, char *options, char **scratch,
                 encoding = "utf-8";
             else
                 lowercase( encoding );
+            if ( description == NULL )
+                description="untitled";
             if ( hashmap_contains(map,DEBUG_KEY) )
                 debug = atoi(hashmap_get(map,DEBUG_KEY));
             if ( debug )
@@ -55,13 +57,12 @@ int process( MVD **mvd, char *options, char **scratch,
             if ( description != NULL )
             {
                 int slen = strlen(description);
-                int dlen = measure_from_encoding( description, 
-                    slen, encoding );
-                UChar *u_description = malloc( dlen+sizeof(UChar) );
+                int dlen = measure_from_encoding( description, slen, encoding );
+                UChar *u_description = calloc( dlen+1, sizeof(UChar) );
                 if ( u_description != NULL )
                 {
                     int nchars = convert_from_encoding( description, slen, 
-                        u_description, (dlen/sizeof(UChar))+1, encoding );
+                        u_description, dlen+1, encoding );
                     if ( nchars > 0 )
                         mvd_set_description( *mvd, u_description );
                     if ( debug )

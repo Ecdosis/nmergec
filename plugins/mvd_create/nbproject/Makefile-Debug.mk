@@ -21,8 +21,8 @@ FC=gfortran
 AS=as
 
 # Macros
-CND_PLATFORM=GNU-MacOSX
-CND_DLIB_EXT=dylib
+CND_PLATFORM=GNU-Linux-x86
+CND_DLIB_EXT=so
 CND_CONF=Debug
 CND_DISTDIR=dist
 CND_BUILDDIR=build
@@ -53,7 +53,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=-licuuc -lmvd
+LDLIBSOPTIONS=-lmvd -licuuc
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
@@ -61,17 +61,17 @@ LDLIBSOPTIONS=-licuuc -lmvd
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_create.${CND_DLIB_EXT}: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_create.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -dynamiclib -install_name libmvd_create.${CND_DLIB_EXT} -fPIC
+	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libmvd_create.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -shared -fPIC
 
 ${OBJECTDIR}/_ext/688439529/plugin_log.o: ../shared/src/plugin_log.c 
 	${MKDIR} -p ${OBJECTDIR}/_ext/688439529
-	${RM} $@.d
-	$(COMPILE.c) -g -I../../mvd/include -I../shared/include -I../../include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/688439529/plugin_log.o ../shared/src/plugin_log.c
+	${RM} "$@.d"
+	$(COMPILE.c) -g -I../../mvd/include -I../shared/include -I../../include -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/688439529/plugin_log.o ../shared/src/plugin_log.c
 
 ${OBJECTDIR}/mvd_create.o: mvd_create.c 
 	${MKDIR} -p ${OBJECTDIR}
-	${RM} $@.d
-	$(COMPILE.c) -g -I../../mvd/include -I../shared/include -I../../include -fPIC  -MMD -MP -MF $@.d -o ${OBJECTDIR}/mvd_create.o mvd_create.c
+	${RM} "$@.d"
+	$(COMPILE.c) -g -I../../mvd/include -I../shared/include -I../../include -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/mvd_create.o mvd_create.c
 
 # Subprojects
 .build-subprojects:

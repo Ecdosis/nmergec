@@ -45,7 +45,7 @@ int convert_to_encoding( UChar *src, int srclen, char *dst,
 /**
  * Convert from an existing encoding to UTF-16
  * @param src the data read from the file
- * @param srclen the length of inbuf in bytes
+ * @param srclen the length of src in bytes
  * @param dst the destination buffer
  * @param dstlen the length of the destination in UChars
  * @param charset the charset of the src
@@ -55,18 +55,18 @@ int convert_from_encoding( char *src, int srclen, UChar *dst,
     int dstlen, char *charset )
 {
     UConverter *conv = NULL;
-  	UErrorCode status = U_ZERO_ERROR;
-  	int32_t len=0;
-  	
-	conv = ucnv_open( charset, &status );
-  	if ( status == U_ZERO_ERROR )
-	{
-	  	len = ucnv_toUChars( conv, dst, dstlen, src, srclen, &status );
-	  	if ( status != U_ZERO_ERROR )
-            fprintf(stderr,"encoding: %s\n",u_errorName(status));
+    UErrorCode status = U_ZERO_ERROR;
+    int32_t len=0;
+
+    conv = ucnv_open( charset, &status );
+    if ( status == U_ZERO_ERROR )
+    {
+        len = ucnv_toUChars( conv, dst, dstlen, src, srclen, &status );
+        if ( status != U_ZERO_ERROR )
+        fprintf(stderr,"encoding: %s\n",u_errorName(status));
         len *= sizeof(UChar);
-	  	ucnv_close(conv);
-	}
+            ucnv_close(conv);
+    }
     return len;
 }
 /**
